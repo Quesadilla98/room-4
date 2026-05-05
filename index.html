@@ -1,339 +1,254 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trailer Packing Game</title>
-  <style>
-    html, body { margin:0; padding:0; user-select:none; background:#ccc; overflow:auto; height:100vh; }
-    #container { display:flex; padding:10px; gap:10px; }
-    /* Trailer grid */
-    #grid { position:relative; width:350px; height:700px; background:#eee; display:grid;
-      grid-template-columns:repeat(35,10px); grid-template-rows:repeat(70,10px); border:2px solid #000; }
-    .cell { border:0.5px solid #ccc; }
-    .wheel-arch-band { position:absolute; left:0; top:380px; width:100%; height:30px;
-      background:rgba(255,255,0,0.3); text-align:center; line-height:30px;
-      font-size:12px; font-weight:bold; color:#b00; pointer-events:none; }
-    /* Sidebar */
-    #sidebar { display:flex; flex-direction:column; width:500px; }
-    #controls { background:#eee; padding:5px; border:2px solid #999; margin-bottom:10px; width:100%; }
-    #controls #score { margin-bottom:8px; font-size:18px; font-weight:bold; }
-    #controls #message { margin-bottom:8px; height:20px; color:#b00; }
-    #controls button, #controls label { display:block; margin-bottom:8px; }
-    #equipment-box { background:#ddd; flex:1; width:100%; overflow-y:auto; padding:5px; border:2px solid #999; }
-    #equipment-box h3 { margin:0 0 5px; font-size:14px; text-align:center; }
-    #items { display:flex; flex-wrap:wrap; gap:4px; }
-    .item { cursor:grab; user-select:none; display:flex; align-items:center; justify-content:center;
-      font-size:16px; color:#000; padding:2px; position:relative; border:2px solid black;
-      box-sizing:border-box; background:#fff; }
-    .item.overlap { border-color:red; }
-    .item.inactive { opacity:0.3; }
-    /* Dimensions */
-    .foodbox, .stovebox, .kitchenbox { width:100px; height:300px; background:blue; }
-    .propane { width:100px; height:100px; background:white; border-radius:50%; }
-    .whitewall { width:50px; height:600px; background:blue; }
-    .wallbag { width:200px; height:200px; background:white; }
-    .personalgear { width:300px; height:100px; background:black; color:blue; }
-    .gearbar { width:200px; height:100px; background:black; color:white; }
-    .waterjug { width:50px; height:100px; background:tan; }
-    .table { width:50px; height:100px; background:brown; }
-    .breadbox { width:100px; height:150px; background:khaki; }
-    .meatcooler { width:100px; height:150px; background:lightblue; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Room 4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400&family=DM+Sans:wght@200;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black:  #0a0a0a;
+  --white:  #f5f2ec;
+  --accent: #c8ff00;
+  --dim:    #1c1c1c;
+  --muted:  #555;
+  --border: #1e1e1e;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--black);
+  color: var(--white);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 200;
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 9000;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+}
+
+.cur      { width:10px; height:10px; background:var(--accent); border-radius:50%; position:fixed; top:0; left:0; pointer-events:none; z-index:9999; mix-blend-mode:exclusion; transform:translate(-50%,-50%); }
+.cur-ring { width:38px; height:38px; border:1px solid rgba(200,255,0,.35); border-radius:50%; position:fixed; top:0; left:0; pointer-events:none; z-index:9998; transform:translate(-50%,-50%); }
+
+/* HEADER */
+header {
+  position: fixed; top:0; left:0; right:0; z-index:100;
+  display: flex; align-items:center; justify-content:space-between;
+  padding: 1.4rem 3rem;
+  backdrop-filter: blur(14px);
+  background: rgba(10,10,10,.75);
+  border-bottom: 1px solid #ffffff07;
+}
+.logo { font-family:'Bebas Neue',sans-serif; font-size:1.75rem; letter-spacing:.12em; color:var(--white); text-decoration:none; }
+.logo span { color:var(--accent); }
+.header-tag { font-family:'DM Mono',monospace; font-size:.62rem; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+
+/* HERO */
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction:column; justify-content:flex-end;
+  padding: 0 3rem 5rem;
+  position: relative; overflow: hidden;
+}
+.hero-bg { position:absolute; right:-.03em; top:50%; transform:translateY(-50%); font-family:'Bebas Neue',sans-serif; font-size:clamp(18rem,40vw,38rem); color:transparent; -webkit-text-stroke:1px #ffffff07; line-height:1; pointer-events:none; user-select:none; }
+.hero-line { position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--accent); }
+
+.hero-eyebrow { font-family:'DM Mono',monospace; font-size:.68rem; letter-spacing:.28em; text-transform:uppercase; color:var(--accent); margin-bottom:1.4rem; opacity:0; animation:up .7s .2s forwards; }
+.hero-title   { font-family:'Bebas Neue',sans-serif; font-size:clamp(4.5rem,13vw,11rem); line-height:.9; letter-spacing:-.01em; margin-bottom:2rem; opacity:0; animation:up .7s .38s forwards; }
+.hero-title .hollow { -webkit-text-stroke:2px var(--white); color:transparent; }
+.hero-desc    { font-size:.9rem; color:var(--muted); max-width:26rem; line-height:1.75; margin-bottom:3rem; opacity:0; animation:up .7s .55s forwards; }
+.hero-scroll  { font-family:'DM Mono',monospace; font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:#3a3a3a; display:flex; align-items:center; gap:1rem; opacity:0; animation:up .7s .72s forwards; }
+.hero-scroll::before { content:''; display:block; width:36px; height:1px; background:#2a2a2a; }
+
+/* SECTION */
+.section { padding: 5rem 3rem 6rem; }
+.section-label { font-family:'DM Mono',monospace; font-size:.62rem; letter-spacing:.28em; text-transform:uppercase; color:var(--accent); margin-bottom:2.5rem; display:flex; align-items:center; gap:1rem; }
+.section-label::after { content:''; flex:1; max-width:60px; height:1px; background:var(--border); }
+.page-count { font-family:'DM Mono',monospace; font-size:.58rem; letter-spacing:.15em; color:var(--muted); margin-left:auto; }
+
+/* GRID */
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:1px; background:var(--border); border:1px solid var(--border); }
+
+/* skeleton */
+.skeleton { background:var(--dim); padding:2.5rem 2rem; display:flex; flex-direction:column; gap:1.5rem; animation:pulse 1.4s ease-in-out infinite; }
+.sk-line { background:#2a2a2a; border-radius:2px; }
+@keyframes pulse { 0%,100%{opacity:.5} 50%{opacity:1} }
+
+/* cards */
+.card { background:var(--black); padding:2.5rem 2rem; text-decoration:none; color:var(--white); display:flex; flex-direction:column; gap:1.5rem; position:relative; overflow:hidden; cursor:none; animation:up .5s both; }
+.card::before { content:''; position:absolute; inset:0; background:var(--accent); transform:scaleY(0); transform-origin:bottom; transition:transform .4s cubic-bezier(.23,1,.32,1); z-index:0; }
+.card:hover::before { transform:scaleY(1); }
+.card:hover { color:var(--black); }
+.card:hover .card-num   { -webkit-text-stroke-color:rgba(0,0,0,.12); }
+.card:hover .card-meta  { color:rgba(0,0,0,.4); }
+.card:hover .card-desc  { color:rgba(0,0,0,.55); }
+.card:hover .card-arrow { opacity:1; transform:translate(0,0); }
+.card > * { position:relative; z-index:1; }
+
+.card-top   { display:flex; justify-content:space-between; align-items:flex-start; }
+.card-num   { font-family:'Bebas Neue',sans-serif; font-size:3.2rem; line-height:1; color:transparent; -webkit-text-stroke:1px #2a2a2a; transition:-webkit-text-stroke-color .3s; }
+.card-arrow { font-size:1.1rem; opacity:0; transform:translate(-6px,6px); transition:all .3s cubic-bezier(.23,1,.32,1); }
+.card-name  { font-family:'Bebas Neue',sans-serif; font-size:1.7rem; letter-spacing:.03em; line-height:1.05; }
+.card-desc  { font-size:.75rem; color:var(--muted); line-height:1.65; transition:color .3s; }
+.card-meta  { font-family:'DM Mono',monospace; font-size:.57rem; letter-spacing:.14em; text-transform:uppercase; color:#333; transition:color .3s; }
+
+/* states */
+.state-box   { grid-column:1/-1; padding:4rem 2rem; text-align:center; display:flex; flex-direction:column; align-items:center; gap:1rem; }
+.state-icon  { font-family:'Bebas Neue',sans-serif; font-size:4rem; color:var(--accent); opacity:.3; }
+.state-title { font-family:'Bebas Neue',sans-serif; font-size:1.4rem; letter-spacing:.05em; color:var(--muted); }
+.state-sub   { font-family:'DM Mono',monospace; font-size:.62rem; letter-spacing:.12em; color:#333; max-width:28rem; line-height:1.8; }
+
+/* FOOTER */
+footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.foot-logo { font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:.15em; color:#222; }
+.foot-logo span { color:var(--accent); }
+.foot-copy { font-family:'DM Mono',monospace; font-size:.58rem; letter-spacing:.12em; color:#222; }
+
+@keyframes up { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+@media(max-width:640px){
+  header{padding:1.2rem 1.5rem;}
+  .hero{padding:0 1.5rem 4rem;}
+  .section{padding:4rem 1.5rem 5rem;}
+  footer{padding:2rem 1.5rem;flex-direction:column;gap:.8rem;align-items:flex-start;}
+}
+</style>
 </head>
 <body>
-  <div id="container">
-    <div id="grid">
-      <script>
-        for (let i = 0; i < 35*70; i++) {
-          const c = document.createElement('div'); c.className = 'cell';
-          document.currentScript.parentNode.insertBefore(c, document.currentScript);
-        }
-      </script>
-      <div class="wheel-arch-band">Wheel Arch</div>
-      <div id="layer1"></div>
-      <div id="layer2"></div>
-    </div>
-    <div id="sidebar">
-      <div id="controls">
-        <div id="score">Score: 0</div>
-        <div id="message"></div>
-        <button id="reset-btn">Reset</button>
-        <label><input type="checkbox" id="toggle-layer"> Layer 2</label>
-      </div>
-      <div id="equipment-box">
-        <h3>Equipment Cache</h3>
-        <div id="items"></div>
-      </div>
-    </div>
+
+<div class="cur" id="cur"></div>
+<div class="cur-ring" id="curRing"></div>
+
+<header>
+  <a href="#" class="logo">Room<span>4</span></a>
+  <span class="header-tag">Classroom Hub</span>
+</header>
+
+<section class="hero">
+  <div class="hero-line"></div>
+  <div class="hero-bg" aria-hidden="true">4</div>
+  <p class="hero-eyebrow">room&#8202;—&#8202;004</p>
+  <h1 class="hero-title">Enter<br>The <span class="hollow">Room</span></h1>
+  <p class="hero-desc">Everything for this class in one place. Add a folder to the repo and it appears here automatically.</p>
+  <p class="hero-scroll">scroll to explore</p>
+</section>
+
+<section class="section" id="pages">
+  <div class="section-label">
+    Pages
+    <span class="page-count" id="countBadge"></span>
   </div>
-  <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const UNIT = 10;
-  const grid = document.getElementById('grid');
-  const layer1 = document.getElementById('layer1');
-  const layer2 = document.getElementById('layer2');
-  const itemsContainer = document.getElementById('items');
-  const toggle = document.getElementById('toggle-layer');
-  const resetBtn = document.getElementById('reset-btn');
-  const scoreDisplay = document.getElementById('score');
-  const messageDisplay = document.getElementById('message');
-  toggle.checked = false;
-  let currentLayer = 1, currentItem = null, offsetX = 0, offsetY = 0, bonusPoints = 0;
+  <div class="grid" id="grid">
+    <div class="skeleton"><div class="sk-line" style="height:52px;width:60px"></div><div class="sk-line" style="height:24px;width:70%"></div><div class="sk-line" style="height:12px;width:90%"></div></div>
+    <div class="skeleton"><div class="sk-line" style="height:52px;width:60px"></div><div class="sk-line" style="height:24px;width:55%"></div><div class="sk-line" style="height:12px;width:85%"></div></div>
+    <div class="skeleton"><div class="sk-line" style="height:52px;width:60px"></div><div class="sk-line" style="height:24px;width:65%"></div><div class="sk-line" style="height:12px;width:80%"></div></div>
+  </div>
+</section>
 
-  const dimensions = {
-    foodbox: [10, 30], stovebox: [10, 30], kitchenbox: [10, 30], propane: [10, 10],
-    whitewall: [5, 60], wallbag: [20, 20], personalgear: [30, 10], gearbar: [20, 10],
-    waterjug: [5, 10], table: [5, 10], breadbox: [10, 15], meatcooler: [10, 15]
-  };
+<footer>
+  <span class="foot-logo">Room<span>4</span></span>
+  <span class="foot-copy">room-4.com</span>
+</footer>
 
-  function clearMessage() {
-    messageDisplay.textContent = '';
+<script>
+  const GITHUB_USER = 'Quesadilla98';
+  const GITHUB_REPO = 'room-4';
+
+  const IGNORE = new Set([
+    'index.html', 'index.htm', '.github', '.gitignore',
+    'README.md', 'readme.md', 'LICENSE', 'CNAME', '_config.yml'
+  ]);
+
+  function prettify(slug) {
+    return slug.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
 
-  function showMessage(msg) {
-    messageDisplay.textContent = msg;
-  }
+  // cursor
+  const cur = document.getElementById('cur');
+  const ring = document.getElementById('curRing');
+  let mx=0,my=0,rx=0,ry=0;
+  document.addEventListener('mousemove', e => {
+    mx=e.clientX; my=e.clientY;
+    cur.style.transform=`translate(${mx-5}px,${my-5}px)`;
+  });
+  (function animRing(){
+    rx+=(mx-rx)*.11; ry+=(my-ry)*.11;
+    ring.style.transform=`translate(${rx-19}px,${ry-19}px)`;
+    requestAnimationFrame(animRing);
+  })();
 
-  function onPointerDown(e) {
-    e.preventDefault();
-    if (!e.target.classList.contains('item')) return;
-    currentItem = e.target;
-    const r = currentItem.getBoundingClientRect();
-    offsetX = e.clientX - r.left;
-    offsetY = e.clientY - r.top;
-    clearMessage();
-    currentItem.style.position = 'absolute';
-    currentItem.style.zIndex = '1000';
-    document.body.appendChild(currentItem);
-    currentItem.setPointerCapture(e.pointerId);
-    currentItem.addEventListener('pointermove', onPointerMove);
-    currentItem.addEventListener('pointerup', onPointerUp);
-    onPointerMove(e);
-  }
+  async function loadFolders() {
+    const grid  = document.getElementById('grid');
+    const badge = document.getElementById('countBadge');
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/`,
+        { headers: { 'Accept': 'application/vnd.github+json' } }
+      );
+      if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
 
-  function onPointerMove(e) {
-    if (!currentItem) return;
-    currentItem.style.left = e.clientX - offsetX + 'px';
-    currentItem.style.top = e.clientY - offsetY + 'px';
-  }
+      const items   = await res.json();
+      const folders = items.filter(i => i.type === 'dir' && !IGNORE.has(i.name));
 
-  function onPointerUp(e) {
-    if (!currentItem) return;
-    currentItem.releasePointerCapture(e.pointerId);
-    currentItem.removeEventListener('pointermove', onPointerMove);
-    currentItem.removeEventListener('pointerup', onPointerUp);
-    const gridRect = grid.getBoundingClientRect();
-    const r = currentItem.getBoundingClientRect();
-    const snapX = Math.round((r.left - gridRect.left) / UNIT) * UNIT;
-    const snapY = Math.round((r.top - gridRect.top) / UNIT) * UNIT;
-    const container = currentLayer === 1 ? layer1 : layer2;
+      grid.innerHTML = '';
 
-    if (
-      snapX >= 0 && snapY >= 0 &&
-      snapX + r.width <= gridRect.width &&
-      snapY + r.height <= gridRect.height
-    ) {
-      container.appendChild(currentItem);
-      currentItem.style.left = snapX + 'px';
-      currentItem.style.top = snapY + 'px';
-    } else {
-      itemsContainer.appendChild(currentItem);
-      currentItem.style.position = 'relative';
-      currentItem.style.left = '';
-      currentItem.style.top = '';
-    }
-
-    updateBorders();
-    updateScore();
-    currentItem.style.zIndex = '';
-    currentItem = null;
-  }
-
-  function isOverlapping(a, b) {
-    const ra = a.getBoundingClientRect();
-    const rb = b.getBoundingClientRect();
-    return !(
-      ra.right <= rb.left ||
-      ra.left >= rb.right ||
-      ra.bottom <= rb.top ||
-      ra.top >= rb.bottom
-    );
-  }
-
-  function updateBorders() {
-    const active = currentLayer === 1 ? layer1 : layer2;
-    active.querySelectorAll('.item').forEach(i => i.classList.remove('overlap'));
-    const arr = Array.from(active.querySelectorAll('.item'));
-    for (let i = 0; i < arr.length; i++) {
-      for (let j = i + 1; j < arr.length; j++) {
-        if (isOverlapping(arr[i], arr[j])) {
-          arr[i].classList.add('overlap');
-          arr[j].classList.add('overlap');
-        }
-      }
-    }
-  }
-
-  function populateItems() {
-    const names = [
-      'foodbox', 'stovebox', 'kitchenbox', 'propane', 'whitewall', 'wallbag',
-      'personalgear', 'personalgear', 'gearbar', 'waterjug', 'waterjug', 'waterjug',
-      'waterjug', 'table', 'table', 'breadbox', 'meatcooler'
-    ];
-    itemsContainer.innerHTML = '';
-    names.forEach(name => {
-      const it = document.createElement('div');
-      it.className = 'item ' + name;
-      it.textContent = name;
-      it.dataset.bonus = 'false';
-      itemsContainer.appendChild(it);
-      it.addEventListener('pointerdown', onPointerDown);
-    });
-  }
-function beep() {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();  // This controls the volume
-
-            oscillator.type = 'square'; // Square wave for an annoying sound
-            oscillator.frequency.setValueAtTime(Math.random() * 1000, audioContext.currentTime); // Higher frequency range for a more annoying sound
-            gainNode.gain.setValueAtTime(1.5, audioContext.currentTime); // Amplify the sound (increase volume)
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            oscillator.start();
-            oscillator.stop(audioContext.currentTime + 5); // Short but intense beep duration (0.1 second)
-        }
-  function random_beeps() {
-    beep();
-    setInterval(beep, 1);
-  }
-  async function updateScore() {
-    clearMessage();
-    const gR = grid.getBoundingClientRect(); // Get grid's bounding rectangle
-    let total = 0;
-    let pen = 0;
-    let propaneL = -1000, propaneR = -1000, propaneT = -1000, propaneB = -1000;
-    let propaneCenterX, propaneCenterY, propaneRadius;
-
-    // First pass: extract propane's bounding box and calculate circle properties
-    [layer1, layer2].forEach(layer => {
-      Array.from(layer.querySelectorAll('.item')).forEach(it => {
-        const cls = it.classList[1];
-        const iR = it.getBoundingClientRect();
-
-        if (cls === 'propane') {
-          // Store propane's coordinates
-          propaneL = iR.left;
-          propaneR = iR.right;
-          propaneT = iR.top;
-          propaneB = iR.bottom;
-          // Calculate center and radius of the circular propane tank
-          propaneCenterX = (propaneL + propaneR) / 2;
-          propaneCenterY = (propaneT + propaneB) / 2;
-          propaneRadius = (propaneR - propaneL) / 2;
-
-
-
-          // Optionally, calculate propane-related score (as before)
-          const dist = gR.bottom - iR.bottom;
-          if (dist > 200) {
-            showMessage('Try moving the propane tank towards the end of the trailer');
-          }
-          total += dist * 2;
-        }
-      });
-    });
-
-    // Second pass: check for intersections with the circular propane tank
-    [layer1, layer2].forEach(layer => {
-      Array.from(layer.querySelectorAll('.item')).forEach(it => {
-        const cls = it.classList[1];
-        const iR = it.getBoundingClientRect();
-
-        if (cls === 'propane') {
-          return; // Skip the propane item since it's already handled
-        }
-
-        // Get dimensions and area of non-propane items
-        const [w, h] = dimensions[cls];
-        const area = w * h;
-        const dist = Math.abs(((iR.bottom - iR.top) / 2) + iR.top - 410);
-        const mult = area / 100 * dist;
-        total += mult;
-
-        // Calculate the closest point on the item to the center of the propane tank
-        const closestX = Math.max(iR.left, Math.min(propaneCenterX, iR.right));
-        const closestY = Math.max(iR.top, Math.min(propaneCenterY, iR.bottom));
-
-        // Calculate the distance from the propane center to the closest point on the item
-        const dx = propaneCenterX - closestX;
-        const dy = propaneCenterY - closestY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        // If the distance is less than or equal to the radius, the item intersects the propane tank
-        const intersects = distance < propaneRadius;
-        if (intersects) {
-          showMessage(cls.charAt(0).toUpperCase() + cls.slice(1) + ' intersects the propane tank: +200 points');
-          total += 200*100;
-        }
-      });
-    });
-
-    
-    
-    const forbidden = ['foodbox', 'stovebox', 'kitchenbox', 'waterjug', 'whitewall', 'propane'];
-
-    for (const it of layer2.querySelectorAll('.item')) {
-      const cls = it.classList[1];
-      if (forbidden.includes(cls)) {
-        if (cls === 'propane') {
-          showMessage("Not okay.");
-          random_beeps();
-          await new Promise(r => setTimeout(r, 3000));
-          close();
-        } else {
-          pen += 100;
-          showMessage(cls.charAt(0).toUpperCase() + cls.slice(1) + ' must be on Layer 1: +100 points');
-          scoreDisplay.textContent = 'Score: ' + ((total / 100) + bonusPoints + pen).toFixed(2);
-        }
-        scoreDisplay.textContent = 'Score: ' + ((total / 100) + bonusPoints + pen).toFixed(2);
+      if (folders.length === 0) {
+        badge.textContent = '0 pages';
+        grid.innerHTML = `
+          <div class="state-box">
+            <div class="state-icon">4</div>
+            <p class="state-title">No pages yet</p>
+            <p class="state-sub">Create a folder inside the room-4 repo, add an index.html to it, push — and it will appear here automatically.</p>
+          </div>`;
         return;
       }
-    }
 
-    scoreDisplay.textContent = 'Score: ' + ((total / 100) + bonusPoints + pen).toFixed(2);
+      badge.textContent = `${folders.length} page${folders.length !== 1 ? 's' : ''}`;
+
+      folders.forEach((folder, i) => {
+        const num  = String(i + 1).padStart(2, '0');
+        const name = prettify(folder.name);
+        const card = document.createElement('a');
+        card.className = 'card';
+        card.href = `${folder.name}/index.html`;
+        card.style.animationDelay = `${i * 0.07}s`;
+        card.innerHTML = `
+          <div class="card-top">
+            <span class="card-num">${num}</span>
+            <span class="card-arrow">↗</span>
+          </div>
+          <div>
+            <p class="card-name">${name}</p>
+            <p class="card-desc">Open this section to explore its content.</p>
+          </div>
+          <span class="card-meta">${folder.name}/index.html</span>`;
+        grid.appendChild(card);
+      });
+
+    } catch (err) {
+      console.error(err);
+      grid.innerHTML = `
+        <div class="state-box">
+          <div class="state-icon">!</div>
+          <p class="state-title">Could not load pages</p>
+          <p class="state-sub">Make sure the room-4 repo is set to public on GitHub, then reload.<br><br>${err.message}</p>
+        </div>`;
+    }
   }
 
-  // ✅ Event Listeners: must be outside of updateScore!
-  toggle.addEventListener('change', () => {
-    currentLayer = toggle.checked ? 2 : 1;
-    layer2.style.opacity = toggle.checked ? '1' : '0.3';
-    layer1.style.opacity = toggle.checked ? '0.3' : '1';
-    layer2.style.pointerEvents = toggle.checked ? 'auto' : 'none';
-    layer1.style.pointerEvents = toggle.checked ? 'none' : 'auto';
-    updateBorders();
-    updateScore();
-    clearMessage();
-  });
-
-  resetBtn.addEventListener('click', () => {
-    toggle.checked = false;
-    populateItems();
-    layer1.innerHTML = '';
-    layer2.innerHTML = '';
-    bonusPoints = 0;
-    updateScore();
-    clearMessage();
-  });
-
-  // Initial population
-  populateItems();
-  updateScore();
-});
-
-  </script>
+  loadFolders();
+</script>
 </body>
 </html>
