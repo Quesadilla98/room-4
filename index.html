@@ -42,6 +42,9 @@ body::after {
 .cur      { width:10px; height:10px; background:var(--accent); border-radius:50%; position:fixed; top:0; left:0; pointer-events:none; z-index:9999; mix-blend-mode:exclusion; transform:translate(-50%,-50%); }
 .cur-ring { width:38px; height:38px; border:1px solid rgba(200,255,0,.35); border-radius:50%; position:fixed; top:0; left:0; pointer-events:none; z-index:9998; transform:translate(-50%,-50%); }
 
+/* ENSURE STACKING */
+header, .hero, .section, footer { position: relative; z-index: 1; }
+
 /* HEADER */
 header {
   position: fixed; top:0; left:0; right:0; z-index:100;
@@ -54,6 +57,13 @@ header {
 .logo { font-family:'Bebas Neue',sans-serif; font-size:1.75rem; letter-spacing:.12em; color:var(--white); text-decoration:none; }
 .logo span { color:var(--accent); }
 .header-tag { font-family:'DM Mono',monospace; font-size:.62rem; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+.header-synergy {
+  font-family:'DM Mono',monospace; font-size:.62rem; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--muted); text-decoration:none;
+  border:1px solid #2a2a2a; padding:.35rem .75rem;
+  transition:color .2s, border-color .2s, background .2s;
+}
+.header-synergy:hover { color:var(--black); background:var(--accent); border-color:var(--accent); }
 
 /* HERO */
 .hero {
@@ -166,12 +176,15 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
 </head>
 <body>
 
+<canvas id="bg" style="position:fixed;inset:0;z-index:0;pointer-events:none;"></canvas>
 <div class="cur" id="cur"></div>
 <div class="cur-ring" id="curRing"></div>
 
 <header>
   <a href="#" class="logo">Room<span>4</span></a>
   <span class="header-tag">Classroom Hub</span>
+  <a class="header-synergy" href="https://or-eug-psv.edupoint.com/PXP2_Login_Student.aspx?regenerateSessionId=true" target="_blank">Student Vue ↗</a>
+  <a class="header-synergy" href="https://twinriverscharter.org" target="_blank">Twin Rivers ↗</a>
 </header>
 
 <section class="hero">
@@ -690,6 +703,139 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
     answerEl.textContent = 'Answer: ' + qotd.a;
     answerEl.classList.add('revealed');
   };
+
+  // ── DYNAMIC BACKGROUND CANVAS ──
+  (function() {
+    const canvas = document.getElementById('bg');
+    const ctx = canvas.getContext('2d');
+    let W, H, particles, mouse = { x: -9999, y: -9999 };
+
+    const ACCENT = [200, 255, 0];
+    const COUNT = 90;
+
+    function resize() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+
+    function rand(a, b) { return a + Math.random() * (b - a); }
+
+    function makeParticle() {
+      return {
+        x:  rand(0, W),
+        y:  rand(0, H),
+        vx: rand(-0.25, 0.25),
+        vy: rand(-0.25, 0.25),
+        r:  rand(1, 2.5),
+        opacity: rand(0.08, 0.35),
+        pulse: rand(0, Math.PI * 2),
+        pulseSpeed: rand(0.005, 0.018),
+      };
+    }
+
+    function init() {
+      resize();
+      particles = Array.from({ length: COUNT }, makeParticle);
+    }
+
+    function drawGrid() {
+      const spacing = 80;
+      ctx.strokeStyle = 'rgba(255,255,255,0.018)';
+      ctx.lineWidth = 0.5;
+      for (let x = 0; x < W; x += spacing) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+      }
+      for (let y = 0; y < H; y += spacing) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+      }
+    }
+
+    function drawConnections() {
+      const maxDist = 160;
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < maxDist) {
+            const alpha = (1 - dist / maxDist) * 0.12;
+            ctx.strokeStyle = `rgba(${ACCENT[0]},${ACCENT[1]},${ACCENT[2]},${alpha})`;
+            ctx.lineWidth = 0.6;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+          }
+        }
+        // connect to mouse
+        const mdx = particles[i].x - mouse.x;
+        const mdy = particles[i].y - mouse.y;
+        const mdist = Math.sqrt(mdx*mdx + mdy*mdy);
+        if (mdist < 200) {
+          const alpha = (1 - mdist / 200) * 0.35;
+          ctx.strokeStyle = `rgba(${ACCENT[0]},${ACCENT[1]},${ACCENT[2]},${alpha})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(mouse.x, mouse.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      drawGrid();
+      drawConnections();
+
+      for (const p of particles) {
+        p.pulse += p.pulseSpeed;
+        const glow = 0.5 + 0.5 * Math.sin(p.pulse);
+        const opacity = p.opacity * (0.7 + 0.3 * glow);
+
+        // mouse repulsion
+        const dx = p.x - mouse.x;
+        const dy = p.y - mouse.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 120 && dist > 0) {
+          const force = (120 - dist) / 120 * 0.6;
+          p.vx += (dx / dist) * force;
+          p.vy += (dy / dist) * force;
+        }
+
+        // velocity damping
+        p.vx *= 0.98;
+        p.vy *= 0.98;
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // wrap edges
+        if (p.x < 0) p.x = W;
+        if (p.x > W) p.x = 0;
+        if (p.y < 0) p.y = H;
+        if (p.y > H) p.y = 0;
+
+        // draw dot
+        const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
+        gradient.addColorStop(0, `rgba(${ACCENT[0]},${ACCENT[1]},${ACCENT[2]},${opacity})`);
+        gradient.addColorStop(1, `rgba(${ACCENT[0]},${ACCENT[1]},${ACCENT[2]},0)`);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+      }
+
+      requestAnimationFrame(draw);
+    }
+
+    document.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+    document.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
+    window.addEventListener('resize', resize);
+
+    init();
+    draw();
+  })();
+
 </script>
 </body>
 </html>
