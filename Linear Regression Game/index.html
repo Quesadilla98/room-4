@@ -3,566 +3,775 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Line of Best Fit</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<title>LINEAR REGRESSION GAME</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0f0f13;
-    --surface: #18181f;
-    --surface2: #22222c;
-    --border: rgba(255,255,255,0.08);
-    --text: #f0eff5;
-    --muted: #7a7a8c;
-    --accent: #c8b8ff;
-    --user-line: #f0c040;
-    --reg-line: #ff4444;
-    --dot: #5ba4f5;
-  }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0a0a0a;
+  font-family: 'Share Tech Mono', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1rem 2rem;
+  position: relative;
+  overflow-x: hidden;
+}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 2rem 1rem;
-  }
+/* diagonal stripe accent top-left like image 2 */
+body::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 18px;
+  height: 260px;
+  background: repeating-linear-gradient(
+    180deg,
+    #39ff14 0px, #39ff14 18px,
+    transparent 18px, transparent 30px
+  );
+  opacity: 0.9;
+}
+body::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 18px;
+  height: 180px;
+  background: repeating-linear-gradient(
+    180deg,
+    #00eeff 0px, #00eeff 14px,
+    transparent 14px, transparent 24px
+  );
+  opacity: 0.6;
+}
 
-  h1 {
-    font-family: 'Space Mono', monospace;
-    font-size: 13px;
-    letter-spacing: 0.2em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 1.5rem;
-  }
+.header {
+  width: 100%;
+  max-width: 760px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #39ff1444;
+  position: relative;
+}
 
-  .stats {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 16px;
-    width: 100%;
-    max-width: 720px;
-  }
+.title-block { line-height: 1; }
 
-  .stat {
-    background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 14px;
-    flex: 1;
-  }
+h1 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 42px;
+  font-weight: 700;
+  color: #39ff14;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 0.95;
+  text-shadow: 0 0 30px #39ff1466;
+}
 
-  .stat-label {
-    font-size: 10px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 3px;
-    font-family: 'Space Mono', monospace;
-  }
+.title-sub {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: #444;
+  text-transform: uppercase;
+  margin-top: 5px;
+}
 
-  .stat-value {
-    font-family: 'Space Mono', monospace;
-    font-size: 20px;
-    color: var(--text);
-  }
+.header-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
 
-  .stat-value.grade { font-size: 14px; }
+.badge-tag {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #222;
+  background: #39ff14;
+  padding: 3px 8px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+}
 
-  canvas {
-    display: block;
-    border-radius: 12px;
-    border: 0.5px solid var(--border);
-    max-width: 720px;
-    width: 100%;
-    cursor: crosshair;
-  }
+.badge-serial {
+  font-size: 8px;
+  color: #333;
+  letter-spacing: 0.1em;
+}
 
-  canvas.drag-mode { cursor: grab; }
-  canvas.dragging { cursor: grabbing; }
+/* Stats row */
+.stats {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+  width: 100%;
+  max-width: 760px;
+}
 
-  #msg {
-    font-size: 13px;
-    color: var(--muted);
-    margin-top: 10px;
-    min-height: 18px;
-    max-width: 720px;
-    width: 100%;
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.05em;
-  }
+.stat {
+  flex: 1;
+  background: #111;
+  border: 1px solid #222;
+  border-top: 2px solid #39ff1455;
+  padding: 8px 10px 6px;
+  position: relative;
+  min-width: 0;
+}
 
-  .btns {
-    display: flex;
-    gap: 8px;
-    margin-top: 14px;
-    max-width: 720px;
-    width: 100%;
-    flex-wrap: wrap;
-  }
+.stat::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 1px;
+  background: #39ff14;
+  opacity: 0.4;
+}
 
-  button {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    background: transparent;
-    border: 0.5px solid rgba(255,255,255,0.2);
-    border-radius: 8px;
-    padding: 9px 18px;
-    color: var(--text);
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-  }
+.stat-label {
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #444;
+  margin-bottom: 4px;
+}
 
-  button:hover { background: var(--surface2); border-color: rgba(255,255,255,0.35); }
-  button:active { transform: scale(0.97); }
-  button:disabled { opacity: 0.3; cursor: default; transform: none; }
+.stat-value {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #e8ffe0;
+  line-height: 1;
+  white-space: nowrap;
+}
+.stat-value.sm { font-size: 17px; padding-top: 5px; }
 
-  #btn-lock {
-    background: var(--accent);
-    color: #1a1030;
-    border-color: var(--accent);
-    font-weight: 700;
-  }
-  #btn-lock:hover { background: #d8ccff; }
-  #btn-lock:disabled { background: transparent; color: var(--text); border-color: rgba(255,255,255,0.2); }
-  #btn-next {
-    background: var(--accent);
-    color: #1a1030;
-    border-color: var(--accent);
-    font-weight: 700;
-  }
-  #btn-next:hover { background: #d8ccff; }
-  #btn-next:disabled { background: transparent; color: var(--text); border-color: rgba(255,255,255,0.2); }
+/* Canvas */
+canvas {
+  display: block;
+  max-width: 760px;
+  width: 100%;
+  cursor: crosshair;
+  border: 1px solid #1a1a1a;
+  outline: 1px solid #39ff1422;
+  outline-offset: 3px;
+}
+canvas.drag-mode { cursor: grab; }
+canvas.dragging  { cursor: grabbing; }
 
-  .legend {
-    display: flex;
-    gap: 16px;
-    margin-top: 12px;
-    max-width: 720px;
-    width: 100%;
-    flex-wrap: wrap;
-  }
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: var(--muted);
-    font-family: 'Space Mono', monospace;
-  }
-  .legend-dot {
-    width: 24px;
-    height: 3px;
-    border-radius: 2px;
-  }
-  .legend-dot.dashed {
-    background: repeating-linear-gradient(90deg, #ff4444 0, #ff4444 6px, transparent 6px, transparent 11px);
-  }
+/* Message */
+#msg {
+  width: 100%; max-width: 760px;
+  margin-top: 10px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #39ff14cc;
+  min-height: 18px;
+  text-transform: uppercase;
+}
+
+/* Buttons */
+.btns {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  max-width: 760px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+button {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: #111;
+  border: 1px solid #333;
+  padding: 10px 20px;
+  color: #444;
+  cursor: pointer;
+  transition: all 0.1s;
+  position: relative;
+  overflow: hidden;
+}
+button::before {
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:1px;
+  background:#ffffff11;
+}
+button:hover:not(:disabled) {
+  background: #161616;
+  border-color: #555;
+  color: #999;
+}
+button:active:not(:disabled) { transform: scale(0.97); }
+button:disabled { opacity: 0.25; cursor: default; }
+
+#btn-lock {
+  background: #0d2200;
+  border: 1px solid #39ff14;
+  color: #39ff14;
+  flex: 2;
+  font-size: 16px;
+  text-shadow: 0 0 12px #39ff1488;
+  box-shadow: 0 0 14px #39ff1422, inset 0 0 12px #39ff1408;
+}
+#btn-lock:hover:not(:disabled) {
+  background: #112800;
+  box-shadow: 0 0 22px #39ff1444, inset 0 0 16px #39ff1412;
+}
+#btn-lock:disabled {
+  background: #111; border-color: #222;
+  color: #333; text-shadow: none; box-shadow: none;
+}
+
+#btn-next {
+  background: #001622;
+  border: 1px solid #00eeff;
+  color: #00eeff;
+  flex: 2;
+  font-size: 16px;
+  text-shadow: 0 0 12px #00eeff88;
+  box-shadow: 0 0 14px #00eeff22, inset 0 0 12px #00eeff08;
+}
+#btn-next:hover:not(:disabled) {
+  background: #001e2e;
+  box-shadow: 0 0 22px #00eeff44, inset 0 0 16px #00eeff12;
+}
+#btn-next:disabled {
+  background: #111; border-color: #222;
+  color: #333; text-shadow: none; box-shadow: none;
+}
+
+/* Legend */
+.legend {
+  display: flex; gap: 18px;
+  margin-top: 8px;
+  max-width: 760px; width: 100%;
+  flex-wrap: wrap; align-items: center;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 10px; color: #444;
+  letter-spacing: 0.15em; text-transform: uppercase;
+}
+.leg-dash {
+  width: 26px; height: 2px;
+  background: repeating-linear-gradient(90deg,#ff2200 0,#ff2200 6px,transparent 6px,transparent 10px);
+}
+.leg-solid { width: 26px; height: 2px; background: #39ff14; }
+
+/* corner decorations */
+.corner-tl, .corner-br {
+  position: absolute;
+  width: 20px; height: 20px;
+  pointer-events: none;
+}
+.corner-tl {
+  top: 0; left: 26px;
+  border-top: 2px solid #39ff1488;
+  border-left: 2px solid #39ff1488;
+}
+.corner-br {
+  bottom: 0; right: 26px;
+  border-bottom: 2px solid #39ff1422;
+  border-right: 2px solid #39ff1422;
+}
 </style>
 </head>
 <body>
+<div class="corner-tl"></div>
+<div class="corner-br"></div>
 
-<h1>Line of Best Fit</h1>
-
-<div class="stats">
-  <div class="stat"><div class="stat-label">Round</div><div class="stat-value" id="sr">1 / 5</div></div>
-  <div class="stat"><div class="stat-label">Score</div><div class="stat-value" id="ss">—</div></div>
-  <div class="stat"><div class="stat-label">Degrees off</div><div class="stat-value" id="sd">—</div></div>
-  <div class="stat"><div class="stat-label">Total</div><div class="stat-value" id="st">0</div></div>
-  <div class="stat"><div class="stat-label">Grade</div><div class="stat-value grade" id="sg">—</div></div>
+<div class="header">
+  <div class="title-block">
+    <h1>LINEAR<br>REGRESSION<br>GAME</h1>
+    <div class="title-sub">Statistical precision training // v2.4</div>
+  </div>
+  <div class="header-badge">
+    <div class="badge-tag">Active</div>
+    <div class="badge-serial">SRL-44821-RGX</div>
+  </div>
 </div>
 
-<canvas id="c" width="720" height="440"></canvas>
+<div class="stats">
+  <div class="stat">
+    <div class="stat-label">Round</div>
+    <div class="stat-value" id="sr">01/05</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Score</div>
+    <div class="stat-value" id="ss">—</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Deg. off</div>
+    <div class="stat-value sm" id="sd">—</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Total</div>
+    <div class="stat-value" id="st">000</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Grade</div>
+    <div class="stat-value sm" id="sg">—</div>
+  </div>
+</div>
 
-<div id="msg">Click anywhere to place your first point.</div>
+<canvas id="c" width="760" height="460"></canvas>
+
+<div id="msg">&gt;_ Place two points to define your regression estimate.</div>
 
 <div class="btns">
-  <button id="btn-lock" disabled>Lock in guess</button>
-  <button id="btn-next" disabled>Next round</button>
+  <button id="btn-lock" disabled>// Lock In Guess</button>
+  <button id="btn-next" disabled>Next Round //</button>
   <button id="btn-restart">Restart</button>
 </div>
 
 <div class="legend" id="legend" style="display:none">
-  <div class="legend-item"><div class="legend-dot dashed"></div>true regression</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#f0c040"></div>your line</div>
+  <div class="legend-item"><div class="leg-dash"></div>True regression</div>
+  <div class="legend-item"><div class="leg-solid"></div>Your estimate</div>
 </div>
 
 <script>
-const cv = document.getElementById('c');
+const cv  = document.getElementById('c');
 const ctx = cv.getContext('2d');
-const W = 720, H = 440, PAD = 56;
+const W = 760, H = 460, PAD = 52;
 cv.width = W; cv.height = H;
 
 const ZONES = [
-  { halfDeg: 4,  score: 100, color: '#1D9E75', label: 'Bullseye!' },
-  { halfDeg: 10, score: 75,  color: '#8ab82a', label: 'Great' },
-  { halfDeg: 18, score: 50,  color: '#EF9F27', label: 'Good' },
-  { halfDeg: 28, score: 25,  color: '#D85A30', label: 'Close' },
-  { halfDeg: 40, score: 10,  color: '#A32D2D', label: 'Miss' },
+  { halfDeg:  4, score: 100, color: '#39ff14', label: 'PERFECT'  },
+  { halfDeg: 10, score:  75, color: '#aaff00', label: 'GREAT'    },
+  { halfDeg: 18, score:  50, color: '#ffdd00', label: 'GOOD'     },
+  { halfDeg: 28, score:  25, color: '#ff7700', label: 'CLOSE'    },
+  { halfDeg: 40, score:  10, color: '#ff2200', label: 'MISS'     },
 ];
 
-const HIT_R = 14;
-
+const HIT_R = 16;
 let data, reg;
-let pts = [];          // user's two canvas points [{x,y},{x,y}]
-let locked = false;
-let revealed = false;
-let dragging = null;   // index of pt being dragged, or null
-let hovering = null;
+let pts = [], locked = false, revealed = false;
+let dragging = null, hovering = null;
 let round = 1, total = 0;
 const ROUNDS = 5;
 
-// ---- math ----
 function linReg(raw) {
-  const n = raw.length; let sx=0,sy=0,sxx=0,sxy=0;
-  for (const p of raw) { sx+=p.x; sy+=p.y; sxx+=p.x*p.x; sxy+=p.x*p.y; }
-  const m = (n*sxy - sx*sy) / (n*sxx - sx*sx);
-  return { m, b: (sy - m*sx)/n };
+  const n=raw.length; let sx=0,sy=0,sxx=0,sxy=0;
+  for(const p of raw){sx+=p.x;sy+=p.y;sxx+=p.x*p.x;sxy+=p.x*p.y;}
+  const m=(n*sxy-sx*sy)/(n*sxx-sx*sx);
+  return{m,b:(sy-m*sx)/n};
 }
 
 function mkData() {
-  const n = 18 + Math.floor(Math.random()*12);
-  const trueM = (Math.random()*2.6 - 1.3) * 2.2;
-  const trueB = Math.random()*80 + 60;
-  const noise = 22 + Math.random()*38;
-  const raw = [];
-  for (let i=0; i<n; i++) {
-    const x = Math.random()*160 + 20;
-    const y = trueM*x + trueB + (Math.random()-0.5)*noise*2;
+  const n=18+Math.floor(Math.random()*12);
+  const trueM=(Math.random()*2.6-1.3)*2.2;
+  const trueB=Math.random()*80+60;
+  const noise=22+Math.random()*38;
+  const raw=[];
+  for(let i=0;i<n;i++){
+    const x=Math.random()*160+20;
+    const y=trueM*x+trueB+(Math.random()-0.5)*noise*2;
     raw.push({x,y});
   }
-  const xs=raw.map(p=>p.x), ys=raw.map(p=>p.y);
-  return { raw, minX:Math.min(...xs)-12, maxX:Math.max(...xs)+12, minY:Math.min(...ys)-12, maxY:Math.max(...ys)+12 };
+  const xs=raw.map(p=>p.x),ys=raw.map(p=>p.y);
+  return{raw,
+    minX:Math.min(...xs)-14,maxX:Math.max(...xs)+14,
+    minY:Math.min(...ys)-14,maxY:Math.max(...ys)+14};
 }
 
-function tc(dx,dy) {
-  return {
-    cx: PAD + (dx-data.minX)/(data.maxX-data.minX)*(W-2*PAD),
-    cy: H-PAD - (dy-data.minY)/(data.maxY-data.minY)*(H-2*PAD)
+function tc(dx,dy){
+  return{
+    cx:PAD+(dx-data.minX)/(data.maxX-data.minX)*(W-2*PAD),
+    cy:H-PAD-(dy-data.minY)/(data.maxY-data.minY)*(H-2*PAD)
   };
 }
 
-function slopeToCanvasAngle(m) {
-  const sx = (data.maxX-data.minX)/(W-2*PAD);
-  const sy = (data.maxY-data.minY)/(H-2*PAD);
-  return Math.atan2(-m*sx/sy, 1);
+function slopeAngle(m){
+  const sx=(data.maxX-data.minX)/(W-2*PAD);
+  const sy=(data.maxY-data.minY)/(H-2*PAD);
+  return Math.atan2(-m*sx/sy,1);
 }
 
-function ptAngle() {
-  if (pts.length < 2) return null;
-  return Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+function ptAngle(){
+  if(pts.length<2)return null;
+  return Math.atan2(pts[1].y-pts[0].y,pts[1].x-pts[0].x);
 }
 
-function angleDiffDeg(a,b) {
-  let d = (a-b)*180/Math.PI;
-  while (d > 90) d -= 180;
-  while (d < -90) d += 180;
+function angleDiff(a,b){
+  let d=(a-b)*180/Math.PI;
+  while(d>90)d-=180; while(d<-90)d+=180;
   return Math.abs(d);
 }
 
-function getZone(deg) {
-  for (const z of ZONES) if (deg <= z.halfDeg) return z;
-  return { score: 0, color: '#666', label: 'Way off' };
+function getZone(deg){
+  for(const z of ZONES)if(deg<=z.halfDeg)return z;
+  return{score:0,color:'#444',label:'WAY OFF'};
 }
 
-function hitTest(cx,cy) {
-  for (let i=0; i<pts.length; i++) {
-    const dx = cx - pts[i].x, dy = cy - pts[i].y;
-    if (Math.sqrt(dx*dx+dy*dy) <= HIT_R) return i;
+function hitTest(x,y){
+  for(let i=0;i<pts.length;i++){
+    const dx=x-pts[i].x,dy=y-pts[i].y;
+    if(Math.sqrt(dx*dx+dy*dy)<=HIT_R)return i;
   }
   return null;
 }
 
-// ---- drawing ----
-function drawWedges(cx,cy,regAngle) {
+function clippedLine(angle,cx,cy,color,dash,width){
+  const R=5000;
   ctx.save();
-  ctx.beginPath(); ctx.rect(PAD,PAD,W-2*PAD,H-2*PAD); ctx.clip();
-  for (let i=ZONES.length-1; i>=0; i--) {
-    const z = ZONES[i];
-    const half = z.halfDeg * Math.PI/180;
-    for (const base of [regAngle, regAngle+Math.PI]) {
-      ctx.beginPath();
-      ctx.moveTo(cx,cy);
-      ctx.arc(cx,cy,2000,base-half,base+half);
-      ctx.closePath();
-      ctx.fillStyle = z.color + '44';
-      ctx.fill();
-    }
-  }
-  // zone score labels
-  for (const z of ZONES) {
-    const half = z.halfDeg * Math.PI/180;
-    const r = Math.min(W,H)*0.34;
-    for (const base of [regAngle, regAngle+Math.PI]) {
-      const lx = cx + Math.cos(base+half)*r;
-      const ly = cy + Math.sin(base+half)*r;
-      ctx.font = '500 11px Space Mono, monospace';
-      ctx.fillStyle = z.color + 'cc';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(z.score, lx, ly);
-    }
-  }
-  ctx.restore();
-}
-
-function drawClippedLine(angle, cx, cy, color, dash, width) {
-  const R = 3000;
-  ctx.save();
-  ctx.beginPath(); ctx.rect(PAD,PAD,W-2*PAD,H-2*PAD); ctx.clip();
+  ctx.beginPath();ctx.rect(PAD,PAD,W-2*PAD,H-2*PAD);ctx.clip();
   ctx.beginPath();
-  ctx.moveTo(cx + Math.cos(angle)*R, cy + Math.sin(angle)*R);
-  ctx.lineTo(cx + Math.cos(angle+Math.PI)*R, cy + Math.sin(angle+Math.PI)*R);
-  ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  ctx.setLineDash(dash||[]);
-  ctx.stroke();
+  ctx.moveTo(cx+Math.cos(angle)*R,cy+Math.sin(angle)*R);
+  ctx.lineTo(cx+Math.cos(angle+Math.PI)*R,cy+Math.sin(angle+Math.PI)*R);
+  ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash||[]);ctx.stroke();
   ctx.setLineDash([]);
   ctx.restore();
 }
 
-function drawUserLine() {
-  if (pts.length < 2) return;
-  const a = ptAngle();
-  const cx = (pts[0].x+pts[1].x)/2, cy = (pts[0].y+pts[1].y)/2;
-  drawClippedLine(a, cx, cy, '#f0c040', [], 2.5);
-}
+function drawWedges(cx,cy,regAngle){
+  ctx.save();
+  ctx.beginPath();ctx.rect(PAD,PAD,W-2*PAD,H-2*PAD);ctx.clip();
 
-function drawHandle(pt, idx) {
-  const isHover = hovering === idx;
-  const isLocked = locked;
-  ctx.beginPath();
-  ctx.arc(pt.x, pt.y, isHover && !isLocked ? HIT_R+2 : HIT_R, 0, Math.PI*2);
-  ctx.fillStyle = isLocked ? '#f0c04033' : (isHover ? '#f0c040cc' : '#f0c04088');
-  ctx.fill();
-  ctx.strokeStyle = '#f0c040';
-  ctx.lineWidth = isLocked ? 1 : 2;
-  ctx.stroke();
-  // lock icon when locked
-  if (isLocked) {
-    ctx.fillStyle = '#f0c040';
-    ctx.beginPath();
-    ctx.arc(pt.x, pt.y, 4, 0, Math.PI*2);
-    ctx.fill();
-  }
-}
-
-function render() {
-  ctx.clearRect(0,0,W,H);
-
-  // background
-  ctx.fillStyle = '#0f0f13';
-  ctx.fillRect(0,0,W,H);
-
-  // grid
-  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-  ctx.lineWidth = 0.5;
-  for (let i=0; i<=6; i++) {
-    const y = PAD + i*(H-2*PAD)/6;
-    ctx.beginPath(); ctx.moveTo(PAD,y); ctx.lineTo(W-PAD,y); ctx.stroke();
-    const x = PAD + i*(W-2*PAD)/6;
-    ctx.beginPath(); ctx.moveTo(x,PAD); ctx.lineTo(x,H-PAD); ctx.stroke();
+  for(let i=ZONES.length-1;i>=0;i--){
+    const z=ZONES[i],half=z.halfDeg*Math.PI/180;
+    ctx.fillStyle=z.color+'22';
+    for(const base of[regAngle,regAngle+Math.PI]){
+      ctx.beginPath();ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,5000,base-half,base+half);
+      ctx.closePath();ctx.fill();
+    }
   }
 
-  // axes
-  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(PAD,PAD); ctx.lineTo(PAD,H-PAD); ctx.lineTo(W-PAD,H-PAD);
-  ctx.stroke();
-
-  const regAngle = slopeToCanvasAngle(reg.m);
-  const cx = W/2, cy = H/2;
-
-  // wedges (only after reveal)
-  if (revealed) {
-    drawWedges(cx, cy, regAngle);
-    drawClippedLine(regAngle, cx, cy, '#ff4444', [9,5], 2.5);
-    // label
-    ctx.save();
-    ctx.beginPath(); ctx.rect(PAD,PAD,W-2*PAD,H-2*PAD); ctx.clip();
-    ctx.font = '700 11px Space Mono, monospace';
-    ctx.fillStyle = '#ff4444';
-    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    ctx.fillText('TRUE REGRESSION', PAD+8, PAD+8);
-    ctx.restore();
-  }
-
-  // data points
-  for (const p of data.raw) {
-    const {cx:px, cy:py} = tc(p.x, p.y);
-    ctx.beginPath(); ctx.arc(px, py, 4.5, 0, Math.PI*2);
-    ctx.fillStyle = '#5ba4f5cc';
-    ctx.fill();
-    ctx.strokeStyle = '#5ba4f533';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  }
-
-  // user line
-  if (pts.length === 2) {
-    drawUserLine();
-    if (!locked) {
-      drawHandle(pts[0], 0);
-      drawHandle(pts[1], 1);
-    } else {
-      // just small locked dots
-      for (const pt of pts) {
-        ctx.beginPath(); ctx.arc(pt.x, pt.y, 5, 0, Math.PI*2);
-        ctx.fillStyle = '#f0c040';
-        ctx.fill();
+  // boundary lines - thin neon
+  for(const z of ZONES){
+    const half=z.halfDeg*Math.PI/180;
+    for(const base of[regAngle,regAngle+Math.PI]){
+      for(const sign of[-1,1]){
+        const a=base+sign*half;
+        ctx.beginPath();ctx.moveTo(cx,cy);
+        ctx.lineTo(cx+Math.cos(a)*5000,cy+Math.sin(a)*5000);
+        ctx.strokeStyle=z.color+'55';ctx.lineWidth=1;
+        ctx.setLineDash([3,4]);ctx.stroke();ctx.setLineDash([]);
       }
     }
-    // user line label
+  }
+
+  // score labels — outlined for contrast
+  const LR=185;
+  ctx.font='700 15px Rajdhani, sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const z of ZONES){
+    const half=z.halfDeg*Math.PI/180;
+    for(const base of[regAngle,regAngle+Math.PI]){
+      const midA=base+half*0.55;
+      const lx=cx+Math.cos(midA)*LR,ly=cy+Math.sin(midA)*LR;
+      ctx.strokeStyle='#000';ctx.lineWidth=5;ctx.strokeText(z.score,lx,ly);
+      ctx.fillStyle=z.color;ctx.fillText(z.score,lx,ly);
+    }
+  }
+  ctx.restore();
+}
+
+function drawHandle(pt,idx){
+  const hover=hovering===idx;
+  const r=hover?HIT_R+4:HIT_R;
+
+  // outer glow ring
+  ctx.beginPath();ctx.arc(pt.x,pt.y,r+4,0,Math.PI*2);
+  ctx.strokeStyle='#39ff1422';ctx.lineWidth=6;ctx.stroke();
+
+  // circle
+  ctx.beginPath();ctx.arc(pt.x,pt.y,r,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,0.85)';ctx.fill();
+  ctx.strokeStyle=hover?'#39ff14':'#39ff1499';
+  ctx.lineWidth=hover?2:1.5;ctx.stroke();
+
+  // crosshair
+  const ch=r-4;
+  ctx.strokeStyle=hover?'#39ff14':'#39ff1488';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(pt.x-ch,pt.y);ctx.lineTo(pt.x+ch,pt.y);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(pt.x,pt.y-ch);ctx.lineTo(pt.x,pt.y+ch);ctx.stroke();
+
+  // center dot
+  ctx.beginPath();ctx.arc(pt.x,pt.y,2,0,Math.PI*2);
+  ctx.fillStyle='#39ff14';ctx.fill();
+}
+
+function hudLabel(text,x,y,color){
+  ctx.save();
+  ctx.font='600 11px Share Tech Mono, monospace';
+  ctx.textBaseline='top';
+  const mw=ctx.measureText(text).width;
+  // bg panel
+  ctx.fillStyle='rgba(0,0,0,0.88)';
+  ctx.fillRect(x-4,y-2,mw+8,18);
+  // left accent bar
+  ctx.fillStyle=color;
+  ctx.fillRect(x-4,y-2,2,18);
+  ctx.fillStyle=color;
+  ctx.fillText(text,x+2,y);
+  ctx.restore();
+}
+
+function render(){
+  ctx.clearRect(0,0,W,H);
+
+  // ── plot background ──────────────────────────────
+  ctx.fillStyle='#080808';
+  ctx.fillRect(0,0,W,H);
+
+  // inner plot bg slightly lighter
+  ctx.fillStyle='#0c0c0c';
+  ctx.fillRect(PAD,PAD,W-2*PAD,H-2*PAD);
+
+  // fine scanline grid
+  ctx.strokeStyle='rgba(57,255,20,0.04)';
+  ctx.lineWidth=1;
+  const gs=22;
+  for(let x=PAD;x<=W-PAD;x+=gs){
+    ctx.beginPath();ctx.moveTo(x,PAD);ctx.lineTo(x,H-PAD);ctx.stroke();
+  }
+  for(let y=PAD;y<=H-PAD;y+=gs){
+    ctx.beginPath();ctx.moveTo(PAD,y);ctx.lineTo(W-PAD,y);ctx.stroke();
+  }
+
+  // major grid
+  ctx.strokeStyle='rgba(57,255,20,0.09)';
+  ctx.lineWidth=0.5;
+  for(let i=0;i<=6;i++){
+    const yy=PAD+i*(H-2*PAD)/6;
+    ctx.beginPath();ctx.moveTo(PAD,yy);ctx.lineTo(W-PAD,yy);ctx.stroke();
+    const xx=PAD+i*(W-2*PAD)/6;
+    ctx.beginPath();ctx.moveTo(xx,PAD);ctx.lineTo(xx,H-PAD);ctx.stroke();
+  }
+
+  // axes — lime green
+  ctx.strokeStyle='#39ff1466';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(PAD,PAD);ctx.lineTo(PAD,H-PAD);ctx.lineTo(W-PAD,H-PAD);ctx.stroke();
+
+  // tick marks
+  ctx.strokeStyle='#39ff1444';ctx.lineWidth=1;
+  for(let i=0;i<=6;i++){
+    const yy=PAD+i*(H-2*PAD)/6;
+    ctx.beginPath();ctx.moveTo(PAD-6,yy);ctx.lineTo(PAD,yy);ctx.stroke();
+    const xx=PAD+i*(W-2*PAD)/6;
+    ctx.beginPath();ctx.moveTo(xx,H-PAD);ctx.lineTo(xx,H-PAD+6);ctx.stroke();
+  }
+
+  // axis labels (numbers)
+  ctx.fillStyle='#39ff1444';
+  ctx.font='9px Share Tech Mono, monospace';
+  ctx.textAlign='right';ctx.textBaseline='middle';
+  for(let i=0;i<=6;i++){
+    const yy=PAD+i*(H-2*PAD)/6;
+    ctx.fillText((6-i).toString(),PAD-9,yy);
+  }
+  ctx.textAlign='center';ctx.textBaseline='top';
+  for(let i=0;i<=6;i++){
+    const xx=PAD+i*(W-2*PAD)/6;
+    ctx.fillText(i.toString(),xx,H-PAD+9);
+  }
+
+  const regAngle=slopeAngle(reg.m);
+  const cx=W/2,cy=H/2;
+
+  if(revealed) drawWedges(cx,cy,regAngle);
+
+  // ── data points ─────────────────────────────────
+  for(const p of data.raw){
+    const{cx:px,cy:py}=tc(p.x,p.y);
+
+    // glow
+    const g=ctx.createRadialGradient(px,py,0,px,py,8);
+    g.addColorStop(0,'rgba(0,180,255,0.18)');
+    g.addColorStop(1,'rgba(0,180,255,0)');
+    ctx.beginPath();ctx.arc(px,py,8,0,Math.PI*2);
+    ctx.fillStyle=g;ctx.fill();
+
+    // dot body
+    ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);
+    ctx.fillStyle='#00aaff';ctx.fill();
+    ctx.strokeStyle='#00ddff';ctx.lineWidth=1;ctx.stroke();
+
+    // specular
+    ctx.beginPath();ctx.arc(px-1,py-1,1.2,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.7)';ctx.fill();
+  }
+
+  // ── true regression line ─────────────────────────
+  if(revealed){
+    // triple glow
+    clippedLine(regAngle,cx,cy,'rgba(255,30,0,0.08)',[10,7],20);
+    clippedLine(regAngle,cx,cy,'rgba(255,30,0,0.2)',[10,7],8);
+    clippedLine(regAngle,cx,cy,'rgba(255,30,0,0.6)',[10,7],3);
+    clippedLine(regAngle,cx,cy,'#ff2200',[10,7],1.5);
+
     ctx.save();
-    ctx.beginPath(); ctx.rect(PAD,PAD,W-2*PAD,H-2*PAD); ctx.clip();
-    ctx.font = '700 11px Space Mono, monospace';
-    ctx.fillStyle = '#f0c040';
-    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    ctx.fillText('YOUR LINE', PAD+8, PAD + (revealed ? 24 : 8));
+    ctx.beginPath();ctx.rect(PAD,PAD,W-2*PAD,H-2*PAD);ctx.clip();
+    hudLabel('TRUE REGRESSION',PAD+8,PAD+8,'#ff4422');
     ctx.restore();
-  } else if (pts.length === 1) {
-    drawHandle(pts[0], 0);
   }
-}
 
-// ---- interaction ----
-function evPos(e) {
-  const r = cv.getBoundingClientRect();
-  const sx = W / r.width;
-  const src = e.touches ? e.touches[0] : e;
-  return { x: (src.clientX - r.left)*sx, y: (src.clientY - r.top)*sx };
-}
+  // ── user line ────────────────────────────────────
+  if(pts.length===2){
+    const ua=ptAngle();
+    const ucx=(pts[0].x+pts[1].x)/2,ucy=(pts[0].y+pts[1].y)/2;
 
-function inPlot(p) {
-  return p.x >= PAD && p.x <= W-PAD && p.y >= PAD && p.y <= H-PAD;
-}
+    // glow passes
+    clippedLine(ua,ucx,ucy,'rgba(57,255,20,0.06)',[],16);
+    clippedLine(ua,ucx,ucy,'rgba(57,255,20,0.18)',[],6);
+    clippedLine(ua,ucx,ucy,'#39ff14',[],2);
 
-cv.addEventListener('mousedown', e => {
-  if (locked || revealed) return;
-  const p = evPos(e);
-  const hit = hitTest(p.x, p.y);
-  if (hit !== null) {
-    dragging = hit;
-    cv.classList.add('dragging');
-    return;
-  }
-  if (!inPlot(p)) return;
-  if (pts.length < 2) {
-    pts.push({x:p.x, y:p.y});
-    if (pts.length === 2) {
-      document.getElementById('btn-lock').disabled = false;
-      setMsg('Drag the endpoints to adjust your line, then lock in your guess.');
+    ctx.save();
+    ctx.beginPath();ctx.rect(PAD,PAD,W-2*PAD,H-2*PAD);ctx.clip();
+    hudLabel('YOUR ESTIMATE',PAD+8,revealed?PAD+30:PAD+8,'#39ff14');
+    ctx.restore();
+
+    if(!locked){
+      drawHandle(pts[0],0);
+      drawHandle(pts[1],1);
     } else {
-      setMsg('Click a second point to complete your line.');
+      for(const pt of pts){
+        ctx.beginPath();ctx.arc(pt.x,pt.y,4,0,Math.PI*2);
+        ctx.fillStyle='#39ff14';ctx.fill();
+        ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.stroke();
+      }
+    }
+  } else if(pts.length===1){
+    drawHandle(pts[0],0);
+  }
+
+  // ── plot border ───────────────────────────────────
+  ctx.strokeStyle='#39ff1433';ctx.lineWidth=1;
+  ctx.strokeRect(PAD,PAD,W-2*PAD,H-2*PAD);
+
+  // corner tick marks on plot
+  const t=8;
+  ctx.strokeStyle='#39ff1488';ctx.lineWidth=1.5;
+  [[PAD,PAD],[W-PAD,PAD],[PAD,H-PAD],[W-PAD,H-PAD]].forEach(([x,y])=>{
+    const sx=x===PAD?1:-1, sy=y===PAD?1:-1;
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+sx*t,y);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+sy*t);ctx.stroke();
+  });
+}
+
+// ── interaction ───────────────────────────────────────
+function evPos(e){
+  const r=cv.getBoundingClientRect(),sx=W/r.width;
+  const src=e.touches?e.touches[0]:e;
+  return{x:(src.clientX-r.left)*sx,y:(src.clientY-r.top)*sx};
+}
+function inPlot(p){return p.x>=PAD&&p.x<=W-PAD&&p.y>=PAD&&p.y<=H-PAD;}
+
+cv.addEventListener('mousedown',e=>{
+  if(locked||revealed)return;
+  const p=evPos(e);
+  const hit=hitTest(p.x,p.y);
+  if(hit!==null){dragging=hit;cv.classList.add('dragging');return;}
+  if(!inPlot(p))return;
+  if(pts.length<2){
+    pts.push({x:p.x,y:p.y});
+    if(pts.length===2){
+      document.getElementById('btn-lock').disabled=false;
+      setMsg('>_ Drag endpoints to adjust. Lock in when ready.');
+    } else {
+      setMsg('>_ Click a second point to complete your estimate.');
     }
     render();
   }
 });
 
-cv.addEventListener('mousemove', e => {
-  if (locked || revealed) return;
-  const p = evPos(e);
-  if (dragging !== null) {
-    if (inPlot(p)) {
-      pts[dragging] = {x:p.x, y:p.y};
-    }
-    render();
-    return;
+cv.addEventListener('mousemove',e=>{
+  if(locked||revealed)return;
+  const p=evPos(e);
+  if(dragging!==null){
+    if(inPlot(p))pts[dragging]={x:p.x,y:p.y};
+    render();return;
   }
-  const hit = hitTest(p.x, p.y);
-  if (hit !== hovering) {
-    hovering = hit;
-    cv.classList.toggle('drag-mode', hit !== null);
+  const hit=hitTest(p.x,p.y);
+  if(hit!==hovering){
+    hovering=hit;
+    cv.classList.toggle('drag-mode',hit!==null);
     render();
   }
 });
 
-cv.addEventListener('mouseup', e => {
-  if (dragging !== null) {
-    dragging = null;
-    cv.classList.remove('dragging');
-    render();
-  }
+cv.addEventListener('mouseup',()=>{
+  if(dragging!==null){dragging=null;cv.classList.remove('dragging');render();}
+});
+cv.addEventListener('mouseleave',()=>{
+  if(dragging!==null){dragging=null;cv.classList.remove('dragging');}
+  hovering=null;render();
 });
 
-cv.addEventListener('mouseleave', () => {
-  if (dragging !== null) { dragging = null; cv.classList.remove('dragging'); }
-  hovering = null;
-  render();
-});
+document.getElementById('btn-lock').addEventListener('click',()=>{
+  if(pts.length<2)return;
+  locked=true;revealed=true;hovering=null;
+  cv.style.cursor='default';
+  document.getElementById('btn-lock').disabled=true;
 
-document.getElementById('btn-lock').addEventListener('click', () => {
-  if (pts.length < 2) return;
-  locked = true;
-  revealed = true;
-  hovering = null;
-  cv.style.cursor = 'default';
-  document.getElementById('btn-lock').disabled = true;
+  const regAngle=slopeAngle(reg.m);
+  const userA=ptAngle();
+  const diff=angleDiff(userA,regAngle);
+  const zone=getZone(diff);
+  total+=zone.score;
 
-  const regAngle = slopeToCanvasAngle(reg.m);
-  const userA = ptAngle();
-  const diff = angleDiffDeg(userA, regAngle);
-  const zone = getZone(diff);
-  total += zone.score;
+  document.getElementById('ss').textContent=zone.score;
+  document.getElementById('ss').style.color=zone.color;
+  document.getElementById('sd').textContent=diff.toFixed(1)+'°';
+  document.getElementById('st').textContent=String(total).padStart(3,'0');
+  document.getElementById('sg').textContent=zone.label;
+  document.getElementById('sg').style.color=zone.color;
+  document.getElementById('legend').style.display='flex';
 
-  document.getElementById('ss').textContent = zone.score;
-  document.getElementById('ss').style.color = zone.color;
-  document.getElementById('sd').textContent = diff.toFixed(1) + '°';
-  document.getElementById('st').textContent = total;
-  document.getElementById('sg').textContent = zone.label;
-  document.getElementById('sg').style.color = zone.color;
-  document.getElementById('legend').style.display = 'flex';
-
-  if (round >= ROUNDS) {
-    setMsg('Game over! Total: ' + total + ' / ' + (ROUNDS*100) + '. Hit Restart to play again.');
+  if(round>=ROUNDS){
+    setMsg('>_ GAME OVER // Total: '+total+' / '+(ROUNDS*100)+' // Hit Restart');
+    document.getElementById('btn-next').disabled=true;
   } else {
-    setMsg(zone.label + ' — ' + diff.toFixed(1) + '° off the true line. ' + zone.score + ' pts. Next round when ready.');
-    document.getElementById('btn-next').disabled = false;
+    document.getElementById('btn-next').disabled=false;
+    setMsg('>_ '+zone.label+' — '+diff.toFixed(1)+'° deviation. Score: '+zone.score+' pts.');
   }
   render();
 });
 
-document.getElementById('btn-next').addEventListener('click', () => {
-  if (round >= ROUNDS) return;
-  round++;
+document.getElementById('btn-next').addEventListener('click',()=>{
+  if(round>=ROUNDS)return;
+  round++;newRound();
+});
+
+document.getElementById('btn-restart').addEventListener('click',()=>{
+  round=1;total=0;
+  document.getElementById('st').textContent='000';
+  document.getElementById('btn-next').disabled=true;
+  document.getElementById('legend').style.display='none';
   newRound();
 });
 
-document.getElementById('btn-restart').addEventListener('click', () => {
-  round = 1; total = 0;
-  document.getElementById('st').textContent = '0';
-  document.getElementById('btn-next').disabled = true;
-  document.getElementById('legend').style.display = 'none';
-  newRound();
-});
-
-function newRound() {
-  data = mkData(); reg = linReg(data.raw);
-  pts = []; locked = false; revealed = false; dragging = null; hovering = null;
-  cv.style.cursor = 'crosshair';
-  document.getElementById('btn-lock').disabled = true;
-  document.getElementById('btn-next').disabled = true;
-  document.getElementById('sr').textContent = round + ' / ' + ROUNDS;
-  document.getElementById('ss').textContent = '—';
-  document.getElementById('ss').style.color = '';
-  document.getElementById('sd').textContent = '—';
-  document.getElementById('sg').textContent = '—';
-  document.getElementById('sg').style.color = '';
-  setMsg('Click anywhere to place your first point.');
+function newRound(){
+  data=mkData();reg=linReg(data.raw);
+  pts=[];locked=false;revealed=false;dragging=null;hovering=null;
+  cv.style.cursor='crosshair';
+  document.getElementById('btn-lock').disabled=true;
+  document.getElementById('btn-next').disabled=true;
+  document.getElementById('sr').textContent=String(round).padStart(2,'0')+'/'+String(ROUNDS).padStart(2,'0');
+  document.getElementById('ss').textContent='—';
+  document.getElementById('ss').style.color='#e8ffe0';
+  document.getElementById('sd').textContent='—';
+  document.getElementById('sg').textContent='—';
+  document.getElementById('sg').style.color='#e8ffe0';
+  setMsg('>_ Place two points to define your regression estimate.');
   render();
 }
 
-function setMsg(t) { document.getElementById('msg').textContent = t; }
+function setMsg(t){document.getElementById('msg').textContent=t;}
 
-data = mkData(); reg = linReg(data.raw); render();
+data=mkData();reg=linReg(data.raw);render();
 </script>
 </body>
 </html>
