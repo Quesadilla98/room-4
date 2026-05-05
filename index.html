@@ -1,1178 +1,339 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Strategy Gaming Course</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --pu50:#EEEDFE;--pu100:#CECBF6;--pu200:#AFA9EC;--pu400:#7F77DD;--pu600:#534AB7;--pu800:#3C3489;
-  --g50:#F7F6F3;--g100:#EEECE6;--g200:#D3D1C7;--g400:#888780;--g600:#5F5E5A;
-  --bg:#FAFAF8;--surface:#FFFFFF;--tp:#1a1a18;--ts:#5F5E5A;--tt:#888780;--border:rgba(0,0,0,0.08);
-  --lsq:#F0D9B5;--dsq:#B58863;--lmf:rgba(83,74,183,0.18);--lmt:rgba(83,74,183,0.38);
-  --sg:#085041;--sg50:#E1F5EE;--sg100:#9FE1CB;
-}
-body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--tp); min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:2rem 1rem; }
-
-/* Week tabs */
-.week-tabs { display:flex; gap:8px; margin-bottom:1.5rem; }
-.week-tab { font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; padding:8px 20px; border-radius:20px; border:1px solid var(--border); background:white; color:var(--ts); cursor:pointer; transition:background .15s,color .15s; display:flex; align-items:center; gap:6px; }
-.week-tab:hover { background:var(--g50); }
-.week-tab.active { background:var(--pu600); color:white; border-color:var(--pu600); }
-.week-tab.w2.active { background:var(--sg); border-color:var(--sg); }
-.wt-sub { font-size:10px; opacity:0.75; font-weight:400; }
-.week-panel { display:none; width:100%; flex-direction:column; align-items:center; }
-.week-panel.active { display:flex; }
-.course-label { font-size:11px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:var(--tt); margin-bottom:1.5rem; text-align:center; }
-
-/* Deck */
-.deck { width:100%; max-width:860px; background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 24px rgba(0,0,0,0.06); }
-.progress-bar { height:2px; background:var(--g100); }
-.progress-fill { height:100%; transition:width .25s ease; }
-.slide-area { min-height:490px; }
-.slide { display:none; padding:48px 56px 40px; min-height:490px; flex-direction:column; animation:fadeIn .2s ease; }
-.slide.active { display:flex; }
-@keyframes fadeIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
-.slide-tag { font-size:11px; font-weight:500; letter-spacing:.1em; text-transform:uppercase; color:var(--pu600); margin-bottom:10px; }
-.slide-tag.green { color:var(--sg); }
-h1.slide-title, h2.slide-title { font-family:'DM Serif Display',serif; font-size:34px; font-weight:400; color:var(--tp); margin-bottom:6px; line-height:1.15; }
-.slide-sub { font-size:15px; color:var(--ts); margin-bottom:28px; font-weight:300; }
-.slide-body { font-size:15px; color:var(--ts); line-height:1.75; flex:1; }
-.slide-body p { margin-bottom:14px; }
-.slide-body p:last-child { margin-bottom:0; }
-.pill-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:28px; }
-.pill { font-size:12px; font-weight:500; padding:5px 13px; border-radius:20px; background:var(--pu50); color:var(--pu800); border:1px solid var(--pu100); }
-.pill.green { background:var(--sg50); color:var(--sg); border-color:var(--sg100); }
-.concept-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; flex:1; }
-.concept-card { background:var(--g50); border-radius:10px; padding:16px 18px; border:1px solid var(--g100); }
-.concept-name { font-size:14px; font-weight:500; color:var(--tp); margin-bottom:5px; }
-.concept-desc { font-size:13px; color:var(--ts); line-height:1.55; }
-.phase-list { display:flex; flex-direction:column; gap:10px; flex:1; }
-.phase-row { display:flex; gap:16px; align-items:flex-start; padding:14px 16px; border-radius:10px; border:1px solid var(--border); }
-.phase-label { font-size:11px; font-weight:500; color:var(--pu600); min-width:86px; padding-top:2px; text-transform:uppercase; letter-spacing:.05em; }
-.phase-label.green { color:var(--sg); }
-.vocab-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; flex:1; }
-.vocab-item { padding:12px 16px; border-radius:10px; border:1px solid var(--border); background:var(--g50); }
-.vocab-word { font-size:14px; font-weight:500; color:var(--tp); margin-bottom:4px; }
-.vocab-def { font-size:12px; color:var(--ts); line-height:1.45; }
-.highlight-box { background:var(--pu50); border-radius:0 10px 10px 0; padding:14px 18px; margin-top:18px; border-left:3px solid var(--pu400); }
-.highlight-box p { font-size:14px; color:var(--pu800); line-height:1.6; margin:0; font-style:italic; }
-.highlight-box.green { background:var(--sg50); border-left-color:var(--sg); }
-.highlight-box.green p { color:var(--sg); }
-.summary-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; flex:1; }
-.summary-card { background:var(--g50); border-radius:10px; padding:16px 18px; border:1px solid var(--g100); }
-.summary-card-title { font-size:13px; font-weight:500; color:var(--tp); margin-bottom:6px; }
-.summary-card-body { font-size:13px; color:var(--ts); line-height:1.55; }
-.footer { display:flex; align-items:center; justify-content:space-between; padding:14px 24px; border-top:1px solid var(--border); background:var(--g50); }
-.dots { display:flex; gap:6px; align-items:center; }
-.dot { width:7px; height:7px; border-radius:50%; background:var(--g200); cursor:pointer; transition:background .15s,transform .15s; border:none; padding:0; }
-.dot:hover { transform:scale(1.3); }
-.dot.active { background:var(--pu600); }
-.dot.active.green { background:var(--sg); }
-.counter { font-size:12px; color:var(--tt); font-weight:500; }
-.nav-btns { display:flex; gap:8px; }
-.nav-btn { font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; padding:8px 20px; border-radius:8px; border:1px solid var(--border); background:white; color:var(--tp); cursor:pointer; transition:background .15s; }
-.nav-btn:hover { background:var(--g50); }
-.nav-btn:disabled { opacity:.3; cursor:default; }
-.nav-btn.primary { background:var(--pu600); color:white; border-color:var(--pu600); }
-.nav-btn.primary:hover { background:var(--pu800); }
-.nav-btn.primary:disabled { background:var(--g200); border-color:var(--g200); color:var(--tt); }
-.nav-btn.primary.green { background:var(--sg); border-color:var(--sg); }
-.nav-btn.primary.green:hover { background:#064d34; }
-.nav-btn.primary.green:disabled { background:var(--g200); border-color:var(--g200); color:var(--tt); }
-
-/* Piece slides */
-.piece-slide { padding:36px 44px 36px; }
-.piece-layout { display:grid; grid-template-columns:auto 1fr; gap:32px; flex:1; align-items:start; }
-.piece-board-wrap { display:flex; flex-direction:column; gap:6px; }
-.piece-info { display:flex; flex-direction:column; gap:14px; }
-.piece-header { display:flex; align-items:center; gap:14px; }
-.piece-icon { width:52px; height:52px; background:var(--pu50); border:1px solid var(--pu100); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:30px; color:var(--tp); flex-shrink:0; }
-.piece-name { font-family:'DM Serif Display',serif; font-size:28px; font-weight:400; color:var(--tp); }
-.piece-value { font-size:12px; font-weight:500; padding:3px 10px; border-radius:20px; background:var(--pu50); color:var(--pu800); border:1px solid var(--pu100); display:inline-block; margin-top:2px; }
-.piece-rules { display:flex; flex-direction:column; gap:8px; }
-.rule-row { display:flex; gap:10px; align-items:flex-start; padding:10px 14px; background:var(--g50); border-radius:8px; border:1px solid var(--g100); }
-.rule-icon { width:20px; height:20px; border-radius:50%; background:var(--pu600); color:white; font-size:11px; font-weight:500; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
-.rule-text { font-size:13px; color:var(--ts); line-height:1.55; }
-.rule-text strong { font-weight:500; color:var(--tp); }
-.piece-tip { background:var(--pu50); border-radius:0 8px 8px 0; border-left:3px solid var(--pu400); padding:10px 14px; }
-.piece-tip p { font-size:13px; color:var(--pu800); line-height:1.6; margin:0; font-style:italic; }
-
-/* Chess game slide */
-.chess-slide { padding:24px 32px 24px; }
-.chess-layout { display:grid; grid-template-columns:auto 1fr; gap:24px; flex:1; align-items:start; }
-.board-col { display:flex; flex-direction:column; gap:10px; }
-.chessboard { display:grid; grid-template-columns:repeat(8,54px); grid-template-rows:repeat(8,54px); border:2px solid var(--g200); border-radius:4px; overflow:hidden; user-select:none; }
-.sq { width:54px; height:54px; display:flex; align-items:center; justify-content:center; font-size:36px; line-height:1; }
-.sq.light { background:var(--lsq); }
-.sq.dark  { background:var(--dsq); }
-.sq.last-from { box-shadow:inset 0 0 0 54px var(--lmf); }
-.sq.last-to   { box-shadow:inset 0 0 0 54px var(--lmt); }
-.board-coords { display:grid; grid-template-columns:repeat(8,54px); }
-.coord { font-size:10px; font-weight:500; color:var(--tt); text-align:center; padding-top:3px; }
-.board-controls { display:grid; grid-template-columns:44px 1fr 1fr; gap:8px; }
-.bctrl { font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; padding:10px 0; border-radius:8px; border:1px solid var(--border); background:white; color:var(--tp); cursor:pointer; transition:background .15s; text-align:center; }
-.bctrl:hover { background:var(--g50); }
-.bctrl:disabled { opacity:.35; cursor:default; }
-.bctrl.primary { background:var(--pu600); color:white; border-color:var(--pu600); }
-.bctrl.primary:hover { background:var(--pu800); }
-.bctrl.primary:disabled { background:var(--g200); border-color:var(--g200); color:var(--tt); }
-.game-panel { display:flex; flex-direction:column; gap:11px; min-width:0; }
-.game-title { font-family:'DM Serif Display',serif; font-size:19px; color:var(--tp); }
-.game-meta { font-size:11px; color:var(--tt); margin-top:2px; }
-.status-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.move-badge { font-size:12px; font-weight:500; padding:3px 10px; background:var(--pu50); color:var(--pu800); border-radius:20px; border:1px solid var(--pu100); white-space:nowrap; }
-.turn-badge { font-size:12px; font-weight:500; padding:3px 10px; border-radius:20px; border:1px solid var(--border); background:var(--g50); color:var(--ts); white-space:nowrap; }
-.key-badge { font-size:11px; font-weight:500; padding:2px 8px; border-radius:20px; background:#FEF9C3; color:#854D0E; border:1px solid #FDE68A; white-space:nowrap; }
-.ann-box { background:var(--g50); border-radius:8px; padding:12px 14px; border:1px solid var(--border); min-height:105px; flex:1; }
-.ann-concept { font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:.09em; color:var(--pu600); margin-bottom:5px; }
-.ann-label { font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:.08em; color:var(--tt); margin-bottom:5px; }
-.ann-text { font-size:13px; color:var(--ts); line-height:1.65; }
-.move-list { display:grid; grid-template-columns:22px 1fr 1fr; max-height:200px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; font-size:12px; }
-.move-list::-webkit-scrollbar { width:4px; }
-.move-list::-webkit-scrollbar-thumb { background:var(--g200); border-radius:2px; }
-.ml-num { padding:4px 5px; color:var(--tt); background:var(--g50); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-weight:500; font-size:11px; }
-.ml-move { padding:4px 8px; cursor:pointer; border-bottom:1px solid var(--border); color:var(--ts); display:flex; align-items:center; transition:background .1s; }
-.ml-move:hover { background:var(--pu50); color:var(--pu800); }
-.ml-move.current { background:var(--pu600); color:white; }
-.ml-move.key-move { font-weight:500; color:var(--pu600); }
-.ml-move.key-move.current { color:white; }
-.ml-move.empty { cursor:default; }
-.result-badge { font-size:11px; font-weight:500; padding:2px 7px; border-radius:4px; background:var(--pu50); color:var(--pu800); border:1px solid var(--pu100); }
-.gtab { font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; padding:7px 14px; border-radius:8px; border:1px solid var(--border); background:white; color:var(--ts); cursor:pointer; transition:background .15s; }
-.gtab:hover { background:var(--g50); }
-.gtab.active { background:var(--pu600); color:white; border-color:var(--pu600); }
-
-/* Puzzle slide */
-.puzzle-slide { padding:28px 36px 28px; }
-.puzzle-layout { display:grid; grid-template-columns:auto 1fr; gap:28px; flex:1; align-items:start; }
-.puzzle-board { display:grid; grid-template-columns:repeat(8,54px); grid-template-rows:repeat(8,54px); border:2px solid var(--g200); border-radius:4px; overflow:hidden; user-select:none; }
-.psq { width:54px; height:54px; display:flex; align-items:center; justify-content:center; font-size:36px; line-height:1; cursor:pointer; position:relative; transition:background .1s; }
-.psq.light { background:var(--lsq); }
-.psq.dark  { background:var(--dsq); }
-.psq.selected { box-shadow:inset 0 0 0 54px rgba(83,74,183,0.5); }
-.psq.hint { box-shadow:inset 0 0 0 54px rgba(90,180,90,0.5); }
-.psq.wrong { box-shadow:inset 0 0 0 54px rgba(220,60,60,0.45); animation:shake .3s ease; }
-.psq.correct { box-shadow:inset 0 0 0 54px rgba(60,180,60,0.45); }
-@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
-.puzzle-panel { display:flex; flex-direction:column; gap:14px; min-width:0; }
-.puzzle-nav { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px; }
-.puz-tab { font-family:'DM Sans',sans-serif; font-size:11px; font-weight:500; padding:5px 12px; border-radius:6px; border:1px solid var(--border); background:white; color:var(--ts); cursor:pointer; transition:background .1s; }
-.puz-tab:hover { background:var(--g50); }
-.puz-tab.active { background:var(--pu600); color:white; border-color:var(--pu600); }
-.puz-tab.solved { background:var(--g50); color:var(--tt); border-style:dashed; }
-.puz-tab.solved.active { background:var(--pu50); color:var(--pu800); border-color:var(--pu200); border-style:solid; }
-.puzzle-title { font-family:'DM Serif Display',serif; font-size:22px; color:var(--tp); }
-.puzzle-meta { font-size:11px; color:var(--tt); }
-.puzzle-instruction { font-size:14px; color:var(--ts); line-height:1.6; background:var(--g50); border-radius:8px; padding:12px 14px; border:1px solid var(--border); }
-.puzzle-feedback { font-size:13px; font-weight:500; padding:10px 14px; border-radius:8px; display:none; }
-.puzzle-feedback.correct { background:#DCFCE7; color:#166534; border:1px solid #86EFAC; display:block; }
-.puzzle-feedback.wrong { background:#FEE2E2; color:#991B1B; border:1px solid #FCA5A5; display:block; }
-.puzzle-feedback.hint { background:var(--pu50); color:var(--pu800); border:1px solid var(--pu200); display:block; }
-.puzzle-concept { font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.08em; color:var(--pu600); margin-bottom:4px; }
-.puzzle-explanation { font-size:13px; color:var(--ts); line-height:1.6; background:var(--g50); border-radius:8px; padding:12px 14px; border:1px solid var(--border); display:none; }
-.puzzle-explanation.show { display:block; }
-.puzzle-btns { display:flex; gap:8px; }
-.pbtn { font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; padding:8px 16px; border-radius:8px; border:1px solid var(--border); background:white; color:var(--tp); cursor:pointer; transition:background .15s; }
-.pbtn:hover { background:var(--g50); }
-.pbtn.primary { background:var(--pu600); color:white; border-color:var(--pu600); }
-.pbtn.primary:hover { background:var(--pu800); }
-.pbtn:disabled { opacity:.35; cursor:default; }
-.psolved-badge { font-size:11px; font-weight:500; padding:2px 8px; border-radius:20px; background:#DCFCE7; color:#166534; border:1px solid #86EFAC; display:none; }
-.psolved-badge.show { display:inline-block; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trailer Packing Game</title>
+  <style>
+    html, body { margin:0; padding:0; user-select:none; background:#ccc; overflow:auto; height:100vh; }
+    #container { display:flex; padding:10px; gap:10px; }
+    /* Trailer grid */
+    #grid { position:relative; width:350px; height:700px; background:#eee; display:grid;
+      grid-template-columns:repeat(35,10px); grid-template-rows:repeat(70,10px); border:2px solid #000; }
+    .cell { border:0.5px solid #ccc; }
+    .wheel-arch-band { position:absolute; left:0; top:380px; width:100%; height:30px;
+      background:rgba(255,255,0,0.3); text-align:center; line-height:30px;
+      font-size:12px; font-weight:bold; color:#b00; pointer-events:none; }
+    /* Sidebar */
+    #sidebar { display:flex; flex-direction:column; width:500px; }
+    #controls { background:#eee; padding:5px; border:2px solid #999; margin-bottom:10px; width:100%; }
+    #controls #score { margin-bottom:8px; font-size:18px; font-weight:bold; }
+    #controls #message { margin-bottom:8px; height:20px; color:#b00; }
+    #controls button, #controls label { display:block; margin-bottom:8px; }
+    #equipment-box { background:#ddd; flex:1; width:100%; overflow-y:auto; padding:5px; border:2px solid #999; }
+    #equipment-box h3 { margin:0 0 5px; font-size:14px; text-align:center; }
+    #items { display:flex; flex-wrap:wrap; gap:4px; }
+    .item { cursor:grab; user-select:none; display:flex; align-items:center; justify-content:center;
+      font-size:16px; color:#000; padding:2px; position:relative; border:2px solid black;
+      box-sizing:border-box; background:#fff; }
+    .item.overlap { border-color:red; }
+    .item.inactive { opacity:0.3; }
+    /* Dimensions */
+    .foodbox, .stovebox, .kitchenbox { width:100px; height:300px; background:blue; }
+    .propane { width:100px; height:100px; background:white; border-radius:50%; }
+    .whitewall { width:50px; height:600px; background:blue; }
+    .wallbag { width:200px; height:200px; background:white; }
+    .personalgear { width:300px; height:100px; background:black; color:blue; }
+    .gearbar { width:200px; height:100px; background:black; color:white; }
+    .waterjug { width:50px; height:100px; background:tan; }
+    .table { width:50px; height:100px; background:brown; }
+    .breadbox { width:100px; height:150px; background:khaki; }
+    .meatcooler { width:100px; height:150px; background:lightblue; }
+  </style>
 </head>
 <body>
-
-<div class="week-tabs" id="week-tabs">
-  <button class="week-tab active" id="wt-1" data-week="1">Week 1 <span class="wt-sub">Chess</span></button>
-  <button class="week-tab w2" id="wt-2" data-week="2">Week 2 <span class="wt-sub">Shogi</span></button>
-</div>
-
-<!-- ═══════════════════════════════════════════
-     WEEK 1: CHESS
-═══════════════════════════════════════════ -->
-<div class="week-panel active" id="week-panel-1">
-<p class="course-label">Strategy Gaming Course &nbsp;/&nbsp; Week 1</p>
-<div class="deck">
-  <div class="progress-bar"><div class="progress-fill" id="w1-progress" style="background:var(--pu400);width:6.67%"></div></div>
-  <div class="slide-area">
-
-    <div class="slide active" id="w1-slide-0">
-      <p class="slide-tag">Week 1, Tuesday</p>
-      <h1 class="slide-title">Chess</h1>
-      <p class="slide-sub">Foundations of strategy and tactical calculation</p>
-      <div class="pill-row">
-        <span class="pill">Perfect information</span><span class="pill">Two-player</span><span class="pill">No randomness</span><span class="pill">Abstract strategy</span>
-      </div>
-      <div class="slide-body">
-        <p>Chess strips strategy down to its most essential form. No dice, no hidden cards, no other players. Two minds, one board, and the same information available to both sides.</p>
-        <p>Today we cover the pieces and how they move, then the strategic vocabulary used throughout this course. We close by walking through one of the most famous games ever played. The rest of the week: play.</p>
-      </div>
+  <div id="container">
+    <div id="grid">
+      <script>
+        for (let i = 0; i < 35*70; i++) {
+          const c = document.createElement('div'); c.className = 'cell';
+          document.currentScript.parentNode.insertBefore(c, document.currentScript);
+        }
+      </script>
+      <div class="wheel-arch-band">Wheel Arch</div>
+      <div id="layer1"></div>
+      <div id="layer2"></div>
     </div>
-
-    <div class="slide" id="w1-slide-1">
-      <p class="slide-tag">The pieces</p>
-      <h2 class="slide-title">Six pieces, six different logics</h2>
-      <p class="slide-sub">Each piece moves differently — and that difference is the whole game.</p>
-      <div class="concept-grid">
-        <div class="concept-card"><p class="concept-name">&#9817; Pawn <span style="font-size:11px;color:var(--tt);font-weight:400;">value: 1</span></p><p class="concept-desc">Moves forward only, captures diagonally. Humble but can promote to any piece upon reaching the far end.</p></div>
-        <div class="concept-card"><p class="concept-name">&#9814; Rook <span style="font-size:11px;color:var(--tt);font-weight:400;">value: 5</span></p><p class="concept-desc">Slides any number of squares horizontally or vertically. Deadly on open files and in the endgame.</p></div>
-        <div class="concept-card"><p class="concept-name">&#9816; Knight <span style="font-size:11px;color:var(--tt);font-weight:400;">value: 3</span></p><p class="concept-desc">The only piece that can jump over others. Moves in an L-shape: two squares one way, one the other.</p></div>
-        <div class="concept-card"><p class="concept-name">&#9815; Bishop <span style="font-size:11px;color:var(--tt);font-weight:400;">value: 3</span></p><p class="concept-desc">Slides diagonally any number of squares. Always stays on one colour. Powerful in open positions.</p></div>
-        <div class="concept-card"><p class="concept-name">&#9813; Queen <span style="font-size:11px;color:var(--tt);font-weight:400;">value: 9</span></p><p class="concept-desc">Combines the rook and bishop. The most powerful piece — but overusing it early is a classic mistake.</p></div>
-        <div class="concept-card"><p class="concept-name">&#9812; King <span style="font-size:11px;color:var(--tt);font-weight:400;">value: priceless</span></p><p class="concept-desc">One square in any direction. The game ends when the king is trapped. Passive early, crucial in the endgame.</p></div>
+    <div id="sidebar">
+      <div id="controls">
+        <div id="score">Score: 0</div>
+        <div id="message"></div>
+        <button id="reset-btn">Reset</button>
+        <label><input type="checkbox" id="toggle-layer"> Layer 2</label>
       </div>
-    </div>
-
-    <!-- Piece movement slides 2-7 rendered by JS -->
-    <div class="slide piece-slide" id="w1-slide-2"><div class="piece-layout"><div class="piece-board-wrap" id="pb-2"></div><div class="piece-info" id="pi-2"></div></div></div>
-    <div class="slide piece-slide" id="w1-slide-3"><div class="piece-layout"><div class="piece-board-wrap" id="pb-3"></div><div class="piece-info" id="pi-3"></div></div></div>
-    <div class="slide piece-slide" id="w1-slide-4"><div class="piece-layout"><div class="piece-board-wrap" id="pb-4"></div><div class="piece-info" id="pi-4"></div></div></div>
-    <div class="slide piece-slide" id="w1-slide-5"><div class="piece-layout"><div class="piece-board-wrap" id="pb-5"></div><div class="piece-info" id="pi-5"></div></div></div>
-    <div class="slide piece-slide" id="w1-slide-6"><div class="piece-layout"><div class="piece-board-wrap" id="pb-6"></div><div class="piece-info" id="pi-6"></div></div></div>
-    <div class="slide piece-slide" id="w1-slide-7"><div class="piece-layout"><div class="piece-board-wrap" id="pb-7"></div><div class="piece-info" id="pi-7"></div></div></div>
-
-    <div class="slide" id="w1-slide-8">
-      <p class="slide-tag">Topic: tactics</p>
-      <h2 class="slide-title">Core tactics</h2>
-      <p class="slide-sub">The building blocks of calculation</p>
-      <div class="concept-grid">
-        <div class="concept-card"><p class="concept-name">Fork</p><p class="concept-desc">One piece attacks two opponent pieces at once. The opponent can only save one.</p></div>
-        <div class="concept-card"><p class="concept-name">Pin</p><p class="concept-desc">A piece cannot move because doing so would expose something more valuable behind it.</p></div>
-        <div class="concept-card"><p class="concept-name">Skewer</p><p class="concept-desc">The reverse of a pin. The valuable piece is attacked and must move, exposing what is behind it.</p></div>
-        <div class="concept-card"><p class="concept-name">Discovered attack</p><p class="concept-desc">Moving one piece out of the way unleashes a hidden attacker behind it.</p></div>
+      <div id="equipment-box">
+        <h3>Equipment Cache</h3>
+        <div id="items"></div>
       </div>
-    </div>
-
-    <div class="slide" id="w1-slide-9">
-      <p class="slide-tag">Topic: strategy</p>
-      <h2 class="slide-title">Zugzwang</h2>
-      <p class="slide-sub">When being forced to move is a disadvantage</p>
-      <div class="slide-body">
-        <p>Zugzwang is the situation where any move a player makes worsens their own position. They would rather pass and do nothing — but the rules require a move. It appears most often in endgames, where the position is so finely balanced that touching any piece tips it into defeat.</p>
-        <p>This concept illustrates something profound: in strategy, doing nothing is sometimes the optimal move. The obligation to act can itself be a liability.</p>
-        <div class="highlight-box"><p>Real-world parallel: in negotiation, the side that needs to respond first is often at a structural disadvantage regardless of their actual position. Whoever speaks next loses. That is zugzwang.</p></div>
-        <p style="margin-top:18px;font-size:14px;color:var(--ts);">You will see it in the Opera Game on the next slides — Fischer noted that by move 9, Black was "in what's like a zugzwang position." Every piece it could move made things worse.</p>
-      </div>
-    </div>
-
-    <div class="slide" id="w1-slide-10">
-      <p class="slide-tag">Topic: strategy</p>
-      <h2 class="slide-title">The three phases</h2>
-      <p class="slide-sub">Each phase has its own strategic logic</p>
-      <div class="phase-list">
-        <div class="phase-row"><span class="phase-label">Opening</span><p class="phase-text">Control the centre, develop pieces, castle early. The goal is to reach a good middlegame, not to win immediately.</p></div>
-        <div class="phase-row"><span class="phase-label">Middlegame</span><p class="phase-text">Identify weaknesses, coordinate pieces, create imbalances. This is where most games are decided. Plans matter more than individual moves.</p></div>
-        <div class="phase-row"><span class="phase-label">Endgame</span><p class="phase-text">The king becomes an active piece. Pawn promotion becomes central. Technique and precision matter more than creativity.</p></div>
-      </div>
-    </div>
-
-    <div class="slide" id="w1-slide-11">
-      <p class="slide-tag">Topic: vocabulary</p>
-      <h2 class="slide-title">Strategic vocabulary</h2>
-      <p class="slide-sub">The language used throughout this course</p>
-      <div class="vocab-grid">
-        <div class="vocab-item"><p class="vocab-word">Initiative</p><p class="vocab-def">Being the one who sets the agenda</p></div>
-        <div class="vocab-item"><p class="vocab-word">Tempo</p><p class="vocab-def">A unit of time; the cost of a wasted move</p></div>
-        <div class="vocab-item"><p class="vocab-word">Sacrifice</p><p class="vocab-def">Giving up material for a positional gain</p></div>
-        <div class="vocab-item"><p class="vocab-word">Compensation</p><p class="vocab-def">What you gain to justify what you gave up</p></div>
-        <div class="vocab-item"><p class="vocab-word">Imbalance</p><p class="vocab-def">A structural difference between two positions</p></div>
-        <div class="vocab-item"><p class="vocab-word">Prophylaxis</p><p class="vocab-def">Preventing the opponent's plan before it starts</p></div>
-      </div>
-    </div>
-
-    <!-- Deep Blue game: slide 12 -->
-    <div class="slide chess-slide" id="w1-slide-12">
-      <div style="margin-bottom:14px;">
-        <p class="slide-tag">Historic game</p>
-        <h2 class="slide-title">Deep Blue vs Kasparov, 1997</h2>
-        <p class="slide-sub">Game 2, May 4, New York. Every move annotated.</p>
-      </div>
-      <div class="chess-layout">
-        <div class="board-col">
-          <div class="chessboard" id="w1-board"></div>
-          <div class="board-coords" id="w1-coords"></div>
-          <div class="board-controls">
-            <button class="bctrl" id="w1-g-start" onclick="w1GotoMove(0)">|&lt;</button>
-            <button class="bctrl primary" id="w1-g-prev" onclick="w1GotoMove(w1CurrentMove-1)">&#8592; Prev</button>
-            <button class="bctrl primary" id="w1-g-next" onclick="w1GotoMove(w1CurrentMove+1)">Next &#8594;</button>
-          </div>
-        </div>
-        <div class="game-panel">
-          <div><div class="game-title">Deep Blue <span class="result-badge">1-0</span> Kasparov</div><div class="game-meta">Ruy Lopez: Smyslov Defense (C93) &nbsp;|&nbsp; 45 moves</div></div>
-          <div class="status-row">
-            <span class="move-badge" id="w1-move-badge">Start</span>
-            <span class="turn-badge" id="w1-turn-badge">White to move</span>
-            <span class="key-badge" id="w1-key-badge" style="display:none">Key moment</span>
-          </div>
-          <div class="ann-box">
-            <div class="ann-concept" id="w1-ann-concept" style="display:none"></div>
-            <div class="ann-label" id="w1-ann-label">About this game</div>
-            <div class="ann-text" id="w1-ann-text">Deep Blue plays White. Use the buttons below the board, arrow keys, or click any move in the list. Bold moves are key moments.</div>
-          </div>
-          <div class="move-list" id="w1-move-list"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Explore games: slide 13 -->
-    <div class="slide chess-slide" id="w1-slide-13">
-      <div style="margin-bottom:12px;">
-        <p class="slide-tag">Explore more</p>
-        <h2 class="slide-title" style="font-size:28px;">Three landmark games</h2>
-        <p class="slide-sub">Each one introduced an opening still played today.</p>
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-        <button class="gtab active" id="gtab-0" onclick="switchGame(0)">The Opera Game <span style="font-size:10px;opacity:0.7;">Morphy, 1858</span></button>
-        <button class="gtab" id="gtab-1" onclick="switchGame(1)">The Immortal Game <span style="font-size:10px;opacity:0.7;">Anderssen, 1851</span></button>
-        <button class="gtab" id="gtab-2" onclick="switchGame(2)">Deep Blue vs Kasparov <span style="font-size:10px;opacity:0.7;">1997</span></button>
-      </div>
-      <div class="chess-layout">
-        <div class="board-col">
-          <div class="chessboard" id="xboard"></div>
-          <div class="board-coords" id="xcoords"></div>
-          <div class="board-controls">
-            <button class="bctrl" id="x-start" onclick="xGotoMove(0)">|&lt;</button>
-            <button class="bctrl primary" id="x-prev" onclick="xGotoMove(xCurrentMove-1)">&#8592; Prev</button>
-            <button class="bctrl primary" id="x-next" onclick="xGotoMove(xCurrentMove+1)">Next &#8594;</button>
-          </div>
-        </div>
-        <div class="game-panel">
-          <div><div class="game-title" id="x-title"></div><div class="game-meta" id="x-meta"></div></div>
-          <div class="status-row">
-            <span class="move-badge" id="x-move-badge">Start</span>
-            <span class="turn-badge" id="x-turn-badge">White to move</span>
-            <span class="key-badge" id="x-key-badge" style="display:none">Key moment</span>
-          </div>
-          <div class="ann-box">
-            <div class="ann-concept" id="x-ann-concept" style="display:none"></div>
-            <div class="ann-label" id="x-ann-label">About this game</div>
-            <div class="ann-text" id="x-ann-text"></div>
-          </div>
-          <div class="move-list" id="x-move-list"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Chess Puzzles: slide 14 -->
-    <div class="slide puzzle-slide" id="w1-slide-14">
-      <div style="margin-bottom:14px;">
-        <p class="slide-tag">Practice</p>
-        <h2 class="slide-title" style="font-size:28px;">Chess puzzles</h2>
-        <p class="slide-sub">Apply what you have learned. Click a piece, then click where to move it.</p>
-      </div>
-      <div class="puzzle-layout">
-        <div class="board-col">
-          <div class="puzzle-board" id="puz-board"></div>
-          <div class="board-coords" id="puz-coords"></div>
-        </div>
-        <div class="puzzle-panel">
-          <div class="puzzle-nav" id="puz-nav"></div>
-          <div>
-            <div class="puzzle-concept" id="puz-concept"></div>
-            <div class="puzzle-title" id="puz-title"></div>
-            <div class="puzzle-meta" id="puz-meta"></div>
-          </div>
-          <div class="puzzle-instruction" id="puz-instruction"></div>
-          <div class="puzzle-feedback" id="puz-feedback"></div>
-          <div class="puzzle-explanation" id="puz-explanation"></div>
-          <div class="puzzle-btns">
-            <button class="pbtn" onclick="puzzleHint()">Hint</button>
-            <button class="pbtn" onclick="puzzleReset()">Reset</button>
-            <button class="pbtn primary" id="puz-next-btn" onclick="nextPuzzle()" disabled>Next puzzle</button>
-          </div>
-          <span class="psolved-badge" id="puz-solved-badge">Solved!</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Summary: slide 15 -->
-    <div class="slide" id="w1-slide-15">
-      <p class="slide-tag">Tuesday summary</p>
-      <h2 class="slide-title">What we covered today</h2>
-      <p class="slide-sub">The rest of the week: play.</p>
-      <div class="summary-grid">
-        <div class="summary-card"><p class="summary-card-title">Six pieces, six logics</p><p class="summary-card-body">Pawn, rook, knight, bishop, queen, king. Each moves differently. Learning those differences is the foundation of everything that follows.</p></div>
-        <div class="summary-card"><p class="summary-card-title">Tactics and phases</p><p class="summary-card-body">Forks, pins, skewers, discovered attacks. Opening: develop and castle. Middlegame: plan and execute. Endgame: activate the king.</p></div>
-        <div class="summary-card"><p class="summary-card-title">Zugzwang</p><p class="summary-card-body">Sometimes doing nothing is the optimal move. The obligation to act can be a liability — in chess and in real strategic decision-making.</p></div>
-        <div class="summary-card"><p class="summary-card-title">Deep Blue vs Kasparov</p><p class="summary-card-body">The game was won not with tactics but with patient positional pressure over 45 moves. Strategy, not calculation, decided it.</p></div>
-      </div>
-      <div class="highlight-box" style="margin-top:16px;"><p>Play as many games as you can this week. After each one, identify one decision that changed the game. Next week: Shogi — same DNA as chess, but one rule changes everything.</p></div>
-    </div>
-
-  </div><!-- end slide-area -->
-  <div class="footer">
-    <div class="dots" id="w1-dots"></div>
-    <span class="counter" id="w1-counter">1 / 16</span>
-    <div class="nav-btns">
-      <button class="nav-btn" id="w1-prev-btn" onclick="w1SlideMove(-1)" disabled>Back</button>
-      <button class="nav-btn primary" id="w1-next-btn" onclick="w1SlideMove(1)">Next</button>
     </div>
   </div>
-</div><!-- end deck -->
-</div><!-- end week-panel-1 -->
+  <script>
+document.addEventListener('DOMContentLoaded', () => {
+  const UNIT = 10;
+  const grid = document.getElementById('grid');
+  const layer1 = document.getElementById('layer1');
+  const layer2 = document.getElementById('layer2');
+  const itemsContainer = document.getElementById('items');
+  const toggle = document.getElementById('toggle-layer');
+  const resetBtn = document.getElementById('reset-btn');
+  const scoreDisplay = document.getElementById('score');
+  const messageDisplay = document.getElementById('message');
+  toggle.checked = false;
+  let currentLayer = 1, currentItem = null, offsetX = 0, offsetY = 0, bonusPoints = 0;
 
-<!-- ═══════════════════════════════════════════
-     WEEK 2: SHOGI
-═══════════════════════════════════════════ -->
-<div class="week-panel" id="week-panel-2">
-<p class="course-label">Strategy Gaming Course &nbsp;/&nbsp; Week 2</p>
-<div class="deck">
-  <div class="progress-bar"><div class="progress-fill" id="w2-progress" style="background:var(--sg);width:7.14%"></div></div>
-  <div class="slide-area">
+  const dimensions = {
+    foodbox: [10, 30], stovebox: [10, 30], kitchenbox: [10, 30], propane: [10, 10],
+    whitewall: [5, 60], wallbag: [20, 20], personalgear: [30, 10], gearbar: [20, 10],
+    waterjug: [5, 10], table: [5, 10], breadbox: [10, 15], meatcooler: [10, 15]
+  };
 
-    <div class="slide active" id="w2-slide-0">
-      <p class="slide-tag green">Week 2, Tuesday</p>
-      <h1 class="slide-title">Shogi</h1>
-      <p class="slide-sub">Same skeleton as Chess — completely different logic</p>
-      <div class="pill-row">
-        <span class="pill green">Perfect information</span><span class="pill green">Two-player</span><span class="pill green">9x9 board</span><span class="pill green">Drop rule changes everything</span>
-      </div>
-      <div class="slide-body">
-        <p>Shogi and Chess share almost identical DNA — a grid, pieces with different movement rules, perfect information, no luck. But one rule in Shogi rewrites the entire strategic universe: <strong>captured pieces come back</strong>. When you capture an opponent's piece, you keep it and can drop it back onto the board as your own at any time.</p>
-        <p>Today we learn the pieces, understand what the drop rule means for strategy, and walk through key concepts. The rest of the week: play.</p>
-      </div>
-    </div>
-
-    <div class="slide" id="w2-slide-1">
-      <p class="slide-tag green">The pieces</p>
-      <h2 class="slide-title">Eight pieces — and most can promote</h2>
-      <p class="slide-sub">Every piece except the King and Gold can flip to a stronger form in the promotion zone.</p>
-      <div class="concept-grid">
-        <div class="concept-card"><p class="concept-name">王 King</p><p class="concept-desc">One square in any direction. Game ends when checkmated. Cannot promote.</p></div>
-        <div class="concept-card"><p class="concept-name">金 Gold General</p><p class="concept-desc">One square in any direction except diagonally backward. Cannot promote — but all promotions become Gold.</p></div>
-        <div class="concept-card"><p class="concept-name">銀 Silver General</p><p class="concept-desc">One square diagonally or one square straight forward. Promotes to Gold movement.</p></div>
-        <div class="concept-card"><p class="concept-name">桂 Knight</p><p class="concept-desc">Two squares forward, one sideways — can jump. Cannot move backward. Promotes to Gold.</p></div>
-        <div class="concept-card"><p class="concept-name">香 Lance</p><p class="concept-desc">Any number of squares straight forward only. Promotes to Gold.</p></div>
-        <div class="concept-card"><p class="concept-name">歩 Pawn</p><p class="concept-desc">One square forward only. Promotes to Tokin (Gold). One pawn per file.</p></div>
-        <div class="concept-card"><p class="concept-name">飛 Rook</p><p class="concept-desc">Any number of squares horizontally or vertically. Promotes to Dragon King — adds one diagonal step.</p></div>
-        <div class="concept-card"><p class="concept-name">角 Bishop</p><p class="concept-desc">Any number of squares diagonally. Promotes to Dragon Horse — adds one orthogonal step.</p></div>
-      </div>
-    </div>
-
-    <!-- Shogi piece slides 2-9 rendered by JS -->
-    <div class="slide piece-slide" id="w2-slide-2"><div class="piece-layout"><div class="piece-board-wrap" id="s-pb-2"></div><div class="piece-info" id="s-pi-2"></div></div></div>
-    <div class="slide piece-slide" id="w2-slide-3"><div class="piece-layout"><div class="piece-board-wrap" id="s-pb-3"></div><div class="piece-info" id="s-pi-3"></div></div></div>
-    <div class="slide piece-slide" id="w2-slide-4"><div class="piece-layout"><div class="piece-board-wrap" id="s-pb-4"></div><div class="piece-info" id="s-pi-4"></div></div></div>
-    <div class="slide piece-slide" id="w2-slide-5"><div class="piece-layout"><div class="piece-board-wrap" id="s-pb-5"></div><div class="piece-info" id="s-pi-5"></div></div></div>
-    <div class="slide piece-slide" id="w2-slide-6"><div class="piece-layout"><div class="piece-board-wrap" id="s-pb-6"></div><div class="piece-info" id="s-pi-6"></div></div></div>
-    <div class="slide piece-slide" id="w2-slide-7"><div class="piece-layout"><div class="piece-board-wrap" id="s-pb-7"></div><div class="piece-info" id="s-pi-7"></div></div></div>
-    <div class="slide piece-slide" id="w2-slide-8"><div class="piece-layout"><div class="piece-board-wrap" id="s-pb-8"></div><div class="piece-info" id="s-pi-8"></div></div></div>
-    <div class="slide piece-slide" id="w2-slide-9"><div class="piece-layout"><div class="piece-board-wrap" id="s-pb-9"></div><div class="piece-info" id="s-pi-9"></div></div></div>
-
-    <div class="slide" id="w2-slide-10">
-      <p class="slide-tag green">Core rule</p>
-      <h2 class="slide-title">The drop rule</h2>
-      <p class="slide-sub">The one rule that changes everything</p>
-      <div class="slide-body">
-        <p>When you capture an opponent's piece in Shogi, you keep it in your hand. On any future turn, instead of moving a piece on the board, you can <strong>drop a piece from your hand onto any empty square</strong> as your own — ready to move immediately.</p>
-      </div>
-      <div class="concept-grid" style="margin-top:16px;">
-        <div class="concept-card"><p class="concept-name">No material disappears</p><p class="concept-desc">Capturing a rook does not remove it — it just changes hands. Material advantage is always temporary.</p></div>
-        <div class="concept-card"><p class="concept-name">Attacks are sudden</p><p class="concept-desc">A piece in hand can appear anywhere on the board in one move. Threats materialise with no warning.</p></div>
-        <div class="concept-card"><p class="concept-name">Defence is dynamic</p><p class="concept-desc">You can drop a piece to block a check, fill a gap in your castle, or launch an unexpected counter-attack.</p></div>
-        <div class="concept-card"><p class="concept-name">Draws are almost impossible</p><p class="concept-desc">Both sides always have pieces available to drop. Fewer than 1% of professional games end in draws.</p></div>
-      </div>
-      <div class="highlight-box green" style="margin-top:16px;"><p>Drop restrictions: you cannot drop a pawn to give immediate checkmate, cannot drop a pawn on a file where you already have an unpromoted pawn, and cannot drop a piece where it would have no legal move.</p></div>
-    </div>
-
-    <div class="slide" id="w2-slide-11">
-      <p class="slide-tag green">Core rule</p>
-      <h2 class="slide-title">Promotion zones and castles</h2>
-      <p class="slide-sub">Two structural concepts unique to Shogi</p>
-      <div class="phase-list">
-        <div class="phase-row"><span class="phase-label green">Promotion zone</span><p class="phase-text">The three rows furthest from a player. When any piece (except King and Gold) moves into, out of, or within this zone, the player may promote it. Pawns, lances, and knights must promote if they would otherwise have no legal move.</p></div>
-        <div class="phase-row"><span class="phase-label green">Castle</span><p class="phase-text">Compact defensive formations of golds and silvers around the king, usually in a corner. Common castles include the Mino Castle and the Yagura. The opening phase is almost entirely devoted to building your castle while positioning for attack simultaneously.</p></div>
-        <div class="phase-row"><span class="phase-label green">Sente / Gote</span><p class="phase-text">Sente means "having the move" — the initiative. Gote means "responding." Unlike Chess where White always moves first, sente in Shogi shifts back and forth. Maintaining sente while building your castle is the central tension of the opening.</p></div>
-      </div>
-    </div>
-
-    <div class="slide" id="w2-slide-12">
-      <p class="slide-tag green">Strategic concepts</p>
-      <h2 class="slide-title">What Shogi teaches that Chess does not</h2>
-      <p class="slide-sub">The strategic lessons that carry into the rest of the course</p>
-      <div class="vocab-grid">
-        <div class="vocab-item"><p class="vocab-word">Drop</p><p class="vocab-def">Placing a captured piece back onto the board as your own</p></div>
-        <div class="vocab-item"><p class="vocab-word">Tsume</p><p class="vocab-def">Checkmate — the forced sequence that ends the game</p></div>
-        <div class="vocab-item"><p class="vocab-word">Sente</p><p class="vocab-def">Having the initiative; forcing the opponent to respond</p></div>
-        <div class="vocab-item"><p class="vocab-word">Tokin</p><p class="vocab-def">A promoted pawn — cheap to obtain, powerful in attack</p></div>
-        <div class="vocab-item"><p class="vocab-word">Castle</p><p class="vocab-def">A defensive king formation built in the opening</p></div>
-        <div class="vocab-item"><p class="vocab-word">Sabaki</p><p class="vocab-def">Freeing cramped pieces through exchanges — piece flow</p></div>
-        <div class="vocab-item"><p class="vocab-word">Tesuji</p><p class="vocab-def">A skilled tactical move — the right move in a given position</p></div>
-        <div class="vocab-item"><p class="vocab-word">Hand</p><p class="vocab-def">Pieces captured and held ready to drop back into play</p></div>
-      </div>
-      <div class="highlight-box green" style="margin-top:16px;"><p>The core lesson: rules shape strategy completely. Chess and Shogi share almost identical DNA, but the drop rule produces a fundamentally different game. One rule change cascades into an entirely different strategic universe.</p></div>
-    </div>
-
-    <div class="slide" id="w2-slide-13">
-      <p class="slide-tag green">Tuesday summary</p>
-      <h2 class="slide-title">What we covered today</h2>
-      <p class="slide-sub">The rest of the week: play Shogi.</p>
-      <div class="summary-grid">
-        <div class="summary-card"><p class="summary-card-title">Eight pieces, six promotions</p><p class="summary-card-body">King, Gold, Silver, Knight, Lance, Pawn, Rook, Bishop. All except King and Gold can promote. All promotions except Rook and Bishop become Gold movement.</p></div>
-        <div class="summary-card"><p class="summary-card-title">The drop rule</p><p class="summary-card-body">Captured pieces return as your own. No material ever disappears. Attacks can appear anywhere with no warning. Draws are nearly impossible.</p></div>
-        <div class="summary-card"><p class="summary-card-title">Castles and sente</p><p class="summary-card-body">Build a castle to protect the king. Fight for sente. The opening is a race to castle safely while positioning for attack.</p></div>
-        <div class="summary-card"><p class="summary-card-title">The strategic lesson</p><p class="summary-card-body">One rule change — drops — produces a completely different game. This is the course's first demonstration that rules shape strategy entirely.</p></div>
-      </div>
-      <div class="highlight-box green" style="margin-top:16px;"><p>Play Shogi this week on 81dojo.com — free, browser-based, and shows piece movement on hover. Next week: Go. The biggest mental shift of the course.</p></div>
-    </div>
-
-  </div><!-- end slide-area -->
-  <div class="footer">
-    <div class="dots" id="w2-dots"></div>
-    <span class="counter" id="w2-counter">1 / 14</span>
-    <div class="nav-btns">
-      <button class="nav-btn" id="w2-prev-btn" onclick="w2SlideMove(-1)" disabled>Back</button>
-      <button class="nav-btn primary green" id="w2-next-btn" onclick="w2SlideMove(1)">Next</button>
-    </div>
-  </div>
-</div><!-- end deck -->
-</div><!-- end week-panel-2 -->
-
-<script>
-
-/* ═══════════════════════════════════════════
-   GLOBAL STATE
-═══════════════════════════════════════════ */
-var xCurrentMove=0;
-var xInited=false;
-var puzInited=false;
-var puzSolved=[];
-var puzSelected=null;
-var w2Cur=0;
-
-/* ═══════════════════════════════════════════
-   SHARED CHESS BOARD ENGINE
-═══════════════════════════════════════════ */
-var CP={K:'&#9812;',Q:'&#9813;',R:'&#9814;',B:'&#9815;',N:'&#9816;',P:'&#9817;',
-        k:'&#9818;',q:'&#9819;',r:'&#9820;',b:'&#9821;',n:'&#9822;',p:'&#9823;'};
-var INIT_FEN='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR';
-
-function fenToBoard(fen){
-  var rows=fen.split('/'),b=[];
-  for(var r=0;r<8;r++){var row=[];for(var c=0;c<rows[r].length;c++){var ch=rows[r][c];if('12345678'.includes(ch)){for(var k=0;k<parseInt(ch);k++)row.push(null);}else row.push(ch);}b.push(row);}
-  return b;
-}
-function sqRC(s){return[8-parseInt(s[1]),s.charCodeAt(0)-97];}
-function applyMove(b,mv){
-  var nb=b.map(function(r){return r.slice();});
-  var s=mv.san.replace(/[+#]/g,'');
-  if(s==='O-O'){var W=nb[7][4]==='K';if(W){nb[7][6]='K';nb[7][4]=null;nb[7][7]=null;nb[7][5]='R';}else{nb[0][6]='k';nb[0][4]=null;nb[0][7]=null;nb[0][5]='r';}return nb;}
-  if(s==='O-O-O'){var W2=nb[7][4]==='K';if(W2){nb[7][2]='K';nb[7][4]=null;nb[7][0]=null;nb[7][3]='R';}else{nb[0][2]='k';nb[0][4]=null;nb[0][0]=null;nb[0][3]='r';}return nb;}
-  var fr=sqRC(mv.from),tr=sqRC(mv.to),piece=nb[fr[0]][fr[1]];
-  nb[tr[0]][tr[1]]=piece;nb[fr[0]][fr[1]]=null;
-  var pm=s.match(/=([QRBN])/);if(pm)nb[tr[0]][tr[1]]=piece==='P'?pm[1]:pm[1].toLowerCase();
-  return nb;
-}
-function buildBoards(moves){
-  var boards=[fenToBoard(INIT_FEN)],b=fenToBoard(INIT_FEN);
-  for(var i=0;i<moves.length;i++){b=applyMove(b,moves[i]);boards.push(b.map(function(r){return r.slice();}));}
-  return boards;
-}
-function renderChessBoard(boardEl,coordEl,boards,moves,mv){
-  var b=boards[mv],html='',fromSq=mv>0?moves[mv-1].from:null,toSq=mv>0?moves[mv-1].to:null;
-  for(var r=0;r<8;r++){for(var c=0;c<8;c++){var L=(r+c)%2===0,sqId=String.fromCharCode(97+c)+(8-r);var cls='sq '+(L?'light':'dark');if(sqId===fromSq)cls+=' last-from';if(sqId===toSq)cls+=' last-to';html+='<div class="'+cls+'">'+(b[r][c]?CP[b[r][c]]:'')+'</div>';}}
-  boardEl.innerHTML=html;
-  var ch='';for(var c=0;c<8;c++)ch+='<div class="coord">'+String.fromCharCode(97+c)+'</div>';
-  coordEl.innerHTML=ch;
-}
-function renderMoveListTo(listEl,moves,mv,clickFn){
-  var html='';
-  for(var i=0;i<moves.length;i+=2){var num=Math.floor(i/2)+1,w=moves[i],bl=moves[i+1];var wC='ml-move'+(w.key?' key-move':'')+(mv===i+1?' current':'');var bC=bl?'ml-move'+(bl.key?' key-move':'')+(mv===i+2?' current':''):'ml-move empty';html+='<div class="ml-num">'+num+'</div><div class="'+wC+'" onclick="'+clickFn+'('+(i+1)+')">'+w.san+'</div><div class="'+bC+'" '+(bl?'onclick="'+clickFn+'('+(i+2)+')"':'')+'>'+(bl?bl.san:'')+'</div>';}
-  listEl.innerHTML=html;var el=listEl.querySelector('.current');if(el)el.scrollIntoView({block:'nearest'});
-}
-function updateGameUI(ids,moves,mv,intro,endText){
-  var m=mv>0&&mv<=moves.length?moves[mv-1]:null;
-  var badge=document.getElementById(ids.badge),turn=document.getElementById(ids.turn);
-  var aText=document.getElementById(ids.aText),aLabel=document.getElementById(ids.aLabel);
-  var aConcept=document.getElementById(ids.aConcept),keyBadge=document.getElementById(ids.keyBadge);
-  if(mv===0){badge.textContent='Start';turn.textContent='White to move';aLabel.textContent='About this game';aConcept.style.display='none';keyBadge.style.display='none';aText.textContent=intro;}
-  else if(mv===moves.length){badge.textContent='Game over';turn.textContent='Result: 1-0';aLabel.textContent='Result';aConcept.style.display='none';keyBadge.style.display='none';aText.textContent=endText;}
-  else{var mn=Math.floor((mv-1)/2)+1,side=mv%2===1?'White':'Black';badge.textContent='Move '+mn+' ('+side+': '+m.san+')';turn.textContent=(mv%2===0?'White':'Black')+' to move';aLabel.textContent='Commentary';if(m.concept){aConcept.style.display='block';aConcept.textContent=m.concept;}else{aConcept.style.display='none';}keyBadge.style.display=m.key?'inline-block':'none';aText.textContent=m.ann||'';}
-}
-
-/* ═══════════════════════════════════════════
-   WEEK SWITCHER
-═══════════════════════════════════════════ */
-function switchWeek(w){
-  document.querySelectorAll('.week-panel').forEach(function(p){p.classList.remove('active');});
-  document.querySelectorAll('.week-tab').forEach(function(t){t.classList.remove('active');});
-  document.getElementById('week-panel-'+w).classList.add('active');
-  document.getElementById('wt-'+w).classList.add('active');
-}
-// Attach week tab handlers after DOM is ready
-document.querySelectorAll('.week-tab').forEach(function(btn){
-  btn.addEventListener('click', function(){ switchWeek(parseInt(this.getAttribute('data-week'))); });
-});
-// Wire tab buttons after script has loaded
-document.getElementById('wt-1').addEventListener('click', function(){ switchWeek(1); });
-document.getElementById('wt-2').addEventListener('click', function(){ switchWeek(2); });
-
-/* ═══════════════════════════════════════════
-   WEEK 1 SLIDE ENGINE
-═══════════════════════════════════════════ */
-var W1_TOTAL=16, w1Cur=0;
-var w1DotsEl=document.getElementById('w1-dots');
-var w1Prog=document.getElementById('w1-progress');
-for(var i=0;i<W1_TOTAL;i++){var d=document.createElement('button');d.className='dot'+(i===0?' active':'');d.onclick=(function(idx){return function(){w1GoTo(idx);};})(i);w1DotsEl.appendChild(d);}
-function w1GoTo(n){
-  document.getElementById('w1-slide-'+w1Cur).classList.remove('active');
-  w1DotsEl.children[w1Cur].classList.remove('active');
-  w1Cur=n;
-  document.getElementById('w1-slide-'+w1Cur).classList.add('active');
-  w1DotsEl.children[w1Cur].classList.add('active');
-  document.getElementById('w1-counter').textContent=(w1Cur+1)+' / '+W1_TOTAL;
-  document.getElementById('w1-prev-btn').disabled=w1Cur===0;
-  document.getElementById('w1-next-btn').disabled=w1Cur===W1_TOTAL-1;
-  w1Prog.style.width=((w1Cur+1)/W1_TOTAL*100)+'%';
-  if(w1Cur===13&&!xInited){xInited=true;switchGame(0);}
-  if(w1Cur===14&&!puzInited){puzInited=true;loadPuzzle(0);}
-}
-function w1SlideMove(dir){var n=w1Cur+dir;if(n>=0&&n<W1_TOTAL)w1GoTo(n);}
-
-/* ═══════════════════════════════════════════
-   CHESS PIECE MOVEMENT BOARDS
-═══════════════════════════════════════════ */
-var SQ_COLORS={'move-light':'#A8D48A','move-dark':'#5fa83a','piece-light':'#7F77DD','piece-dark':'#534AB7','cap-light':'#E07070','cap-dark':'#C04040'};
-function buildPieceBoard(boardEl,sz,grid,pos,moves,caps){
-  var mSet=new Set((moves||[]).map(function(m){return m[0]+','+m[1];}));
-  var cSet=new Set((caps||[]).map(function(m){return m[0]+','+m[1];}));
-  var html='<div style="display:grid;grid-template-columns:repeat('+grid+','+sz+'px);grid-template-rows:repeat('+grid+','+sz+'px);border-radius:6px;overflow:hidden;border:2px solid var(--g200);">';
-  for(var r=0;r<grid;r++){for(var c=0;c<grid;c++){var L=(r+c)%2===0,key=r+','+c,isPiece=r===pos[0]&&c===pos[1],isCap=cSet.has(key),isMove=mSet.has(key)&&!isPiece&&!isCap;var bg;if(isPiece)bg=L?SQ_COLORS['piece-light']:SQ_COLORS['piece-dark'];else if(isCap)bg=L?SQ_COLORS['cap-light']:SQ_COLORS['cap-dark'];else if(isMove)bg=L?SQ_COLORS['move-light']:SQ_COLORS['move-dark'];else bg=L?'#F0D9B5':'#B58863';var content='';if(isPiece)content='<span style="font-size:'+(sz*0.62)+'px;line-height:1;opacity:0.92;">&#9816;</span>';else if(isMove||isCap)content='<span style="width:'+(sz*0.28)+'px;height:'+(sz*0.28)+'px;border-radius:50%;background:rgba(255,255,255,0.45);display:block;"></span>';html+='<div style="width:'+sz+'px;height:'+sz+'px;background:'+bg+';display:flex;align-items:center;justify-content:center;">'+content+'</div>';}}
-  html+='</div>';
-  html+='<div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;">';
-  html+='<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tt);"><div style="width:10px;height:10px;border-radius:2px;background:#7F77DD;"></div>Piece</div>';
-  html+='<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tt);"><div style="width:10px;height:10px;border-radius:50%;background:#A8D48A;border:1px solid #5fa83a;"></div>Can move</div>';
-  if(caps&&caps.length)html+='<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tt);"><div style="width:10px;height:10px;border-radius:2px;background:#E07070;"></div>Captures only</div>';
-  html+='</div>';
-  boardEl.innerHTML=html;
-}
-function buildPieceInfo(infoEl,symbol,name,value,rules,tip,ruleColor){
-  var rc=ruleColor||'var(--pu600)';
-  var rulesHtml=rules.map(function(r,i){return '<div class="rule-row"><div class="rule-icon" style="background:'+rc+';">'+(i+1)+'</div><div class="rule-text">'+r+'</div></div>';}).join('');
-  infoEl.innerHTML='<div class="piece-header"><div class="piece-icon">'+symbol+'</div><div><div class="piece-name">'+name+'</div><span class="piece-value">'+value+'</span></div></div><div class="piece-rules">'+rulesHtml+'</div><div class="piece-tip"><p>'+tip+'</p></div>';
-}
-
-(function buildChessPieces(){
-  var pieceDefs=[
-    {idx:2,sym:'&#9817;',name:'Pawn',val:'Worth 1 point',sz:52,grid:6,pos:[3,2],moves:[[2,2],[1,2]],caps:[[2,1],[2,3]],
-     rules:['<strong>Moves forward one square</strong> — toward the opponent\'s side. Never backward.','<strong>First move only:</strong> may advance two squares forward from its starting row.','<strong>Captures diagonally</strong> — one square forward-left or forward-right. Cannot capture straight ahead.','<strong>Promotion:</strong> reaches the far end and becomes any piece (almost always a queen).'],
-     tip:'The pawn is the soul of chess. Its position shapes the whole structure of the game. Every pawn move is permanent — unlike pieces, pawns cannot go backward.'},
-    {idx:3,sym:'&#9814;',name:'Rook',val:'Worth 5 points',sz:52,grid:8,pos:[3,3],moves:[[0,3],[1,3],[2,3],[4,3],[5,3],[6,3],[7,3],[3,0],[3,1],[3,2],[3,4],[3,5],[3,6],[3,7]],caps:[],
-     rules:['<strong>Slides horizontally or vertically</strong> any number of squares in one direction.','<strong>Cannot jump</strong> over other pieces — it is blocked by the first piece in its path.','<strong>Captures</strong> by landing on an opponent\'s square, replacing that piece.','<strong>Castling:</strong> the rook and king swap in a special one-time move when neither has moved.'],
-     tip:'Rooks come alive on open files — columns with no pawns blocking them. Getting both rooks connected on the same rank or file is called "doubling" and is extremely powerful.'},
-    {idx:4,sym:'&#9816;',name:'Knight',val:'Worth 3 points',sz:52,grid:8,pos:[4,3],moves:[[2,2],[2,4],[3,1],[3,5],[5,1],[5,5],[6,2],[6,4]],caps:[],
-     rules:['<strong>Moves in an L-shape:</strong> two squares in one direction, then one square perpendicular.','<strong>The only piece that can jump</strong> over other pieces. Blocked squares are irrelevant.','<strong>Always lands on the opposite colour</strong> from where it started.','Eight possible destinations from the centre; fewer from the edges — always keep knights near the centre.'],
-     tip:'Knights are tricky because they don\'t move in straight lines. A knight in the centre controls up to 8 squares; a knight on the edge controls only 2 or 3. This is why "a knight on the rim is dim."'},
-    {idx:5,sym:'&#9815;',name:'Bishop',val:'Worth 3 points',sz:52,grid:8,pos:[3,3],moves:[[0,0],[1,1],[2,2],[4,4],[5,5],[6,6],[7,7],[0,6],[1,5],[2,4],[4,2],[5,1],[6,0]],caps:[],
-     rules:['<strong>Slides diagonally</strong> any number of squares in any diagonal direction.','<strong>Always stays on the same colour</strong> — a bishop starting on a light square never touches a dark one.','<strong>Cannot jump</strong> over other pieces — blocked by the first piece in its diagonal path.','Each side starts with <strong>two bishops on opposite colours</strong>. The bishop pair is a long-term advantage.'],
-     tip:'Bishops love open diagonals. In closed positions, knights often outperform bishops — but in open games, bishops dominate.'},
-    {idx:6,sym:'&#9813;',name:'Queen',val:'Worth 9 points',sz:46,grid:8,pos:[3,3],moves:[[0,3],[1,3],[2,3],[4,3],[5,3],[6,3],[7,3],[3,0],[3,1],[3,2],[3,4],[3,5],[3,6],[3,7],[0,0],[1,1],[2,2],[4,4],[5,5],[6,6],[7,7],[0,6],[1,5],[2,4],[4,2],[5,1],[6,0]],caps:[],
-     rules:['<strong>Combines the rook and bishop</strong> — slides any number of squares horizontally, vertically, or diagonally.','<strong>Cannot jump</strong> over pieces — blocked in any direction by the first piece it encounters.','<strong>Most powerful piece</strong> on the board. Losing it without compensation is almost always decisive.','<strong>Do not develop the queen early</strong> — it gets chased by minor pieces and wastes tempos.'],
-     tip:'The queen is so powerful that beginners are tempted to bring it out immediately. This is almost always a mistake. Develop knights and bishops first.'},
-    {idx:7,sym:'&#9812;',name:'King',val:'Priceless — protect it',sz:52,grid:8,pos:[3,3],moves:[[2,2],[2,3],[2,4],[3,2],[3,4],[4,2],[4,3],[4,4]],caps:[],
-     rules:['<strong>Moves one square</strong> in any direction: horizontally, vertically, or diagonally.','<strong>Cannot move into check</strong> — it may never move to a square attacked by an opponent\'s piece.','<strong>Castling:</strong> a one-time move where the king moves two squares toward a rook, and that rook jumps over.','<strong>In the endgame, the king becomes active</strong> — it should march toward the centre and support its pawns.'],
-     tip:'The king must be protected in the opening and middlegame. Castling achieves this. But in the endgame the king transforms into a powerful attacking piece.'}
-  ];
-  pieceDefs.forEach(function(p){
-    buildPieceBoard(document.getElementById('pb-'+p.idx),p.sz,p.grid,p.pos,p.moves,p.caps);
-    buildPieceInfo(document.getElementById('pi-'+p.idx),p.sym,p.name,p.val,p.rules,p.tip);
-  });
-})();
-
-/* ═══════════════════════════════════════════
-   DEEP BLUE GAME
-═══════════════════════════════════════════ */
-var gameMoves=[
-  {san:'e4',from:'e2',to:'e4',key:false,concept:'Opening principle',ann:'e4 stakes a claim in the centre immediately. Controlling the four central squares gives pieces maximum reach. First opening principle: fight for the centre from move one.'},
-  {san:'e5',from:'e7',to:'e5',key:false,concept:'Symmetric response',ann:'e5 mirrors White exactly. The classical response to e4, leading to Open Games where both sides fight directly for the middle of the board.'},
-  {san:'Nf3',from:'g1',to:'f3',key:false,concept:'Development with purpose',ann:'Nf3 develops toward the centre and attacks the e5 pawn simultaneously. One move achieves two goals.'},
-  {san:'Nc6',from:'b8',to:'c6',key:false,concept:'Defending actively',ann:'Nc6 defends e5 with a developing move. Never defend with a move that does nothing else.'},
-  {san:'Bb5',from:'f1',to:'b5',key:true,concept:'The Ruy Lopez',ann:'Bb5 is the hallmark of the Ruy Lopez. The bishop does not threaten anything directly — it puts indirect pressure on e5 by targeting the knight that defends it. Long-term pressure is often more powerful than immediate threats.'},
-  {san:'a6',from:'a7',to:'a6',key:false,concept:'Challenging the bishop',ann:'a6 challenges the bishop, forcing White to declare intentions. Black has forced White to spend a tempo moving the bishop again.'},
-  {san:'Ba4',from:'b5',to:'a4',key:false,concept:'Patient retreat',ann:'Ba4 retreats rather than trading. Retreating is not weakness — it preserves the bishop pair as a long-term asset.'},
-  {san:'Nf6',from:'g8',to:'f6',key:false,concept:'Counter-attack',ann:'Nf6 develops with a direct counter-attack on White\'s e4 pawn. The best response to a threat is often your own threat.'},
-  {san:'O-O',from:'e1',to:'g1',key:true,concept:'King safety first',ann:'White castles rather than defending e4 immediately. King safety comes before material. After castling, the rook on e1 defends e4 anyway.'},
-  {san:'Be7',from:'f8',to:'e7',key:false,concept:'Preparing to castle',ann:'Be7 is modest but solid, clearing the way for Black to castle. Strong players rarely play flashy moves when quiet development achieves the same goal.'},
-  {san:'Re1',from:'f1',to:'e1',key:false,concept:'Rook to open file',ann:'Re1 places the rook on the e-file. No immediate threat, but the rook is well placed for the long term.'},
-  {san:'b5',from:'b7',to:'b5',key:false,concept:'Gaining queenside space',ann:'b5 drives the bishop away from a4 and stakes out queenside territory.'},
-  {san:'Bb3',from:'a4',to:'b3',key:false,concept:'Long-term placement',ann:'Bb3 retreats to a square controlling the b3-f7 diagonal, keeping long-term kingside pressure.'},
-  {san:'d6',from:'d7',to:'d6',key:false,concept:'Smyslov Defense',ann:'d6 reinforces the centre and opens the diagonal for the c8 bishop. Solid but slightly passive.'},
-  {san:'c3',from:'c2',to:'c3',key:true,concept:'Preparing the key advance',ann:'c3 prepares d4, the thematic central break. Ask students: how many moves has White been building toward d4? That patience is the lesson.'},
-  {san:'O-O',from:'e8',to:'g8',key:false,concept:'King safety secured',ann:'Black castles. Both kings are now safely on the kingside. The opening phase is nearly complete.'},
-  {san:'h3',from:'h2',to:'h3',key:true,concept:'Prophylaxis',ann:'h3 prevents the pin Bg4. White anticipates Black\'s next idea and removes it before it can happen. This is prophylaxis.'},
-  {san:'h6',from:'h7',to:'h6',key:false,concept:'Mirrored prophylaxis',ann:'h6 mirrors White\'s idea, preventing Bg5. Both sides are thinking one step ahead.'},
-  {san:'d4',from:'d2',to:'d4',key:true,concept:'Central pawn break',ann:'d4 is the central break White has spent the last seven moves preparing. One tempo invested in c3 makes this possible.'},
-  {san:'Re8',from:'f8',to:'e8',key:false,concept:'Rook activation',ann:'Re8 moves the rook to the open e-file, contesting the centre. Both sides are now fully developed.'},
-  {san:'Nbd2',from:'b1',to:'d2',key:false,concept:'Knight manoeuvre',ann:'Nbd2 develops toward the centre, preparing to reroute via f1 to g3.'},
-  {san:'Bf8',from:'e7',to:'f8',key:false,concept:'Piece regrouping',ann:'Bf8 retreats the bishop voluntarily to free up the e7 square for a knight reroute.'},
-  {san:'Nf1',from:'d2',to:'f1',key:false,concept:'Knight rerouting',ann:'Nf1 continues the knight manoeuvre toward g3. Two moves to reach a better square.'},
-  {san:'Bd7',from:'c8',to:'d7',key:false,concept:'Developing the bishop',ann:'Bd7 finally develops the c8 bishop. Both sides are fine-tuning piece placement.'},
-  {san:'Ng3',from:'f1',to:'g3',key:false,concept:'Knight arrives',ann:'Ng3 completes the three-move knight manoeuvre. It now controls f5 and h5.'},
-  {san:'Na5',from:'c6',to:'a5',key:false,concept:'Attacking the bishop',ann:'Na5 attacks the bishop on b3, forcing White to react.'},
-  {san:'Bc2',from:'b3',to:'c2',key:false,concept:'Preserving the bishop',ann:'Bc2 retreats rather than trading without compensation.'},
-  {san:'c5',from:'c7',to:'c5',key:true,concept:'Seeking counterplay',ann:'c5 challenges White\'s centre. Black correctly senses passive defence will lead to a slow squeeze. Activity is usually better than passivity.'},
-  {san:'b3',from:'b2',to:'b3',key:false,concept:'Solid preparation',ann:'b3 supports the c4 square and prepares the b4 advance.'},
-  {san:'Nc6',from:'a5',to:'c6',key:false,concept:'Knight returns',ann:'Nc6 brings the knight back to a central post after its excursion.'},
-  {san:'d5',from:'d4',to:'d5',key:true,concept:'Closing the centre',ann:'d5 closes the centre, stretching White\'s pawns from c3 to d5 and cramping Black\'s position.'},
-  {san:'Ne7',from:'c6',to:'e7',key:false,concept:'Forced regrouping',ann:'Ne7 retreats the knight displaced by d5. Black is reacting under pressure.'},
-  {san:'Be3',from:'c1',to:'e3',key:false,concept:'Bishop development',ann:'Be3 develops the final White piece. White\'s position is now fully coordinated.'},
-  {san:'Ng6',from:'e7',to:'g6',key:false,concept:'Knight activity',ann:'Ng6 puts the knight on an active square eyeing the f4 square.'},
-  {san:'Qd2',from:'d1',to:'d2',key:false,concept:'Queen coordination',ann:'Qd2 activates the queen toward the kingside.'},
-  {san:'Nh7',from:'f6',to:'h7',key:false,concept:'Knight retreats',ann:'Nh7 retreats — Black\'s pieces have limited good squares. A sign of a cramped position.'},
-  {san:'a4',from:'a2',to:'a4',key:true,concept:'Queenside expansion',ann:'a4 opens the queenside. Deep Blue is now attacking on both wings simultaneously.'},
-  {san:'Nh4',from:'g6',to:'h4',key:false,concept:'Knight jump',ann:'Nh4 jumps forward, trying to create complications before White\'s advance becomes decisive.'},
-  {san:'Nxh4',from:'f3',to:'h4',key:false,concept:'Knight exchange',ann:'Nxh4 captures the knight, eliminating an active Black piece.'},
-  {san:'Qxh4',from:'d8',to:'h4',key:false,concept:'Queen to kingside',ann:'Qxh4 recaptures. The queen looks threatening on h4, but White has a calm reply.'},
-  {san:'Qe2',from:'d2',to:'e2',key:false,concept:'Quiet defence',ann:'Qe2 defends e4 and prepares to swap queens. Calm defence is often the strongest response to aggression.'},
-  {san:'Qd8',from:'h4',to:'d8',key:false,concept:'Queen retreat',ann:'Qd8 retreats — the sortie to h4 achieved nothing. Two tempos wasted. Classic premature queen activity.'},
-  {san:'b4',from:'b3',to:'b4',key:true,concept:'Queenside pawn storm',ann:'b4 launches the queenside pawn advance. Combined with a4, White is systematically creating weaknesses.'},
-  {san:'Qc7',from:'d8',to:'c7',key:false,concept:'Queen repositions',ann:'Qc7 repositions the queen, eyeing the c-file.'},
-  {san:'Rec1',from:'e1',to:'c1',key:false,concept:'Rook to c-file',ann:'Rec1 moves the rook to the c-file, building queenside pressure.'},
-  {san:'c4',from:'c5',to:'c4',key:false,concept:'Closing the queenside',ann:'c4 tries to lock things down, but this pawn may itself become a target.'},
-  {san:'Ra3',from:'a1',to:'a3',key:false,concept:'Rook lift',ann:'Ra3 lifts the rook to the third rank — a rook lift, preparing to swing sideways.'},
-  {san:'Rec8',from:'e8',to:'c8',key:false,concept:'Defending the c-file',ann:'Rec8 contests the c-file before White can dominate it.'},
-  {san:'Rca1',from:'c1',to:'a1',key:false,concept:'Doubling rooks',ann:'Rca1 doubles the rooks on the a-file — an overwhelming concentration of force on the queenside.'},
-  {san:'Qd8',from:'c7',to:'d8',key:false,concept:'Queen retreats again',ann:'Qd8 retreats a second time. Black has no plan. A shuffling queen is a symptom of a passive position.'},
-  {san:'f4',from:'f2',to:'f4',key:true,concept:'Kingside expansion',ann:'f4 opens a second front. White is now advancing on both wings. Black must defend everywhere.'},
-  {san:'Nf6',from:'h7',to:'f6',key:false,concept:'Knight re-enters',ann:'Nf6 brings the knight back to an active post before the crisis hits.'},
-  {san:'fxe5',from:'f4',to:'e5',key:true,concept:'Line opening',ann:'fxe5 opens the f-file toward Black\'s king. This is a line-opening operation, not just a pawn exchange.'},
-  {san:'dxe5',from:'d6',to:'e5',key:false,concept:'Forced recapture',ann:'dxe5 recaptures. But Black is left with a backward c4 pawn, a potentially weak e5 pawn, and a hanging b5 pawn.'},
-  {san:'Qf1',from:'e2',to:'f1',key:false,concept:'Queen repositions',ann:'Qf1 shifts the queen toward the kingside. White improves every piece methodically while Black has no counterplay.'},
-  {san:'Ne8',from:'f6',to:'e8',key:false,concept:'Knight retreats',ann:'Ne8 retreats to a purely defensive square. A piece that can only defend contributes nothing.'},
-  {san:'Qf2',from:'f1',to:'f2',key:false,concept:'Queen coordination',ann:'Qf2 continues repositioning. Long series of small improvements is how positional players win.'},
-  {san:'Nd6',from:'e8',to:'d6',key:false,concept:'Knight finds a post',ann:'Nd6 relocates. Black has spent many moves shuffling this knight around — a symptom of severe positional difficulties.'},
-  {san:'Bb6',from:'e3',to:'b6',key:true,concept:'Bishop outpost',ann:'Bb6 occupies an outpost on b6 where it eyes d8, restricts Black\'s queen, and coordinates with the rooks. The bind tightens.'},
-  {san:'Qe8',from:'d8',to:'e8',key:false,concept:'Queen sidesteps',ann:'Qe8 sidesteps. Black\'s queen has now moved six times without achieving anything.'},
-  {san:'R3a2',from:'a3',to:'a2',key:false,concept:'Rook repositions',ann:'R3a2 pulls one rook back to the second rank before the decisive action.'},
-  {san:'Be7',from:'f8',to:'e7',key:false,concept:'Piece shuffle',ann:'Be7 shuffles the bishop. When a player has no plan and is just moving pieces, they are essentially lost.'},
-  {san:'Bc5',from:'b6',to:'c5',key:false,concept:'Bishop redeployment',ann:'Bc5 increases pressure further. White keeps finding small improvements even in a clearly winning position.'},
-  {san:'Bf8',from:'e7',to:'f8',key:false,concept:'Forced retreat',ann:'Bf8 is forced by Bc5. Black is completely reactive. Every move is a forced retreat.'},
-  {san:'Nf5',from:'g3',to:'f5',key:true,concept:'Knight outpost',ann:'Nf5 is the decisive advance. The knight leaps to f5, an incredible outpost. From here it attacks e7, h6, and d6 simultaneously and cannot easily be removed.'},
-  {san:'Bxf5',from:'d7',to:'f5',key:false,concept:'Forced exchange',ann:'Bxf5 is forced. But now White gets a strong passed pawn on f5.'},
-  {san:'exf5',from:'e4',to:'f5',key:false,concept:'Passed pawn',ann:'exf5 recaptures, creating a passed pawn on f5 with no opposing pawns to stop it advancing.'},
-  {san:'f6',from:'f7',to:'f6',key:false,concept:'Blocking the pawn',ann:'f6 tries to block the f5 pawn. But this weakens the kingside pawn structure further.'},
-  {san:'Bxd6',from:'c5',to:'d6',key:true,concept:'Destroying a defender',ann:'Bxd6 captures the knight, eliminating a key defensive piece. Positional factors outweigh material here.'},
-  {san:'Bxd6',from:'f8',to:'d6',key:false,concept:'Recapture',ann:'Bxd6 recaptures. Material is equal but all of White\'s positional advantages remain.'},
-  {san:'axb5',from:'a4',to:'b5',key:true,concept:'The combination begins',ann:'axb5 begins the decisive combination that shocked Kasparov. Deep Blue tears open the queenside with precision Kasparov had not anticipated.'},
-  {san:'axb5',from:'a6',to:'b5',key:false,concept:'Forced recapture',ann:'axb5 recaptures. The queenside is opening exactly as Deep Blue planned.'},
-  {san:'Be4',from:'c2',to:'e4',key:true,concept:'The surprising move',ann:'Be4 is what Kasparov found almost impossible to believe. A quiet bishop move rather than an immediate material grab. This restraint suggested strategic understanding beyond brute calculation — Kasparov suspected human assistance.'},
-  {san:'Rxa2',from:'a8',to:'a2',key:false,concept:'Rook invades',ann:'Rxa2 invades the seventh rank, Black\'s best chance at counterplay.'},
-  {san:'Qxa2',from:'f2',to:'a2',key:false,concept:'Queen recaptures',ann:'Qxa2 recaptures while the queen becomes very active on the a-file.'},
-  {san:'Qd7',from:'e8',to:'d7',key:false,concept:'Queen activates',ann:'Qd7 finally activates Black\'s queen, but it is too late.'},
-  {san:'Qa7',from:'a2',to:'a7',key:true,concept:'Queen penetrates',ann:'Qa7 penetrates to the seventh rank, targeting the b7 pawn and coordinating with the rooks.'},
-  {san:'Rc7',from:'c8',to:'c7',key:false,concept:'Defending the seventh',ann:'Rc7 blocks the queen\'s attack. Every defensive move creates a new problem elsewhere.'},
-  {san:'Qb6',from:'a7',to:'b6',key:false,concept:'Queen maintains pressure',ann:'Qb6 maintains pressure. White is not rushing — there is no need to hurry when the opponent has no counterplay.'},
-  {san:'Rb7',from:'c7',to:'b7',key:false,concept:'Defending b5',ann:'Rb7 defends the b5 pawn. Black\'s pieces all defend; White\'s all attack.'},
-  {san:'Ra8+',from:'a1',to:'a8',key:true,concept:'Rook invades',ann:'Ra8+ is a powerful rook invasion with check. The king is forced to a less safe square.'},
-  {san:'Kf7',from:'g8',to:'f7',key:false,concept:'King forced out',ann:'Kf7 is the only legal move. The king is driven out of its safe castled position.'},
-  {san:'Qa6',from:'b6',to:'a6',key:false,concept:'Queen infiltrates',ann:'Qa6 coordinates with the rook on a8 and puts pressure on multiple weak squares.'},
-  {san:'Qc7',from:'d7',to:'c7',key:false,concept:'Desperate defence',ann:'Qc7 tries to defend, but Black\'s position is beyond saving.'},
-  {san:'Qc6',from:'a6',to:'c6',key:true,concept:'Queen dominates',ann:'Qc6 attacks the bishop on d6, eyes the b5 pawn, and coordinates with the rook on a8. Black has no good reply.'},
-  {san:'Qb6+',from:'c7',to:'b6',key:false,concept:'Desperate check',ann:'Qb6+ is a desperate check buying time. Deep Blue has calculated everything.'},
-  {san:'Kf1',from:'g1',to:'f1',key:false,concept:'King sidesteps',ann:'Kf1 calmly steps out of check. Post-game analysis found Kh1 was more precise, but White\'s advantage was so large it did not matter.'},
-  {san:'Rb8',from:'b7',to:'b8',key:false,concept:'Last defence',ann:'Rb8 retreats, trying to dislodge the rook on a8. Black\'s last attempt to complicate.'},
-  {san:'Ra6',from:'a8',to:'a6',key:true,concept:'The final blow',ann:'Ra6 is the move Kasparov called one of the most striking he had seen from a machine. The rook retreats from a8 to a6, completely paralysing Black\'s position. It traps the queen on b6, targets the b5 pawn, and ties down all Black\'s pieces. Kasparov resigned. Post-game analysis revealed he could have held a draw with Qe3, but missed it. This game changed how the chess world thought about machine strategy.'},
-];;
-var w1Boards=buildBoards(gameMoves);
-var w1CurrentMove=0;
-function w1GotoMove(mv){
-  mv=Math.max(0,Math.min(gameMoves.length,mv));w1CurrentMove=mv;
-  renderChessBoard(document.getElementById('w1-board'),document.getElementById('w1-coords'),w1Boards,gameMoves,mv);
-  renderMoveListTo(document.getElementById('w1-move-list'),gameMoves,mv,'w1GotoMove');
-  updateGameUI({badge:'w1-move-badge',turn:'w1-turn-badge',aText:'w1-ann-text',aLabel:'w1-ann-label',aConcept:'w1-ann-concept',keyBadge:'w1-key-badge'},gameMoves,mv,'Deep Blue plays White. Use the buttons below the board, arrow keys, or click any move in the list. Bold moves are key moments.','Kasparov resigned. Post-game analysis revealed he could have held a draw with Qe3, but missed it. Won through patient positional pressure over 45 moves.');
-  document.getElementById('w1-g-start').disabled=mv===0;document.getElementById('w1-g-prev').disabled=mv===0;document.getElementById('w1-g-next').disabled=mv===gameMoves.length;
-}
-w1GotoMove(0);
-
-/* ═══════════════════════════════════════════
-   EXPLORE GAMES
-═══════════════════════════════════════════ */
-var xGames=[
-  {
-    title:'Morphy vs Duke of Brunswick & Count Isouard',
-    meta:'The Opera Game &nbsp;|&nbsp; Paris, 1858 &nbsp;|&nbsp; Philidor Defense &nbsp;|&nbsp; 17 moves',
-    intro:'Paul Morphy played this game in a box at the Paris Opera in 1858. His opponents were two noblemen consulting together. Morphy demolished them in 17 moves while the opera played in the background. Bobby Fischer called it one of the most instructive games ever played.',
-    result:'1-0',
-    moves:[
-      {san:'e4',from:'e2',to:'e4',key:false,concept:'Open game',ann:'e4 opens the game. Morphy was the supreme advocate of open, attacking chess — he believed strongly in rapid development and centre control.'},
-      {san:'e5',from:'e7',to:'e5',key:false,concept:'Symmetrical reply',ann:'e5 mirrors White. The Philidor Defence is about to begin — a solid but passive setup named after the great 18th-century player Francois Philidor.'},
-      {san:'Nf3',from:'g1',to:'f3',key:false,concept:'Development',ann:'Nf3 attacks the e5 pawn and develops. Morphy develops every piece with a threat attached. This is a core Morphy principle: every move should do something.'},
-      {san:'d6',from:'d7',to:'d6',key:false,concept:'Philidor Defense',ann:'d6 is the hallmark of the Philidor Defense. Black supports the e5 pawn passively. Modern theory considers this slightly passive — it blocks the f8 bishop and gives White more space.'},
-      {san:'d4',from:'d2',to:'d4',key:true,concept:'Central challenge',ann:'d4 is the thematic response to the Philidor. Morphy immediately challenges the centre, not willing to let Black consolidate.'},
-      {san:'Bg4',from:'c8',to:'g4',key:false,concept:'Pin attempt',ann:'Bg4 tries to pin the f3 knight, which defends e5. But this is the move Fischer called "weak already" — the bishop is about to be trapped.'},
-      {san:'dxe5',from:'d4',to:'e5',key:true,concept:'Breaking open',ann:'dxe5 immediately exploits the pin. If the knight is pinned, take the pawn it was defending. Black must recapture but will lose time.'},
-      {san:'Bxf3',from:'g4',to:'f3',key:false,concept:'Bishop captured',ann:'Bxf3 takes the knight. This gives Morphy the bishop pair and a strong centre. Black has been forced to trade a bishop for a knight — usually a slight positional concession.'},
-      {san:'Qxf3',from:'d1',to:'f3',key:false,concept:'Queen develops',ann:'Qxf3 recaptures with the queen, bringing it into the game with tempo. The queen on f3 is very active and Black cannot easily challenge it.'},
-      {san:'dxe5',from:'d6',to:'e5',key:false,concept:'Recaptures',ann:'dxe5 recaptures the pawn. Black now has a symmetrical pawn centre but is behind in development. This will matter.'},
-      {san:'Bc4',from:'f1',to:'c4',key:true,concept:'Italian bishop',ann:'Bc4 develops the bishop to its most aggressive square, targeting the f7 pawn — the weakest point in Black\'s position. This is the same bishop placement seen in the Italian Game and the King\'s Gambit.'},
-      {san:'Nf6',from:'g8',to:'f6',key:false,concept:'Development',ann:'Nf6 develops the knight and attacks the queen. Black is finally trying to catch up in development.'},
-      {san:'Qb3',from:'f3',to:'b3',key:true,concept:'Double attack',ann:'Qb3 is a double attack — it threatens both the f7 pawn and the b7 pawn simultaneously. Black cannot defend both.'},
-      {san:'Qe7',from:'d8',to:'e7',key:false,concept:'Defending f7',ann:'Qe7 defends f7 by connecting the queen to that square. But this blocks the bishop on f8 from developing and prevents kingside castling. Black is already in serious trouble.'},
-      {san:'Nc3',from:'b1',to:'c3',key:false,concept:'Development',ann:'Nc3 develops another piece. Morphy has now developed four pieces in a row while Black has only managed three. The development gap is growing.'},
-      {san:'c6',from:'c7',to:'c6',key:false,concept:'Defending b5',ann:'c6 defends the b5 square to prevent Nb5, but this blocks the natural development of the b8 knight. Black is tying itself in knots trying to hold everything together.'},
-      {san:'Bg5',from:'c1',to:'g5',key:true,concept:'All pieces out',ann:'Bg5 is the last minor piece developed. Every single White piece is now active and developed. Meanwhile Black has the queen, one knight, and no rooks developed. Morphy has achieved a total development advantage.'},
-      {san:'b5',from:'b7',to:'b5',key:false,concept:'Counterattack',ann:'b5 attacks the bishop on c4, trying to gain time. But this creates a new weakness on c5 and moves a pawn rather than developing pieces.'},
-      {san:'Nxb5',from:'c3',to:'b5',key:true,concept:'Sacrifice begins',ann:'Nxb5 is the first sacrifice. Morphy gives up the knight to rip open the position. Principle: when ahead in development, open the position immediately. Every open line benefits the better-developed side.'},
-      {san:'cxb5',from:'c6',to:'b5',key:false,concept:'Must recapture',ann:'cxb5 captures the knight. Black has no choice — but now the queenside is blown open and Morphy\'s pieces can pour in.'},
-      {san:'Bxb5+',from:'c4',to:'b5',key:false,concept:'Check with gain',ann:'Bxb5+ check forces the king to lose castling rights or a piece to be blocked. Black must interpose a piece, losing the ability to castle.'},
-      {san:'Nbd7',from:'b8',to:'d7',key:false,concept:'Blocking check',ann:'Nbd7 interposes, blocking the check. This is the only reasonable move. Now Morphy castles queenside to place the rook on the open d-file.'},
-      {san:'O-O-O',from:'e1',to:'c1',key:true,concept:'Castling queenside',ann:'O-O-O is a brilliant decision. By castling queenside, Morphy\'s rook lands directly on the open d-file, targeting the pinned knight on d7. This is not just castling for safety — it is a developing move with immediate effect.'},
-      {san:'Rd8',from:'a8',to:'d8',key:false,concept:'Rook defends',ann:'Rd8 brings the rook to defend d7. Black is trying desperately to hold the position together. But it is already too late.'},
-      {san:'Rxd7',from:'d1',to:'d7',key:true,concept:'Rook sacrifice',ann:'Rxd7 is the decisive rook sacrifice. White gives up the rook for the knight. Why? Because after the recapture, White will bring the other rook to d1 with crushing effect.'},
-      {san:'Rxd7',from:'d8',to:'d7',key:false,concept:'Forced',ann:'Rxd7 recaptures. If Black does not take, White wins material for free. Now watch what happens.'},
-      {san:'Rd1',from:'h1',to:'d1',key:true,concept:'Zwischenzug',ann:'Rd1 is the quiet zwischenzug (in-between move) that makes it all work. The rook threatens to pin the queen to the king. Black has no good defence.'},
-      {san:'Qe6',from:'e7',to:'e6',key:false,concept:'Desperado',ann:'Qe6 tries to unpin the knight on d7 and offer a queen trade. But it is futile — Morphy has a forced finish.'},
-      {san:'Bxd7+',from:'b5',to:'d7',key:true,concept:'Discovered attack',ann:'Bxd7+ is a discovered check from the rook on d1. The bishop captures with check, forcing the knight to recapture — after which the back rank will be devastated.'},
-      {san:'Nxd7',from:'f6',to:'d7',key:false,concept:'Forced',ann:'Nxd7 recaptures. Black has no choice. Now comes the queen sacrifice.'},
-      {san:'Qb8+',from:'b3',to:'b8',key:true,concept:'Queen sacrifice!',ann:'Qb8+ is the stunning queen sacrifice that finishes the game. Morphy gives up the queen — the most powerful piece on the board — to force checkmate. The king must take the queen.'},
-      {san:'Nxb8',from:'d7',to:'b8',key:false,concept:'Must take',ann:'Nxb8 takes the queen. There is no choice. And now...'},
-      {san:'Rd8+',from:'d1',to:'d8',key:true,concept:'Checkmate!',ann:'Rd8 is checkmate! The rook delivers the final blow. Morphy won using only three pieces in the mating position while giving up his queen. This is the "opera mate" — one of the most elegant finishes in chess history. Fischer called it a perfect demonstration of how chess should be played.'},
-    ]
-  },
-  {
-    title:'Anderssen vs Kieseritzky',
-    meta:'The Immortal Game &nbsp;|&nbsp; London, 1851 &nbsp;|&nbsp; King\'s Gambit &nbsp;|&nbsp; 23 moves',
-    intro:'Widely regarded as the most brilliant game of the 19th century. Anderssen sacrificed a bishop, both rooks, AND his queen — and still won. Kieseritzky was so impressed he telegraphed the moves to his chess club in Paris the same evening.',
-    result:'1-0',
-    moves:[
-      {san:'e4',from:'e2',to:'e4',key:false,concept:'Open game',ann:'e4 opens. Anderssen was one of the greatest attacking players of the 19th century — known for breathtaking sacrifices and brilliant combinations.'},
-      {san:'e5',from:'e7',to:'e5',key:false,concept:'Symmetric',ann:'e5 mirrors. A standard reply. Kieseritzky is a strong player himself, well-known for his games at the Cafe de la Regence in Paris.'},
-      {san:'f4',from:'f2',to:'f4',key:true,concept:'King\'s Gambit',ann:'f4 is the King\'s Gambit — one of the oldest and most aggressive openings in chess. White offers a pawn to get rapid development and open the f-file for the rook. This opening was enormously popular in the 19th century.'},
-      {san:'exf4',from:'e5',to:'f4',key:false,concept:'Gambit accepted',ann:'exf4 accepts the gambit. Black takes the pawn. Now White will try to build a powerful pawn centre with d4, while Black tries to hold onto the extra pawn.'},
-      {san:'Bc4',from:'f1',to:'c4',key:false,concept:'Bishop\'s Gambit',ann:'Bc4 is the Bishop\'s Gambit variation. White immediately develops the bishop to its most aggressive square rather than playing Nf3 first. The bishop eyes the f7 pawn.'},
-      {san:'Qh4+',from:'d8',to:'h4',key:true,concept:'Early queen check',ann:'Qh4+ is an early queen sortie. By checking the king, Black forces it to move, costing White the right to castle. This is a concrete and somewhat risky idea — the queen is well placed on h4 but can be chased later.'},
-      {san:'Kf1',from:'e1',to:'f1',key:true,concept:'King moves',ann:'Kf1 is forced. The king moves, losing the right to castle forever. This looks alarming, but Anderssen is completely unfazed — he will use this king as part of his attack.'},
-      {san:'b5',from:'b7',to:'b5',key:false,concept:'Attacking the bishop',ann:'b5 attacks the bishop, trying to gain time. Black wants to drive the bishop away and consolidate the extra pawn.'},
-      {san:'Bxb5',from:'c4',to:'b5',key:false,concept:'Accepting the sacrifice',ann:'Bxb5 takes the pawn. Anderssen is not worried about being down material — he is focused entirely on development and attack.'},
-      {san:'Nf6',from:'g8',to:'f6',key:false,concept:'Development',ann:'Nf6 develops the knight and attacks the queen on h4. Black is building up pieces while trying to hold the material advantage.'},
-      {san:'Nf3',from:'g1',to:'f3',key:false,concept:'Developing',ann:'Nf3 develops the knight and attacks the queen simultaneously, gaining a tempo.'},
-      {san:'Qh6',from:'h4',to:'h6',key:false,concept:'Queen retreats',ann:'Qh6 retreats the queen to safety. The queen has done its job of forcing Kf1, but now gets out of the way of the developing knight.'},
-      {san:'d3',from:'d2',to:'d3',key:false,concept:'Solid centre',ann:'d3 solidifies the centre and prepares to develop the bishop. Anderssen is building up quietly while Black\'s queenside remains undeveloped.'},
-      {san:'Nh5',from:'f6',to:'h5',key:false,concept:'Attacking the bishop',ann:'Nh5 attacks the bishop on b5 and threatens Ng3+ — a fork of king and rook. Black is generating threats.'},
-      {san:'Nh4',from:'f3',to:'h4',key:false,concept:'Knight to h4',ann:'Nh4 attacks the queen on h6, forcing it to move while gaining a tempo.'},
-      {san:'Qg5',from:'h6',to:'g5',key:false,concept:'Queen retreats',ann:'Qg5 retreats to g5, still targeting the knight on h4. Black is trying to maintain the queen\'s activity.'},
-      {san:'Nf5',from:'h4',to:'f5',key:true,concept:'Knight outpost',ann:'Nf5 is an aggressive leap — the knight occupies a powerful outpost and attacks the queen. Anderssen is dictating the pace of the game.'},
-      {san:'c6',from:'c7',to:'c6',key:false,concept:'Attacking the bishop',ann:'c6 attacks the bishop on b5. Black continues trying to win material while Anderssen builds up the attack.'},
-      {san:'g4',from:'g2',to:'g4',key:true,concept:'Pawn storm',ann:'g4 attacks the queen directly and begins a pawn storm on the kingside. This is pure aggression — Anderssen is advancing pawns toward Black\'s king with enormous force.'},
-      {san:'Nf6',from:'h5',to:'f6',key:false,concept:'Knight retreats',ann:'Nf6 retreats the knight. Black is struggling to find good moves — every piece is being pushed around.'},
-      {san:'Rg1',from:'h1',to:'g1',key:true,concept:'Rook enters',ann:'Rg1 is a brilliant move. The rook enters the attack via the g-file, which Anderssen has deliberately opened with g4. White is now threatening g5 to chase the queen again.'},
-      {san:'cxb5',from:'c6',to:'b5',key:false,concept:'Taking the bishop',ann:'cxb5 finally captures the bishop. Black has material: a bishop and two pawns for the upcoming attack. But it costs a critical tempo.'},
-      {san:'h4',from:'h2',to:'h4',key:true,concept:'Pawn storm continues',ann:'h4 continues the kingside pawn storm. Anderssen is advancing h and g pawns directly at Black\'s queen.'},
-      {san:'Qg6',from:'g5',to:'g6',key:false,concept:'Queen retreats again',ann:'Qg6 retreats the queen again. The queen has been chased all over the board and has contributed very little to Black\'s defence.'},
-      {san:'h5',from:'h4',to:'h5',key:false,concept:'Queen chased',ann:'h5 chases the queen again. Anderssen\'s pawn march is relentless. The queen has no good square.'},
-      {san:'Qg5',from:'g6',to:'g5',key:false,concept:'Queen forced back',ann:'Qg5 is forced. The queen is stuck on g5, hemmed in by White\'s advancing pawns.'},
-      {san:'Qf3',from:'d1',to:'f3',key:true,concept:'Queen joins attack',ann:'Qf3 brings the White queen into the attack. White now threatens Bxf4 to regain the pawn, then has a devastating kingside attack. Black is in zugzwang — every move makes things worse.'},
-      {san:'Ng8',from:'f6',to:'g8',key:false,concept:'Knight retreats',ann:'Ng8 retreats the knight all the way back to its starting square. Black has run out of good moves. Fischer: "Black is in what\'s like a zugzwang position."'},
-      {san:'Bxf4',from:'c1',to:'f4',key:false,concept:'Regaining material',ann:'Bxf4 recaptures the gambit pawn. Anderssen has finished his development and is now ready for the final attack.'},
-      {san:'Qf6',from:'g5',to:'f6',key:false,concept:'Queen repositions',ann:'Qf6 brings the queen to a more central square. But Black is already lost.'},
-      {san:'Nc3',from:'b1',to:'c3',key:false,concept:'Last piece out',ann:'Nc3 develops the last remaining piece. Anderssen now has all his forces coordinated for the final assault.'},
-      {san:'Bc5',from:'f8',to:'c5',key:false,concept:'Bishop develops',ann:'Bc5 finally develops the bishop. But it is far too late.'},
-      {san:'Nd5',from:'c3',to:'d5',key:true,concept:'Decisive knight',ann:'Nd5 is the decisive move. The knight leaps to d5, threatening both the queen and the bishop on c5. Black\'s position is collapsing.'},
-      {san:'Qxb2',from:'f6',to:'b2',key:false,concept:'Taking material',ann:'Qxb2 grabs the rook on a1. Black is taking all the material it can. But Anderssen has seen much further ahead.'},
-      {san:'Bd6',from:'f4',to:'d6',key:true,concept:'Brilliancy begins',ann:'Bd6 is the start of the immortal combination. Anderssen ignores the rook on a1 and plays a bishop move instead. He is setting up the most spectacular finish in 19th century chess.'},
-      {san:'Bxg1',from:'c5',to:'g1',key:false,concept:'Taking the rook',ann:'Bxg1 captures the other rook. Black has now taken both White rooks. Anderssen is down a bishop AND both rooks. He will still win.'},
-      {san:'e5',from:'e4',to:'e5',key:true,concept:'Ignoring material',ann:'e5 ignores the bishop on g1 and advances the pawn. Anderssen is in no hurry to recapture. He has a plan that does not require the rooks.'},
-      {san:'Qxa1+',from:'b2',to:'a1',key:false,concept:'Taking the last rook',ann:'Qxa1+ takes the last rook with check. Black has now captured a bishop and both rooks — a huge material advantage. But the queen is now trapped on a1, far from the action.'},
-      {san:'Ke2',from:'f1',to:'e2',key:false,concept:'King steps up',ann:'Ke2 steps the king to safety. Anderssen\'s king, which looked exposed all game, now walks calmly into the centre. Nothing can save Black.'},
-      {san:'Na6',from:'b8',to:'a6',key:false,concept:'Helpless',ann:'Na6 is a helpless move. Black has no defence. The game is effectively over.'},
-      {san:'Nxg7+',from:'f5',to:'g7',key:true,concept:'Knight sacrifice',ann:'Nxg7+ is another sacrifice. The knight on g7 opens up the king\'s position and forces the king to d8, setting up the final combination.'},
-      {san:'Kd8',from:'e8',to:'d8',key:false,concept:'King runs',ann:'Kd8 retreats the king. There is no escape.'},
-      {san:'Qf6+',from:'f3',to:'f6',key:true,concept:'Queen sacrifice!',ann:'Qf6+ is the queen sacrifice — one of the most famous moves in chess history. Anderssen gives up the queen. Black must take it. Then comes the final blow.'},
-      {san:'Nxf6',from:'g8',to:'f6',key:false,concept:'Must take',ann:'Nxf6 takes the queen. Forced. And now...'},
-      {san:'Be7+',from:'d6',to:'e7',key:true,concept:'Checkmate!',ann:'Be7+ is checkmate! A lone bishop delivers the final blow. Anderssen won having sacrificed a bishop, BOTH rooks, and his queen — using only three minor pieces for the mate. Kieseritzky telegraphed the moves to Paris that evening. It has been called the Immortal Game ever since.'},
-    ]
+  function clearMessage() {
+    messageDisplay.textContent = '';
   }
-];;
-xGames.push({title:'Deep Blue vs Kasparov',meta:'Game 2, New York 1997 &nbsp;|&nbsp; Ruy Lopez: Smyslov Defense &nbsp;|&nbsp; 45 moves',intro:'Return to the game studied earlier. Step through it again now that you have seen the Opera Game and the Immortal Game — you may notice different patterns.',result:'1-0',moves:null});
-var xAllBoards=[buildBoards(xGames[0].moves),buildBoards(xGames[1].moves),null];
-var xCurrentGame=0,xCurrentMove=0,xInited=false;
-function xBoards(g){return g===2?w1Boards:xAllBoards[g];}
-function xMoves(g){return g===2?gameMoves:xGames[g].moves;}
-function xGotoMove(mv){
-  var moves=xMoves(xCurrentGame),boards=xBoards(xCurrentGame);
-  mv=Math.max(0,Math.min(moves.length,mv));xCurrentMove=mv;
-  renderChessBoard(document.getElementById('xboard'),document.getElementById('xcoords'),boards,moves,mv);
-  renderMoveListTo(document.getElementById('x-move-list'),moves,mv,'xGotoMove');
-  var g=xGames[xCurrentGame];
-  updateGameUI({badge:'x-move-badge',turn:'x-turn-badge',aText:'x-ann-text',aLabel:'x-ann-label',aConcept:'x-ann-concept',keyBadge:'x-key-badge'},moves,mv,g.intro,xCurrentGame===2?'Kasparov resigned. Won through patient positional pressure.':xCurrentGame===1?'Checkmate with bishop and two knights — after sacrificing both rooks and the queen.':'Checkmate by rook after a queen sacrifice. Morphy\'s most famous game.');
-  document.getElementById('x-start').disabled=mv===0;document.getElementById('x-prev').disabled=mv===0;document.getElementById('x-next').disabled=mv===moves.length;
-}
-function switchGame(g){
-  xCurrentGame=g;xCurrentMove=0;
-  for(var i=0;i<3;i++)document.getElementById('gtab-'+i).classList.toggle('active',i===g);
-  var game=xGames[g];
-  var titleEl=document.getElementById('x-title');titleEl.textContent=game.title+' ';
-  var rb=document.createElement('span');rb.className='result-badge';rb.textContent=game.result;titleEl.appendChild(rb);
-  document.getElementById('x-meta').innerHTML=game.meta;
-  xGotoMove(0);
-}
 
-/* ═══════════════════════════════════════════
-   CHESS PUZZLES
-═══════════════════════════════════════════ */
-var puzzles=[
-  {
-    id:0, title:'Knight Fork', concept:'Fork', meta:'White to move — win material',
-    instruction:'White can fork the king and rook with the knight. Find the move that attacks both at once.',
-    fen:'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w - - 0 1',
-    solution:{from:'f3',to:'g5'},
-    hint:'Look for a knight move that attacks the king and another piece simultaneously.',
-    explanation:'Ng5 forks the king on e6 and the queen on d8 simultaneously — if the king moves, the queen is lost. This is a classic knight fork, one of the most common and powerful tactical patterns in chess.'
-  },
-  {
-    id:1, title:'Back Rank Mate', concept:'Checkmate pattern', meta:'White to move — deliver checkmate',
-    instruction:'Black\'s king is trapped on the back rank with no escape. Find the checkmate in one move.',
-    fen:'6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1',
-    solution:{from:'d1',to:'d8'},
-    hint:'The rook controls the d-file. The black king cannot escape the back rank.',
-    explanation:'Rd8 is checkmate. The black king is trapped on g8 by its own pawns on f7, g7, and h7. The rook delivers check on the back rank with no escape. This "back rank mate" pattern appears in countless games and is one of the first mating patterns beginners learn.'
-  },
-  {
-    id:2, title:'Pin to Win', concept:'Pin', meta:'White to move — win a piece',
-    instruction:'White can pin the knight to the king, winning it next move. Find the pin.',
-    fen:'rnb1k2r/pppp1ppp/5n2/4p3/1b2P3/3P1N2/PPP2PPP/RNBQKB1R w KQkq - 0 1',
-    solution:{from:'f1',to:'e2'},
-    hint:'A piece that cannot move because doing so would expose the king is pinned. Which White piece can create a pin on the f6 knight?',
-    explanation:'Be2 pins the knight on f6 to the king on e8. The knight cannot move without exposing the king to check, so it is completely immobilised. On the next move White can play d4 or another developing move while threatening to win the pinned knight with a later d5 or Ng5.'
-  },
-  {
-    id:3, title:'Discovered Attack', concept:'Discovered attack', meta:'White to move — gain material',
-    instruction:'Moving one White piece reveals a deadly attack from the piece behind it. Find the combination.',
-    fen:'r1bqkb1r/ppp2ppp/2np1n2/1B2p3/3PP3/2N2N2/PPP2PPP/R1BQK2R w KQkq - 0 1',
-    solution:{from:'d4',to:'e5'},
-    hint:'When a pawn moves, which hidden piece does it uncover — and what does that piece attack?',
-    explanation:'dxe5 captures the pawn and simultaneously uncovers the bishop on c1 along the d-file — creating a discovered attack on the knight at d6 (actually opening the diagonal onto the queen or exposing an attack). Moving the pawn reveals the hidden battery. Discovered attacks are especially powerful because the opponent can only deal with one threat at a time.'
-  },
-  {
-    id:4, title:'Skewer the King', concept:'Skewer', meta:'White to move — win the rook',
-    instruction:'Attack the king directly, force it to move, and capture the rook behind it.',
-    fen:'k7/1r6/8/8/8/8/8/K5R1 w - - 0 1',
-    solution:{from:'g1',to:'g7'},
-    hint:'A skewer is a reverse pin — attack the more valuable piece first, then capture what is behind it when it moves.',
-    explanation:'Rg7 attacks the rook on b7. If the rook moves, White wins nothing — but the black king is on a8, not behind the rook. Actually this position shows: Rg8+ skewers the king, forcing Ka7, then White takes the rook on b7. The rook attacks through the king to the rook behind. The king must move, leaving the rook to be captured.'
-  },
-  {
-    id:5, title:'Promote the Pawn', concept:'Pawn promotion', meta:'White to move — queen the pawn',
-    instruction:'White has a passed pawn that can promote. Clear the path and queen it.',
-    fen:'8/3P4/8/8/8/8/8/k5K1 w - - 0 1',
-    solution:{from:'d7',to:'d8'},
-    hint:'The pawn is one square away from promotion. Simply advance it — nothing can stop it.',
-    explanation:'d8=Q promotes the pawn to a queen, immediately creating a massive material advantage. Passed pawns — pawns with no opposing pawns blocking them — are among the most powerful long-term assets in chess endgames. This is why endgame technique focuses so heavily on king and pawn structures.'
+  function showMessage(msg) {
+    messageDisplay.textContent = msg;
   }
-];
 
-var puzCurrent=0,puzSelected=null,puzSolved=[],puzInited=false;
-
-function loadPuzzle(idx){
-  puzCurrent=idx;puzSelected=null;
-  var p=puzzles[idx];
-  document.getElementById('puz-concept').textContent=p.concept;
-  document.getElementById('puz-title').textContent=p.title;
-  document.getElementById('puz-meta').textContent=p.meta;
-  document.getElementById('puz-instruction').textContent=p.instruction;
-  document.getElementById('puz-feedback').className='puzzle-feedback';
-  document.getElementById('puz-feedback').textContent='';
-  document.getElementById('puz-explanation').className='puzzle-explanation';
-  document.getElementById('puz-solved-badge').className='psolved-badge'+(puzSolved.includes(idx)?' show':'');
-  document.getElementById('puz-next-btn').disabled=(idx>=puzzles.length-1)||!puzSolved.includes(idx);
-  renderPuzTabs();
-  renderPuzBoard(idx,null,null);
-}
-
-function renderPuzTabs(){
-  var nav=document.getElementById('puz-nav');
-  nav.innerHTML='';
-  puzzles.forEach(function(p,i){
-    var btn=document.createElement('button');
-    btn.className='puz-tab'+(i===puzCurrent?' active':'')+(puzSolved.includes(i)?' solved':'');
-    btn.textContent='Puzzle '+(i+1);
-    btn.onclick=(function(idx){return function(){loadPuzzle(idx);};})(i);
-    nav.appendChild(btn);
-  });
-}
-
-function renderPuzBoard(idx,selectedSq,hintSq){
-  var p=puzzles[idx];
-  var b=fenToBoard(p.fen);
-  var boardEl=document.getElementById('puz-board');
-  var html='';
-  for(var r=0;r<8;r++){
-    for(var c=0;c<8;c++){
-      var L=(r+c)%2===0;
-      var sqId=String.fromCharCode(97+c)+(8-r);
-      var cls='psq '+(L?'light':'dark');
-      if(sqId===selectedSq)cls+=' selected';
-      if(sqId===hintSq)cls+=' hint';
-      html+='<div class="'+cls+'" onclick="puzClick(\''+sqId+'\')">'+(b[r][c]?CP[b[r][c]]:'')+'</div>';
-    }
+  function onPointerDown(e) {
+    e.preventDefault();
+    if (!e.target.classList.contains('item')) return;
+    currentItem = e.target;
+    const r = currentItem.getBoundingClientRect();
+    offsetX = e.clientX - r.left;
+    offsetY = e.clientY - r.top;
+    clearMessage();
+    currentItem.style.position = 'absolute';
+    currentItem.style.zIndex = '1000';
+    document.body.appendChild(currentItem);
+    currentItem.setPointerCapture(e.pointerId);
+    currentItem.addEventListener('pointermove', onPointerMove);
+    currentItem.addEventListener('pointerup', onPointerUp);
+    onPointerMove(e);
   }
-  boardEl.innerHTML=html;
-  var ch='';for(var c=0;c<8;c++)ch+='<div class="coord">'+String.fromCharCode(97+c)+'</div>';
-  document.getElementById('puz-coords').innerHTML=ch;
-}
 
-function puzClick(sqId){
-  if(puzSolved.includes(puzCurrent))return;
-  var p=puzzles[puzCurrent];
-  var b=fenToBoard(p.fen);
-  var rc=sqRC(sqId);
-  var piece=b[rc[0]][rc[1]];
-  if(!puzSelected){
-    // Select a white piece (uppercase)
-    if(piece&&piece===piece.toUpperCase()&&piece!==piece.toLowerCase()){
-      puzSelected=sqId;
-      renderPuzBoard(puzCurrent,sqId,null);
-    }
-  } else {
-    var fromSq=puzSelected;puzSelected=null;
-    if(sqId===fromSq){renderPuzBoard(puzCurrent,null,null);return;}
-    // Check solution
-    var sol=p.solution;
-    if(fromSq===sol.from&&sqId===sol.to){
-      puzSolved.push(puzCurrent);
-      var fb=document.getElementById('puz-feedback');
-      fb.className='puzzle-feedback correct';fb.textContent='Correct!';
-      document.getElementById('puz-explanation').className='puzzle-explanation show';
-      document.getElementById('puz-explanation').textContent=p.explanation;
-      document.getElementById('puz-solved-badge').className='psolved-badge show';
-      document.getElementById('puz-next-btn').disabled=(puzCurrent>=puzzles.length-1);
-      // Animate the move on the board
-      var nb=JSON.parse(JSON.stringify(b));
-      var frc=sqRC(fromSq),trc=sqRC(sqId);
-      nb[trc[0]][trc[1]]=nb[frc[0]][frc[1]];nb[frc[0]][frc[1]]=null;
-      renderPuzBoard(puzCurrent,null,null);
-      // Re-render with correct squares highlighted
-      var bEl=document.getElementById('puz-board');
-      var sqs=bEl.children;
-      for(var i=0;i<sqs.length;i++){
-        var r=Math.floor(i/8),c=i%8,sq2=String.fromCharCode(97+c)+(8-r);
-        if(sq2===fromSq||sq2===sqId)sqs[i].classList.add('correct');
-      }
-      renderPuzTabs();
+  function onPointerMove(e) {
+    if (!currentItem) return;
+    currentItem.style.left = e.clientX - offsetX + 'px';
+    currentItem.style.top = e.clientY - offsetY + 'px';
+  }
+
+  function onPointerUp(e) {
+    if (!currentItem) return;
+    currentItem.releasePointerCapture(e.pointerId);
+    currentItem.removeEventListener('pointermove', onPointerMove);
+    currentItem.removeEventListener('pointerup', onPointerUp);
+    const gridRect = grid.getBoundingClientRect();
+    const r = currentItem.getBoundingClientRect();
+    const snapX = Math.round((r.left - gridRect.left) / UNIT) * UNIT;
+    const snapY = Math.round((r.top - gridRect.top) / UNIT) * UNIT;
+    const container = currentLayer === 1 ? layer1 : layer2;
+
+    if (
+      snapX >= 0 && snapY >= 0 &&
+      snapX + r.width <= gridRect.width &&
+      snapY + r.height <= gridRect.height
+    ) {
+      container.appendChild(currentItem);
+      currentItem.style.left = snapX + 'px';
+      currentItem.style.top = snapY + 'px';
     } else {
-      var fb=document.getElementById('puz-feedback');
-      fb.className='puzzle-feedback wrong';fb.textContent='Not quite — try again.';
-      renderPuzBoard(puzCurrent,null,null);
-      var bEl=document.getElementById('puz-board');
-      var sqs=bEl.children;
-      for(var i=0;i<sqs.length;i++){
-        var r=Math.floor(i/8),c=i%8,sq2=String.fromCharCode(97+c)+(8-r);
-        if(sq2===sqId)sqs[i].classList.add('wrong');
+      itemsContainer.appendChild(currentItem);
+      currentItem.style.position = 'relative';
+      currentItem.style.left = '';
+      currentItem.style.top = '';
+    }
+
+    updateBorders();
+    updateScore();
+    currentItem.style.zIndex = '';
+    currentItem = null;
+  }
+
+  function isOverlapping(a, b) {
+    const ra = a.getBoundingClientRect();
+    const rb = b.getBoundingClientRect();
+    return !(
+      ra.right <= rb.left ||
+      ra.left >= rb.right ||
+      ra.bottom <= rb.top ||
+      ra.top >= rb.bottom
+    );
+  }
+
+  function updateBorders() {
+    const active = currentLayer === 1 ? layer1 : layer2;
+    active.querySelectorAll('.item').forEach(i => i.classList.remove('overlap'));
+    const arr = Array.from(active.querySelectorAll('.item'));
+    for (let i = 0; i < arr.length; i++) {
+      for (let j = i + 1; j < arr.length; j++) {
+        if (isOverlapping(arr[i], arr[j])) {
+          arr[i].classList.add('overlap');
+          arr[j].classList.add('overlap');
+        }
       }
-      setTimeout(function(){renderPuzBoard(puzCurrent,null,null);},400);
     }
   }
-}
 
-function puzzleHint(){
-  if(puzSolved.includes(puzCurrent))return;
-  var p=puzzles[puzCurrent];
-  var fb=document.getElementById('puz-feedback');
-  fb.className='puzzle-feedback hint';fb.textContent=p.hint;
-  renderPuzBoard(puzCurrent,null,p.solution.from);
-  puzSelected=null;
-}
-function puzzleReset(){
-  puzSelected=null;
-  document.getElementById('puz-feedback').className='puzzle-feedback';
-  document.getElementById('puz-feedback').textContent='';
-  if(!puzSolved.includes(puzCurrent)){
-    document.getElementById('puz-explanation').className='puzzle-explanation';
+  function populateItems() {
+    const names = [
+      'foodbox', 'stovebox', 'kitchenbox', 'propane', 'whitewall', 'wallbag',
+      'personalgear', 'personalgear', 'gearbar', 'waterjug', 'waterjug', 'waterjug',
+      'waterjug', 'table', 'table', 'breadbox', 'meatcooler'
+    ];
+    itemsContainer.innerHTML = '';
+    names.forEach(name => {
+      const it = document.createElement('div');
+      it.className = 'item ' + name;
+      it.textContent = name;
+      it.dataset.bonus = 'false';
+      itemsContainer.appendChild(it);
+      it.addEventListener('pointerdown', onPointerDown);
+    });
   }
-  renderPuzBoard(puzCurrent,null,null);
-}
-function nextPuzzle(){if(puzCurrent<puzzles.length-1)loadPuzzle(puzCurrent+1);}
+function beep() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();  // This controls the volume
 
-/* ═══════════════════════════════════════════
-   WEEK 2 SLIDE ENGINE
-═══════════════════════════════════════════ */
-var W2_TOTAL=14, w2Cur=0;
-var w2DotsEl=document.getElementById('w2-dots');
-var w2Prog=document.getElementById('w2-progress');
-for(var i=0;i<W2_TOTAL;i++){var d=document.createElement('button');d.className='dot'+(i===0?' active':'');d.onclick=(function(idx){return function(){w2GoTo(idx);};})(i);w2DotsEl.appendChild(d);}
-function w2GoTo(n){
-  document.getElementById('w2-slide-'+w2Cur).classList.remove('active');
-  w2DotsEl.children[w2Cur].classList.remove('active');
-  w2Cur=n;
-  document.getElementById('w2-slide-'+w2Cur).classList.add('active');
-  w2DotsEl.children[w2Cur].classList.add('active');
-  document.getElementById('w2-counter').textContent=(w2Cur+1)+' / '+W2_TOTAL;
-  document.getElementById('w2-prev-btn').disabled=w2Cur===0;
-  document.getElementById('w2-next-btn').disabled=w2Cur===W2_TOTAL-1;
-  w2Prog.style.width=((w2Cur+1)/W2_TOTAL*100)+'%';
-}
-function w2SlideMove(dir){var n=w2Cur+dir;if(n>=0&&n<W2_TOTAL)w2GoTo(n);}
+            oscillator.type = 'square'; // Square wave for an annoying sound
+            oscillator.frequency.setValueAtTime(Math.random() * 1000, audioContext.currentTime); // Higher frequency range for a more annoying sound
+            gainNode.gain.setValueAtTime(1.5, audioContext.currentTime); // Amplify the sound (increase volume)
 
-/* ═══════════════════════════════════════════
-   SHOGI PIECE BOARDS
-═══════════════════════════════════════════ */
-var LSQG='#E8F5E9',DSQG='#C8E6C9';
-var S_SQ={ml:'#A8D48A',md:'#5fa83a',pl:'#085041',pd:'#064d34',bl:'#6BA3BE',bd:'#4a7a92'};
-function buildShogiBoardHTML(sz,grid,pos,moves,promo){
-  var mSet=new Set((moves||[]).map(function(m){return m[0]+','+m[1];}));
-  var pSet=new Set((promo||[]).map(function(m){return m[0]+','+m[1];}));
-  var html='<div style="display:grid;grid-template-columns:repeat('+grid+','+sz+'px);grid-template-rows:repeat('+grid+','+sz+'px);border-radius:6px;overflow:hidden;border:2px solid var(--g200);">';
-  for(var r=0;r<grid;r++){for(var c=0;c<grid;c++){var L=(r+c)%2===0,key=r+','+c,isPiece=r===pos[0]&&c===pos[1],isProm=pSet.has(key)&&!isPiece,isMove=mSet.has(key)&&!isPiece&&!isProm;var bg;if(isPiece)bg=L?S_SQ.pl:S_SQ.pd;else if(isProm)bg=L?S_SQ.bl:S_SQ.bd;else if(isMove)bg=L?S_SQ.ml:S_SQ.md;else bg=L?LSQG:DSQG;var content='';if(isPiece)content='<span style="font-size:'+(sz*0.38)+'px;line-height:1;color:white;font-weight:600;font-family:serif;">将</span>';else if(isMove||isProm)content='<span style="width:'+(sz*0.28)+'px;height:'+(sz*0.28)+'px;border-radius:50%;background:rgba(255,255,255,0.45);display:block;"></span>';html+='<div style="width:'+sz+'px;height:'+sz+'px;background:'+bg+';display:flex;align-items:center;justify-content:center;">'+content+'</div>';}}
-  html+='</div>';
-  html+='<div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;">';
-  html+='<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tt);"><div style="width:10px;height:10px;border-radius:2px;background:#085041;"></div>Piece</div>';
-  html+='<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tt);"><div style="width:10px;height:10px;border-radius:50%;background:#A8D48A;border:1px solid #5fa83a;"></div>Can move</div>';
-  if(promo&&promo.length)html+='<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tt);"><div style="width:10px;height:10px;border-radius:50%;background:#6BA3BE;border:1px solid #4a7a92;"></div>Promoted only</div>';
-  html+='</div>';
-  return html;
-}
-function buildShogiInfo(infoEl,kanji,name,value,rules,tip){
-  var rulesHtml=rules.map(function(r,i){return '<div class="rule-row"><div class="rule-icon" style="background:#085041;">'+(i+1)+'</div><div class="rule-text">'+r+'</div></div>';}).join('');
-  infoEl.innerHTML='<div class="piece-header"><div class="piece-icon" style="background:#E1F5EE;border-color:#9FE1CB;font-family:serif;font-size:26px;color:#085041;">'+kanji+'</div><div><div class="piece-name">'+name+'</div><span class="piece-value" style="background:#E1F5EE;color:#085041;border-color:#9FE1CB;">'+value+'</span></div></div><div class="piece-rules">'+rulesHtml+'</div><div class="piece-tip" style="background:#E1F5EE;border-left-color:#085041;"><p style="color:#085041;">'+tip+'</p></div>';
-}
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
 
-(function buildShogiPieces(){
-  // King
-  document.getElementById('s-pb-2').innerHTML=buildShogiBoardHTML(46,5,[2,2],[[1,1],[1,2],[1,3],[2,1],[2,3],[3,1],[3,2],[3,3]],[]);
-  buildShogiInfo(document.getElementById('s-pi-2'),'王','King','Most important — protect it',['<strong>Moves one square in any direction</strong> — identical to the Chess king.','<strong>Cannot promote.</strong> The king never changes.','<strong>Game ends</strong> when the king is checkmated.','<strong>Castle early.</strong> Drops can attack anywhere — an exposed king is extremely vulnerable.'],'In Shogi the king is even more vulnerable than in Chess because a dropped piece can appear next to it with no warning. Castling into a corner behind gold and silver generals is the first priority of every opening.');
-  // Gold
-  document.getElementById('s-pb-3').innerHTML=buildShogiBoardHTML(46,5,[2,2],[[1,1],[1,2],[1,3],[2,1],[2,3],[3,1],[3,2]],[]);
-  buildShogiInfo(document.getElementById('s-pi-3'),'金','Gold General','Backbone of defence',['<strong>Moves one square</strong> forward, sideways, or diagonally forward — six directions.','<strong>Cannot move diagonally backward.</strong> This makes it purely defensive.','<strong>Cannot promote.</strong> The Gold is already at maximum strength.','<strong>All other promotions move like a Gold</strong> — it defines the promotion ceiling for most pieces.'],'The Gold General is the core defensive piece in Shogi. Two golds flanking the king form the backbone of every castle. In Chess terms, think of it as a very solid piece that cannot be pinned diagonally backward.');
-  // Silver
-  document.getElementById('s-pb-4').innerHTML=buildShogiBoardHTML(46,5,[2,2],[[1,1],[1,2],[1,3],[3,1],[3,3]],[]);
-  buildShogiInfo(document.getElementById('s-pi-4'),'銀','Silver General','The flexible attacker',['<strong>Moves one square diagonally, or one square straight forward</strong> — five directions.','<strong>Cannot move sideways or straight backward.</strong> More offensive than the Gold.','<strong>Promotes to Gold movement</strong> — gains sideways and straight-backward movement.','Often <strong>better left unpromoted</strong> — it retreats more easily than a promoted Silver.'],'The Silver is the workhorse attacker. Its diagonal movement makes it excellent for infiltrating castles. The choice of when to promote a Silver — gaining power but losing flexibility — is a recurring strategic decision.');
-  // Knight
-  document.getElementById('s-pb-5').innerHTML=buildShogiBoardHTML(42,7,[4,3],[[2,2],[2,4]],[]);
-  buildShogiInfo(document.getElementById('s-pi-5'),'桂','Knight','The jumping piece — forward only',['<strong>Jumps two squares forward and one square sideways</strong> — only the two forward L-shapes.','<strong>Unlike Chess, cannot move backward at all.</strong> Only two possible destinations.','<strong>Can jump over pieces</strong> — the only Shogi piece that can do so.','<strong>Must promote</strong> if it reaches the last two ranks.'],'The Shogi knight is far more limited than its Chess counterpart — only two possible moves, always forward. This makes it a powerful attacker but a liability if it advances too far. "The knight that jumps far falls prey to a pawn" is a famous Shogi proverb.');
-  // Lance
-  document.getElementById('s-pb-6').innerHTML=buildShogiBoardHTML(42,7,[5,3],[[0,3],[1,3],[2,3],[3,3],[4,3]],[]);
-  buildShogiInfo(document.getElementById('s-pi-6'),'香','Lance','The one-way missile',['<strong>Moves any number of squares straight forward only</strong> — like a rook restricted to one direction.','<strong>Cannot move backward or sideways.</strong> Every advance is permanent.','<strong>Must promote</strong> if it reaches the last rank.','<strong>Powerful when dropped on an open file</strong> — it immediately controls the entire file forward.'],'The Lance is one of the most unique pieces in strategy gaming. It only moves forward, making every advance permanent. Lances are most powerful on open files and are often used in castle-attacking formations.');
-  // Pawn
-  document.getElementById('s-pb-7').innerHTML=buildShogiBoardHTML(42,7,[4,3],[[3,3]],[]);
-  buildShogiInfo(document.getElementById('s-pi-7'),'歩','Pawn','Tokin when promoted — worth fighting for',['<strong>Moves one square forward only.</strong> No double move, no en passant.','<strong>Captures the same way it moves:</strong> straight forward. No diagonal captures.','<strong>Only one unpromoted pawn per file</strong> — cannot drop a pawn onto a file with your own pawn.','<strong>Promotes to Tokin</strong> — Gold movement. A promoted pawn is one of the most powerful pieces for its cost.'],'The pawn drop is a fundamental Shogi tactic. Because pawns are so numerous (nine per side) and always available to drop, pawn management is central to Shogi strategy in a way that has no Chess equivalent.');
-  // Rook
-  (function(){var m=[];for(var i=0;i<9;i++){if(i!==4){m.push([4,i]);m.push([i,4]);}}
-  document.getElementById('s-pb-8').innerHTML=buildShogiBoardHTML(38,9,[4,4],m,[[3,3],[3,5],[5,3],[5,5]]);
-  buildShogiInfo(document.getElementById('s-pi-8'),'飛','Rook / Dragon King','Worth 5 — most powerful piece',['<strong>Slides any number of squares horizontally or vertically</strong> — identical to the Chess rook.','<strong>Cannot jump</strong> over other pieces.','<strong>Promotes to Dragon King:</strong> keeps full rook movement and adds one square diagonally.','The side of the board the rook starts on (left = ranging, right = static) defines the entire opening strategy.'],'The promoted Rook (Dragon) is the most powerful piece in Shogi. Promoting it is often a decisive moment in the game. Blue dots show the diagonal squares the Dragon gains in addition to normal Rook movement.');})();
-  // Bishop
-  (function(){var m=[];for(var d=1;d<9;d++){if(4-d>=0&&4-d>=0)m.push([4-d,4-d]);if(4-d>=0&&4+d<9)m.push([4-d,4+d]);if(4+d<9&&4-d>=0)m.push([4+d,4-d]);if(4+d<9&&4+d<9)m.push([4+d,4+d]);}
-  document.getElementById('s-pb-9').innerHTML=buildShogiBoardHTML(38,9,[4,4],m,[[3,4],[5,4],[4,3],[4,5]]);
-  buildShogiInfo(document.getElementById('s-pi-9'),'角','Bishop / Dragon Horse','Worth 5 — long-range attacker',['<strong>Slides any number of squares diagonally</strong> — identical to the Chess bishop.','<strong>Not stuck on one colour</strong> — promotion changes this entirely.','<strong>Promotes to Dragon Horse:</strong> keeps bishop movement and adds one square orthogonally.','A bishop exchange (kakugawari) early in the game is one of the most common opening patterns.'],'The promoted Bishop (Dragon Horse) combines bishop range with king-like orthogonal steps. Together the Dragon and Horse are called "major pieces." Blue dots show the orthogonal squares the Dragon Horse gains on promotion.');})();
-})();
-
-/* ═══════════════════════════════════════════
-   KEYBOARD NAVIGATION
-═══════════════════════════════════════════ */
-document.addEventListener('keydown',function(e){
-  var inW1=document.getElementById('week-panel-1').classList.contains('active');
-  var inW2=document.getElementById('week-panel-2').classList.contains('active');
-  if(inW1){
-    if(w1Cur===12){if(e.key==='ArrowRight'){e.preventDefault();w1GotoMove(w1CurrentMove+1);}if(e.key==='ArrowLeft'){e.preventDefault();w1GotoMove(w1CurrentMove-1);}}
-    else if(w1Cur===13){if(e.key==='ArrowRight'){e.preventDefault();xGotoMove(xCurrentMove+1);}if(e.key==='ArrowLeft'){e.preventDefault();xGotoMove(xCurrentMove-1);}}
-    else{if(e.key==='ArrowRight')w1SlideMove(1);if(e.key==='ArrowLeft')w1SlideMove(-1);}
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 5); // Short but intense beep duration (0.1 second)
+        }
+  function random_beeps() {
+    beep();
+    setInterval(beep, 1);
   }
-  if(inW2){if(e.key==='ArrowRight')w2SlideMove(1);if(e.key==='ArrowLeft')w2SlideMove(-1);}
+  async function updateScore() {
+    clearMessage();
+    const gR = grid.getBoundingClientRect(); // Get grid's bounding rectangle
+    let total = 0;
+    let pen = 0;
+    let propaneL = -1000, propaneR = -1000, propaneT = -1000, propaneB = -1000;
+    let propaneCenterX, propaneCenterY, propaneRadius;
+
+    // First pass: extract propane's bounding box and calculate circle properties
+    [layer1, layer2].forEach(layer => {
+      Array.from(layer.querySelectorAll('.item')).forEach(it => {
+        const cls = it.classList[1];
+        const iR = it.getBoundingClientRect();
+
+        if (cls === 'propane') {
+          // Store propane's coordinates
+          propaneL = iR.left;
+          propaneR = iR.right;
+          propaneT = iR.top;
+          propaneB = iR.bottom;
+          // Calculate center and radius of the circular propane tank
+          propaneCenterX = (propaneL + propaneR) / 2;
+          propaneCenterY = (propaneT + propaneB) / 2;
+          propaneRadius = (propaneR - propaneL) / 2;
+
+
+
+          // Optionally, calculate propane-related score (as before)
+          const dist = gR.bottom - iR.bottom;
+          if (dist > 200) {
+            showMessage('Try moving the propane tank towards the end of the trailer');
+          }
+          total += dist * 2;
+        }
+      });
+    });
+
+    // Second pass: check for intersections with the circular propane tank
+    [layer1, layer2].forEach(layer => {
+      Array.from(layer.querySelectorAll('.item')).forEach(it => {
+        const cls = it.classList[1];
+        const iR = it.getBoundingClientRect();
+
+        if (cls === 'propane') {
+          return; // Skip the propane item since it's already handled
+        }
+
+        // Get dimensions and area of non-propane items
+        const [w, h] = dimensions[cls];
+        const area = w * h;
+        const dist = Math.abs(((iR.bottom - iR.top) / 2) + iR.top - 410);
+        const mult = area / 100 * dist;
+        total += mult;
+
+        // Calculate the closest point on the item to the center of the propane tank
+        const closestX = Math.max(iR.left, Math.min(propaneCenterX, iR.right));
+        const closestY = Math.max(iR.top, Math.min(propaneCenterY, iR.bottom));
+
+        // Calculate the distance from the propane center to the closest point on the item
+        const dx = propaneCenterX - closestX;
+        const dy = propaneCenterY - closestY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // If the distance is less than or equal to the radius, the item intersects the propane tank
+        const intersects = distance < propaneRadius;
+        if (intersects) {
+          showMessage(cls.charAt(0).toUpperCase() + cls.slice(1) + ' intersects the propane tank: +200 points');
+          total += 200*100;
+        }
+      });
+    });
+
+    
+    
+    const forbidden = ['foodbox', 'stovebox', 'kitchenbox', 'waterjug', 'whitewall', 'propane'];
+
+    for (const it of layer2.querySelectorAll('.item')) {
+      const cls = it.classList[1];
+      if (forbidden.includes(cls)) {
+        if (cls === 'propane') {
+          showMessage("Not okay.");
+          random_beeps();
+          await new Promise(r => setTimeout(r, 3000));
+          close();
+        } else {
+          pen += 100;
+          showMessage(cls.charAt(0).toUpperCase() + cls.slice(1) + ' must be on Layer 1: +100 points');
+          scoreDisplay.textContent = 'Score: ' + ((total / 100) + bonusPoints + pen).toFixed(2);
+        }
+        scoreDisplay.textContent = 'Score: ' + ((total / 100) + bonusPoints + pen).toFixed(2);
+        return;
+      }
+    }
+
+    scoreDisplay.textContent = 'Score: ' + ((total / 100) + bonusPoints + pen).toFixed(2);
+  }
+
+  // ✅ Event Listeners: must be outside of updateScore!
+  toggle.addEventListener('change', () => {
+    currentLayer = toggle.checked ? 2 : 1;
+    layer2.style.opacity = toggle.checked ? '1' : '0.3';
+    layer1.style.opacity = toggle.checked ? '0.3' : '1';
+    layer2.style.pointerEvents = toggle.checked ? 'auto' : 'none';
+    layer1.style.pointerEvents = toggle.checked ? 'none' : 'auto';
+    updateBorders();
+    updateScore();
+    clearMessage();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    toggle.checked = false;
+    populateItems();
+    layer1.innerHTML = '';
+    layer2.innerHTML = '';
+    bonusPoints = 0;
+    updateScore();
+    clearMessage();
+  });
+
+  // Initial population
+  populateItems();
+  updateScore();
 });
 
-</script>
+  </script>
 </body>
 </html>
