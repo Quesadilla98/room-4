@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Newspaper Page Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink: #000;
+  --paper: #fff;
+  --rule: #000;
+  --muted: #444;
+  --accent: #000;
+  --sidebar-bg: #1a1a1a;
+  --sidebar-text: #ddd;
+  --toolbar-bg: #2c2c2c;
+  --toolbar-text: #eee;
+  --btn-hover: #444;
+  --active-tpl: #f0c040;
+}
+
+body {
+  font-family: 'EB Garamond', Georgia, serif;
+  background: #3a3a3a;
+  color: var(--ink);
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 200px;
+  min-width: 200px;
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  border-right: 1px solid #000;
+}
+
+.sidebar-logo {
+  padding: 14px 12px 10px;
+  font-family: 'UnifrakturMaguntia', serif;
+  font-size: 18px;
+  color: var(--active-tpl);
+  border-bottom: 1px solid #333;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+}
+.sidebar-logo span { display: block; font-family: Arial, sans-serif; font-size: 9px; color: #777; text-transform: uppercase; letter-spacing: 0.12em; margin-top: 2px; }
+
+.sidebar-section { padding: 10px 10px 4px; font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 0.15em; font-family: Arial, sans-serif; }
+
+.tpl-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  color: var(--sidebar-text);
+  font-size: 11px;
+  font-family: Arial, sans-serif;
+  text-align: left;
+  width: 100%;
+  transition: background 0.12s, border-color 0.12s;
+}
+.tpl-btn:hover { background: #2d2d2d; border-left-color: #555; }
+.tpl-btn.active { background: #2d2d2d; border-left-color: var(--active-tpl); color: #fff; }
+
+.tpl-thumb {
+  width: 32px; height: 24px;
+  border: 1px solid #555;
+  background: #eee;
+  border-radius: 2px;
+  display: flex; gap: 1px; padding: 2px;
+  flex-shrink: 0;
+}
+.tc { background: #aaa; border-radius: 1px; flex: 1; }
+.tc.d { background: #777; }
+.tc.img { background: #999; }
+
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.toolbar {
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid #111;
+  padding: 7px 12px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.toolbar label { font-size: 10px; color: #aaa; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 0.08em; }
+.toolbar input, .toolbar select {
+  font-size: 12px; padding: 4px 8px;
+  background: #3a3a3a; color: #eee;
+  border: 1px solid #555; border-radius: 3px;
+  font-family: Arial, sans-serif;
+}
+.toolbar input:focus { outline: none; border-color: var(--active-tpl); }
+.tb-sep { width: 1px; height: 22px; background: #444; margin: 0 2px; }
+.toolbar-right { margin-left: auto; display: flex; gap: 6px; }
+.btn-action {
+  padding: 5px 14px; font-size: 11px; font-family: Arial, sans-serif;
+  border: 1px solid #555; border-radius: 3px; cursor: pointer;
+  background: #444; color: #eee;
+  transition: background 0.1s;
+}
+.btn-action:hover { background: #555; }
+.btn-action.primary { background: var(--active-tpl); color: #111; border-color: var(--active-tpl); font-weight: 700; }
+.btn-action.primary:hover { background: #d4a800; }
+
+.canvas-wrap {
+  flex: 1; overflow: auto;
+  background: #555;
+  padding: 24px;
+  display: flex; justify-content: center; align-items: flex-start;
+}
+
+.page {
+  width: 900px;
+  height: 1200px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'EB Garamond', Georgia, serif;
+  padding: 36px 44px 36px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.page-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.page-grow { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.page-grow > .grid { flex: 1; min-height: 0; }
+.page-grow > .grid > .gc { overflow: hidden; }
+.page-footer { margin-top: auto; padding-top: 8px; }
+
+.page-header { text-align: center; margin-bottom: 0; }
+.page-edition { font-size: 10px; font-family: Arial, sans-serif; font-style: italic; color: var(--muted); margin-bottom: 3px; }
+.page-masthead {
+  font-family: 'UnifrakturMaguntia', serif;
+  font-size: 56px; line-height: 1;
+  color: var(--ink);
+  padding: 6px 0 4px;
+  border-top: 2.5px solid var(--rule);
+  border-bottom: 3px double var(--rule);
+  margin-bottom: 3px;
+}
+.page-meta {
+  display: flex; justify-content: space-between;
+  font-size: 9.5px; font-family: Arial, sans-serif;
+  border-bottom: 1px solid var(--rule);
+  padding: 3px 0 4px;
+  margin-bottom: 0;
+}
+
+.rule { border: none; border-top: 1px solid var(--rule); margin: 7px 0; }
+.rule-dbl { border: none; border-top: 3px double var(--rule); margin: 8px 0; }
+.rule-thick { border: none; border-top: 2px solid var(--rule); margin: 7px 0; }
+
+.banner-head {
+  text-align: center;
+  font-family: 'Oswald', sans-serif;
+  font-size: 32px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  line-height: 1.1;
+  padding: 8px 0 6px;
+  border-bottom: 2px solid var(--rule);
+  margin-bottom: 6px;
+}
+.banner-sub {
+  text-align: center;
+  font-size: 13px; font-style: italic;
+  font-family: 'Playfair Display', Georgia, serif;
+  margin-bottom: 7px; color: #333;
+}
+
+.kicker { font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.12em; font-family: Arial, sans-serif; color: var(--accent); margin-bottom: 2px; font-weight: 700; }
+.art-head { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 900; line-height: 1.15; margin-bottom: 4px; }
+.art-head.lg { font-size: 22px; }
+.art-head.sm { font-size: 13px; }
+.art-byline { font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.06em; font-family: Arial, sans-serif; color: var(--muted); border-bottom: 0.5px solid #999; padding-bottom: 3px; margin-bottom: 6px; }
+.art-body { font-size: 10.5px; line-height: 1.58; font-family: 'EB Garamond', Georgia, serif; text-align: justify; white-space: normal; }
+.art-body p { margin-bottom: 5px; }
+.drop-cap { font-family: 'Playfair Display', serif; font-size: 48px; float: left; line-height: 0.76; margin: 2px 3px 0 0; font-weight: 700; color: var(--ink); }
+
+.pullquote {
+  border-top: 2px solid var(--rule); border-bottom: 2px solid var(--rule);
+  padding: 9px 8px; margin: 9px 0;
+  text-align: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 14px; font-style: italic; font-weight: 700;
+  line-height: 1.35; color: #000;
+}
+
+.img-box {
+  background: #e0e0e0; border: 0.5px solid #888;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 9px; color: #555; font-family: Arial, sans-serif;
+  margin: 5px 0; cursor: pointer; position: relative;
+  overflow: hidden;
+}
+.img-box input { position: absolute; opacity: 0; inset: 0; cursor: pointer; width: 100%; height: 100%; }
+.img-box img { width: 100%; height: 100%; object-fit: cover; display: block; position: absolute; inset: 0; }
+.img-box .img-hint { pointer-events: none; z-index: 1; text-align: center; padding: 4px; }
+.img-box .img-hint svg { display: block; margin: 0 auto 4px; opacity: 0.5; }
+
+.caption { font-size: 8.5px; color: #555; font-family: Arial, sans-serif; font-style: italic; margin-top: 2px; margin-bottom: 5px; line-height: 1.4; }
+
+.grid { display: grid; gap: 0; }
+.gc { padding: 0 10px; border-right: 0.5px solid #666; }
+.gc:first-child { padding-left: 0; }
+.gc:last-child { border-right: none; }
+
+.comic-zone {
+  border: 1.5px dashed #aaa; background: #f0f0f0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #888; font-family: Arial, sans-serif;
+  cursor: pointer; position: relative; margin: 4px 0;
+  overflow: hidden;
+}
+.comic-zone input { position: absolute; opacity: 0; inset: 0; cursor: pointer; width: 100%; height: 100%; }
+.comic-zone img { width: 100%; height: 100%; object-fit: contain; display: block; position: absolute; inset: 0; }
+.comic-zone .cz-hint { pointer-events: none; z-index: 1; text-align: center; }
+
+.page-footer { border-top: 2px solid var(--rule); padding-top: 4px; font-size: 8.5px; font-family: Arial, sans-serif; display: flex; justify-content: space-between; color: var(--muted); }
+
+.black-bar { background: #000; color: #fff; text-align: center; padding: 6px 12px; font-family: 'Oswald', sans-serif; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 8px; }
+
+[contenteditable="true"] { white-space: normal; word-spacing: normal; }
+[contenteditable="true"]:focus { outline: 1.5px dashed rgba(0,0,0,0.4); outline-offset: 1px; border-radius: 1px; }
+
+body.placing-photo .canvas-wrap { cursor: crosshair; }
+body.placing-photo #btn-add-photo { background: var(--active-tpl); color: #111; border-color: var(--active-tpl); }
+.place-hint {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+  background: #111; color: #fff; font-family: Arial, sans-serif; font-size: 11px;
+  padding: 6px 16px; border-radius: 20px; pointer-events: none; z-index: 9999;
+  opacity: 0; transition: opacity 0.15s;
+}
+body.placing-photo .place-hint { opacity: 1; }
+
+.placed-photo {
+  position: absolute;
+  border: 1.5px solid #777;
+  background: #e0e0e0;
+  overflow: visible;
+  cursor: move;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  z-index: 10;
+}
+.placed-photo .ph-inner {
+  width: 100%; height: 100%; overflow: hidden; position: relative;
+}
+.placed-photo img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+.placed-photo .ph-hint {
+  width: 100%; height: 100%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-size: 9px; color: #777; font-family: Arial, sans-serif; text-align: center;
+  gap: 4px; pointer-events: none;
+}
+.placed-photo .ph-upload {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.placed-photo .ph-controls {
+  position: absolute; top: -26px; right: 0; display: flex; gap: 3px;
+  opacity: 0; transition: opacity 0.15s; z-index: 20;
+}
+.placed-photo:hover .ph-controls { opacity: 1; }
+.ph-btn {
+  background: rgba(30,30,30,0.85); color: #fff; border: none; border-radius: 3px;
+  font-size: 10px; padding: 2px 7px; cursor: pointer; font-family: Arial, sans-serif; line-height: 1.6; white-space: nowrap;
+}
+.ph-btn:hover { background: #000; }
+.ph-resize {
+  position: absolute; bottom: -8px; right: -8px;
+  width: 16px; height: 16px; cursor: se-resize;
+  background: #555; border-radius: 50%;
+  z-index: 20; border: 2px solid #ccc;
+}
+#page { position: relative; }
+
+#export-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+  z-index: 99999; align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+}
+#export-overlay.active { display: flex; }
+#export-overlay .exp-box {
+  background: #222; color: #eee; font-family: Arial, sans-serif; font-size: 13px;
+  padding: 28px 40px; border-radius: 8px; text-align: center; min-width: 260px;
+}
+#export-overlay .exp-title { font-size: 15px; font-weight: 700; margin-bottom: 10px; color: var(--active-tpl); }
+#export-overlay .exp-bar-wrap { background: #444; border-radius: 4px; height: 6px; margin-top: 12px; overflow: hidden; }
+#export-overlay .exp-bar { background: var(--active-tpl); height: 100%; width: 0%; transition: width 0.3s; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="place-hint">Click anywhere on the page to place the photo box — press Esc to cancel</div>
+
+<div id="export-overlay">
+  <div class="exp-box">
+    <div class="exp-title">Exporting your newspaper...</div>
+    <div id="exp-status">Preparing...</div>
+    <div class="exp-bar-wrap"><div class="exp-bar" id="exp-bar"></div></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<div class="sidebar">
+  <div class="sidebar-logo">
+    The Press<span>Newspaper Page Builder</span>
+  </div>
+
+  <div class="sidebar-section">Article Layouts</div>
+
+  <button class="tpl-btn active" onclick="load('art1',this)">
+    <div class="tpl-thumb"><div class="tc"></div><div class="tc"></div><div class="tc"></div></div>
+    Article I — 3 Column
+  </button>
+  <button class="tpl-btn" onclick="load('art2',this)">
+    <div class="tpl-thumb"><div class="tc d" style="flex:1.4;"></div><div class="tc"></div></div>
+    Article II — Lead+Side
+  </button>
+  <button class="tpl-btn" onclick="load('art3',this)">
+    <div class="tpl-thumb" style="flex-direction:column;gap:1px;"><div class="tc" style="height:35%;width:100%;"></div><div style="display:flex;flex:1;gap:1px;width:100%;"><div class="tc"></div><div class="tc"></div><div class="tc"></div></div></div>
+    Article III — Banner+3
+  </button>
+  <button class="tpl-btn" onclick="load('art4',this)">
+    <div class="tpl-thumb"><div class="tc" style="flex:1.5;"></div><div class="tc img" style="flex:1;"></div></div>
+    Article IV — Feature
+  </button>
+  <button class="tpl-btn" onclick="load('art5',this)">
+    <div class="tpl-thumb" style="flex-direction:column;gap:1px;"><div class="tc img" style="height:45%;width:100%;"></div><div style="display:flex;flex:1;gap:1px;width:100%;"><div class="tc"></div><div class="tc"></div></div></div>
+    Article V — Photo Lead
+  </button>
+  <button class="tpl-btn" onclick="load('art6',this)">
+    <div class="tpl-thumb"><div class="tc"></div><div class="tc"></div></div>
+    Article VI — 2 Column
+  </button>
+  <button class="tpl-btn" onclick="load('art7',this)">
+    <div class="tpl-thumb" style="flex-direction:column;gap:1px;"><div class="tc img" style="height:50%;width:100%;"></div><div style="display:flex;flex:1;gap:1px;"><div class="tc"></div><div class="tc"></div></div></div>
+    Article VII — Big Photo
+  </button>
+  <button class="tpl-btn" onclick="load('art8',this)">
+    <div class="tpl-thumb"><div class="tc"></div><div class="tc img d"></div><div class="tc"></div></div>
+    Article VIII — Center Img
+  </button>
+  <button class="tpl-btn" onclick="load('art9',this)">
+    <div class="tpl-thumb"><div class="tc"></div><div class="tc"></div><div class="tc"></div><div class="tc"></div></div>
+    Article IX — 4 Column
+  </button>
+  <button class="tpl-btn" onclick="load('art10',this)">
+    <div class="tpl-thumb" style="flex-direction:column;gap:1px;"><div style="display:flex;flex:1;gap:1px;"><div class="tc img" style="flex:0.6;"></div><div class="tc" style="flex:1;"></div><div class="tc img" style="flex:0.6;"></div></div><div class="tc" style="height:28%;width:100%;"></div></div>
+    Article X — Gallery
+  </button>
+
+  <div class="sidebar-section" style="margin-top:6px;">Special Pages</div>
+
+  <button class="tpl-btn" onclick="load('front',this)">
+    <div class="tpl-thumb" style="flex-direction:column;gap:1px;"><div class="tc d" style="height:12%;width:100%;"></div><div class="tc" style="height:22%;width:100%;"></div><div style="display:flex;flex:1;gap:1px;"><div class="tc img"></div><div class="tc"></div><div class="tc"></div></div></div>
+    Front Page Classic
+  </button>
+  <button class="tpl-btn" onclick="load('comics',this)">
+    <div class="tpl-thumb" style="flex-direction:column;gap:1px;"><div class="tc d" style="height:15%;width:100%;"></div><div class="tc img" style="height:30%;width:100%;border:1px dashed #aaa;"></div><div style="display:flex;flex:1;gap:1px;"><div class="tc img"></div><div class="tc img"></div></div></div>
+    Comics Page
+  </button>
+  <button class="tpl-btn" onclick="load('opinion',this)">
+    <div class="tpl-thumb"><div class="tc"></div><div class="tc"></div></div>
+    Opinion / Editorial
+  </button>
+  <button class="tpl-btn" onclick="load('sports',this)">
+    <div class="tpl-thumb" style="flex-direction:column;gap:1px;"><div class="tc d" style="height:18%;width:100%;"></div><div style="display:flex;flex:1;gap:1px;"><div class="tc img"></div><div class="tc"></div></div></div>
+    Sports Page
+  </button>
+  <button class="tpl-btn" onclick="load('obituary',this)">
+    <div class="tpl-thumb"><div class="tc img" style="flex:0.7;"></div><div class="tc" style="flex:1.3;"></div></div>
+    Obituary Page
+  </button>
+</div>
+
+<div class="main">
+  <div class="toolbar">
+    <label>Masthead</label>
+    <input id="i-mast" value="Twin Rivers Times" style="width:155px;" oninput="updateField('.page-masthead',this.value)">
+    <div class="tb-sep"></div>
+    <label>Date</label>
+    <input id="i-date" value="April 16, 2026" style="width:115px;" oninput="updateField('.meta-date',this.value)">
+    <div class="tb-sep"></div>
+    <label>City / Location</label>
+    <input id="i-city" value="Eugene, OR" style="width:145px;" oninput="updateField('.meta-city',this.value)">
+    <div class="tb-sep"></div>
+    <label>Edition</label>
+    <input id="i-ed" value="Vol. 1  No. 1" style="width:90px;" oninput="updateField('.meta-ed',this.value)">
+    <div class="tb-sep"></div>
+    <label>Text Size</label>
+    <select id="i-textsize" onchange="applyTextSize(this.value)" style="width:90px;">
+      <option value="xs">Extra Small</option>
+      <option value="sm">Small</option>
+      <option value="md" selected>Medium</option>
+      <option value="lg">Large</option>
+      <option value="xl">Extra Large</option>
+    </select>
+    <div class="tb-sep"></div>
+    <button class="btn-action" id="btn-add-photo" onclick="startPhotoPlace()" title="Click then click on the page to place a photo box">📷 Add Photo</button>
+    <div class="toolbar-right">
+      <button class="btn-action" onclick="document.execCommand('undo')">↩ Undo</button>
+      <button class="btn-action primary" id="btn-export" onclick="exportBothSizes()">&#11015; Export (9&times;12 &amp; 12&times;18)</button>
+    </div>
+  </div>
+
+  <div class="canvas-wrap">
+    <div class="page" id="page"></div>
+  </div>
+</div>
+
+<script>
+const L1 = "The confluence of the Green and Colorado Rivers lies 32 miles southwest of Moab, Utah. The Green River originates in Wyoming and travels over 700 miles before joining the Colorado, passing through Flaming Gorge Reservoir along the way. White arrows show the direction of combined flow as the rivers merge within Canyonlands National Park.";
+const L2 = "John Wesley Powell had an expedition in 1869 to explore areas of what he called the Great Unknown of the Great Canyons in the American West. He first spent most of his time exploring the canyons of the Green and Colorado rivers in Utah. This expedition represents an amazing achievement for Powell and his team at the time. Before leaving Utah territory, Powell wrote that they had reached a historical point.";
+const L3 = "The Green River begins in the Wind River Mountains of Wyoming and travels more than 730 miles southward through Utah before meeting the Colorado. This junction marks one of the most historically and ecologically significant points in the American West, lying within Canyonlands National Park. Reservoir levels have reached a 30-year high due to record snowpack in the Rockies this winter season.";
+const L4 = "Officials at the Bureau of Reclamation confirmed that the dam is operating within normal parameters despite elevated water levels. Engineers have been monitoring the spillway gates around the clock as inflows from the upper basin continue to exceed seasonal averages by a wide margin. Communities downstream have been placed on flood watch as a precautionary measure.";
+
+// Text size scale multipliers applied to .art-body font-size (base 10.5px)
+const TEXT_SIZES = {
+  xs: 0.8,
+  sm: 0.9,
+  md: 1.0,
+  lg: 1.15,
+  xl: 1.3
+};
+
+function applyTextSize(size) {
+  const mult = TEXT_SIZES[size] || 1.0;
+  const basePx = 10.5 * mult;
+  const page = document.getElementById('page');
+  page.querySelectorAll('.art-body').forEach(el => {
+    el.style.fontSize = basePx.toFixed(1) + 'px';
+  });
+}
+
+function e(tag, attrs, inner) {
+  let s = `<${tag}`;
+  for (const [k,v] of Object.entries(attrs||{})) s += ` ${k}="${v}"`;
+  s += `>${inner||''}</${tag}>`;
+  return s;
+}
+function ce(cls, inner, extra) { return `<div class="${cls}" contenteditable="true"${extra||''}>${inner}</div>`; }
+
+function getMast() { return document.getElementById('i-mast').value || 'Twin Rivers Times'; }
+function getDate() { return document.getElementById('i-date').value || 'April 16, 2026'; }
+function getCity() { return document.getElementById('i-city').value || 'Eugene, OR'; }
+function getEd()   { return document.getElementById('i-ed').value   || 'Vol. 1 No. 1'; }
+
+function updateField(sel, val) {
+  document.querySelectorAll(sel).forEach(el => { if (!el.isContentEditable || !document.activeElement.isSameNode(el)) el.textContent = val; });
+}
+
+function header(section) {
+  return `
+  <div class="page-header">
+    ${ce('page-edition', section||'Morning Edition')}
+    ${ce('page-masthead', getMast())}
+    <div class="page-meta">
+      ${ce('meta-ed', getEd())}
+      ${ce('meta-city', getCity())}
+      ${ce('meta-date', getDate())}
+    </div>
+  </div>`;
+}
+
+function footer(pg) {
+  return `<div class="page-footer">
+    <span contenteditable="true">© ${getMast()} — All Rights Reserved</span>
+    <span contenteditable="true">Continued on Page ${pg||2} →</span>
+  </div>`;
+}
+
+function wrap(headerHtml, bodyHtml, footerHtml) {
+  return headerHtml +
+    '<div class="page-body"><div class="page-grow">' + bodyHtml + '</div>' +
+    footerHtml + '</div>';
+}
+
+function imgBox(h, lbl) {
+  return `<div class="img-box" style="height:${h}px;">
+    <div class="img-hint">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      Click to add photo
+    </div>
+    <input type="file" accept="image/*" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;" onchange="loadImg(event,this.parentElement)">
+  </div>`;
+}
+
+function comicZone(h, lbl) {
+  return `<div class="comic-zone" style="height:${h}px;">
+    <div class="cz-hint">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="1.5" style="display:block;margin:0 auto 3px;"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="8 10 12 14 16 10"/></svg>
+      ${lbl}
+    </div>
+    <input type="file" accept="image/*" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;" onchange="loadImg(event,this.parentElement)">
+  </div>`;
+}
+
+function loadImg(ev, container) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = e2 => {
+    const hint = container.querySelector('.img-hint, .cz-hint');
+    if (hint) hint.style.display = 'none';
+    let img = container.querySelector('img');
+    if (!img) {
+      img = document.createElement('img');
+      img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;z-index:0;pointer-events:none;';
+      container.insertBefore(img, container.firstChild);
+    }
+    img.src = e2.target.result;
+    ev.target.value = '';
+  };
+  r.readAsDataURL(file);
+}
+
+function article(size, head, body1, body2, byline) {
+  const b1 = body1||L1, b2 = body2||L2;
+  return `
+  ${ce('kicker','Special Report')}
+  ${ce('art-head'+(size?' '+size:''), head||'Click to Edit Headline')}
+  ${ce('art-byline','By '+(byline||'Staff Reporter')+' | '+getCity())}
+  <div class="art-body" contenteditable="true"><p>${b1}</p><p>${b2}</p></div>`;
+}
+
+const templates = {
+
+art1: ()=> wrap(
+  header('News'),
+  `${ce('banner-head','Dam Project Approved Amid Record Water Levels')}
+  ${ce('banner-sub','Officials say infrastructure upgrade will protect thousands of downstream residents')}
+  <hr class="rule">
+  ${ce('kicker','Breaking News')}
+  ${ce('art-head lg','Historic Vote Seals the Dam\'s Fate')}
+  ${ce('art-byline','By Jane Waters | Staff Reporter | '+getCity())}
+  <hr class="rule" style="margin:4px 0;">
+  <div class="grid" style="grid-template-columns:1fr 1fr 1fr; flex:1; align-items:stretch;">
+    <div class="gc">
+      <div class="art-body" contenteditable="true"><p>${L1}</p><p>${L2}</p></div>
+    </div>
+    <div class="gc">
+      ${imgBox(145,'Photo')}
+      ${ce('caption','Workers inspect the northern face of Flaming Gorge Dam. Photo: U.S. Bureau of Reclamation')}
+      <div class="art-body" contenteditable="true"><p>${L3}</p></div>
+    </div>
+    <div class="gc">
+      <div class="pullquote" contenteditable="true">"The dam has held for 60 years — but not without a cost to future generations."</div>
+      <div class="art-body" contenteditable="true"><p>${L4}</p><p>${L1}</p></div>
+    </div>
+  </div>`,
+  footer(2)
+),
+
+art2: ()=> wrap(
+  header('Features'),
+  `${ce('banner-head','Life at the Water\'s Edge')}
+  ${ce('banner-sub','A photographer\'s journey along the Green River from Wyoming to Utah')}
+  <hr class="rule">
+  <div class="grid" style="grid-template-columns:1.5fr 1fr; flex:1; align-items:stretch;">
+    <div class="gc">
+      ${ce('kicker','Feature')}
+      ${ce('art-head lg','The River That Built the West')}
+      ${ce('art-byline','By M. Siewney | Photo Correspondent | '+getCity())}
+      ${imgBox(240,'Main Feature Photo')}
+      ${ce('caption','The Green River winds past canyon walls carved over millennia. Photo: M. Siewney, 2026')}
+      <div class="art-body" contenteditable="true"><p>${L1}</p><p>${L2}</p></div>
+    </div>
+    <div class="gc">
+      <div class="pullquote" contenteditable="true">"Protecting the flow, preserving the future."</div>
+      ${imgBox(130,'Secondary Photo')}
+      ${ce('caption','High-water marks visible on canyon walls near the dam.')}
+      <div class="art-body" contenteditable="true"><p>${L3}</p><p>${L4}</p><p>${L1}</p></div>
+    </div>
+  </div>`,
+  footer(3)
+),
+
+art3: ()=> wrap(
+  header('Sunday Edition'),
+  `${ce('banner-head','The Great Dam of the American West: A Century of Power')}
+  ${ce('banner-sub','From New Deal dream to modern engineering marvel — the full story of Flaming Gorge')}
+  <hr class="rule">
+  ${ce('kicker','Long Read')}
+  ${ce('art-head lg','One Hundred Years in the Making')}
+  ${ce('art-byline','By the Editorial Staff | '+getCity())}
+  ${imgBox(190,'Wide Banner Photo — Full Width')}
+  ${ce('caption','Aerial view of Flaming Gorge Reservoir stretching 91 miles into the canyon on a clear spring morning.')}
+  <hr class="rule">
+  <div class="grid" style="grid-template-columns:1fr 1fr 1fr; flex:1; align-items:stretch;">
+    <div class="gc"><div class="art-body" contenteditable="true"><p>${L1}</p><p>${L2}</p></div></div>
+    <div class="gc"><div class="art-body" contenteditable="true"><p>${L3}</p><p>${L4}</p></div></div>
+    <div class="gc">
+      <div class="pullquote" contenteditable="true">"What we built here was not just a dam — it was a declaration of what this nation could do."</div>
+      <div class="art-body" contenteditable="true"><p>${L1}</p></div>
+    </div>
+  </div>`,
+  footer(4)
+),
+
+art4: ()=> wrap(
+  header('In Depth'),
+  `<hr class="rule">
+  <div class="grid" style="grid-template-columns:1.6fr 1fr; flex:1; align-items:stretch;">
+    <div class="gc">
+      ${ce('kicker','Investigative Report')}
+      ${ce('art-head lg','Inside the Fight Over Flaming Gorge Water Rights')}
+      ${ce('art-byline','By Maria Sandoval | Special Correspondent | '+getCity())}
+      ${imgBox(210,'Feature Photograph')}
+      ${ce('caption','The dam\'s spillway gates, last opened in 2011 during peak runoff season.')}
+      <div class="art-body" contenteditable="true"><p>${L1}</p><p>${L2}</p><p>${L3}</p></div>
+    </div>
+    <div class="gc">
+      <div class="pullquote" contenteditable="true">"Water is the oil of the 21st century — and we are running dry."</div>
+      ${imgBox(130,'Portrait Photo')}
+      ${ce('caption','Dam director Carl Webb addresses reporters at the Monday briefing.')}
+      <div class="art-body" contenteditable="true"><p>${L4}</p><p>${L1}</p><p>${L2}</p></div>
+    </div>
+  </div>`,
+  footer(2)
+),
+
+art5: ()=> wrap(
+  header('Breaking News'),
+  `${ce('banner-head','Flash Flood Watch Issued for Lower Basin')}
+  ${ce('banner-sub','Authorities urge evacuation of riverside communities as dam reaches 98% capacity')}
+  <hr class="rule">
+  ${imgBox(230,'Breaking News Photo — Full Width')}
+  ${ce('caption','Murky floodwaters approach the main access road below the dam, Sunday evening. Photo: AP / Dale Brooks')}
+  <hr class="rule">
+  ${ce('kicker','Developing Story')}
+  ${ce('art-head lg','Evacuation Orders Issued for Three Counties')}
+  ${ce('art-byline','By Dale Brooks | Staff Reporter | '+getCity())}
+  <div class="grid" style="grid-template-columns:1fr 1fr; flex:1; align-items:stretch;">
+    <div class="gc">
+      <div class="art-body" contenteditable="true"><p>${L1}</p><p>${L2}</p></div>
+    </div>
+    <div class="gc">
+      <div class="pullquote" contenteditable="true">"Leave now. Do not wait until morning." — Sheriff Dale Brooks, Green River County</div>
+      <div class="art-body" contenteditable="true"><p>${L3}</p><p>${L4}</p></div>
+    </div>
+  </div>`,
+  footer(2)
+),
+
+art6: ()=> wrap(
+  header('Local News'),
+  `${ce('banner-head','Town Council Approves Dam Renovation Budget')}
+  <hr class="rule">
+  ${ce('kicker','Local Government')}
+  ${ce('art-head lg','$42 Million Plan Moves Forward After Contentious Vote')}
+  ${ce('art-byline','By Alex Stone | City Hall Reporter | '+getCity())}
+  <hr class="rule" style="margin:4px 0;">
+  <div class="grid" style="grid-template-columns:1fr 1fr; flex:1; align-items:stretch;">
+    <div class="gc">
+      ${imgBox(175,'Council Meeting Photo')}
+      ${ce('caption','Council members vote 5-2 in favor of the renovation package at Tuesday\'s session.')}
+      <div class="art-body" contenteditable="true"><p>${L1}</p><p>${L2}</p></div>
+    </div>
+    <div class="gc">
+      <div class="pullquote" contenteditable="true">"This investment will protect our community for generations to come."</div>
+      <div class="art-body" contenteditable="true"><p>${L3}</p><p>${L4}</p><p>${L1}</p></div>
+    </div>
+  </div>`,
+  footer(3)
+),
+
+art7: ()=> wrap(
+  header('Photography'),
+  `${ce('banner-head','Breathtaking Views From the Gorge')}
+  <hr class="rule">
+  ${imgBox(305,'Full-Width Panoramic Photo')}
+  ${ce('caption','Looking south from the dam\'s observation deck at golden hour. Photo: M. Siewney, 2026 — Confluence of the Green and Colorado Rivers, Utah')}
+  <hr class="rule">
+  ${ce('kicker','Photo Essay')}
+  ${ce('art-head lg','A View Like No Other')}
+  ${ce('art-byline','By M. Siewney | Photo Correspondent | '+getCity())}
+  <div class="grid" style="grid-template-columns:1fr 1fr; flex:1; align-items:stretch;">
+    <div class="gc"><div class="art-body" contenteditable="true"><p>${L1}</p><p>${L2}</p></div></div>
+    <div class="gc">
+      <div class="pullquote" contenteditable="true">"There is no landscape on earth quite like the canyon country of Utah at dusk."</div>
+      <div class="art-body" contenteditable="true"><p>${L3}</p></div>
+    </div>
+  </div>`,
+  footer(5)
+),
+
+art8: ()=> wrap(
+  header('Science & Environment'),
+  `${ce('banner-head','The Endangered Species the Dam Cannot Ignore')}
+  ${ce('banner-sub','Biologists warn that rising reservoir levels may be the final blow for four native fish')}
+  <hr class="rule">
+  ${ce('kicker','Environment')}
+  ${ce('art-head lg','A River\'s Last Survivors')}
+  ${ce('art-byline','By Dr. Ellen Marsh | Science Correspondent | '+getCity())}
+  <hr class="rule" style="margin:4px 0;">
+  <div class="grid" style="grid-template-columns:1fr 1.3fr 1fr; flex:1; align-items:stretch;">
+    <div class="gc">
+      <div class="art-body" contenteditable="true"><p>${L1}</p><p>${L2}</p></div>
+    </div>
+    <div class="gc">
+      ${imgBox(220,'Center Featured Species Photo')}
+      ${ce('caption','A razorback sucker surfaces near the dam\'s south gate. Population estimated at under 10,000.')}
+      <div class="pullquote" contenteditable="true">"We have ten years to act — maybe less."</div>
+    </div>
+    <div class="gc">
+      <div class="art-body" contenteditable="true"><p>${L3}</p><p>${L4}</p></div>
+    </div>
+  </div>`,
+  footer(6)
+),
+
+art9: ()=> wrap(
+  header('Analysis'),
+  `${ce('banner-head','Dam Economics: Who Benefits, Who Pays')}
+  <hr class="rule">
+  ${ce('kicker','Economic Analysis')}
+  ${ce('art-head lg','The Hidden Costs of a Century-Old Bargain')}
+  ${ce('art-byline','By the Investigative Desk | '+getCity())}
+  <hr class="rule" style="margin:4px 0;">
+  <div class="grid" style="grid-template-columns:1fr 1fr 1fr 1fr; flex:1; align-items:stretch;">
+    <div class="gc">
+      <div class="art-body" style="font-size:10px;" contenteditable="true"><p>${L1}</p><p>${L2}</p></div>
+    </div>
+    <div class="gc">
+      <div class="art-body" style="font-size:10px;" contenteditable="true"><p>${L2}</p><p>${L3}</p></div>
+    </div>
+    <div class="gc">
+      <div class="pullquote" contenteditable="true">"The numbers don't lie — but they can be made to mislead."</div>
+      <div class="art-body" style="font-size:10px;" contenteditable="true"><p>${L3}</p></div>
+    </div>
+    <div class="gc">
+      <div class="art-body" style="font-size:10px;" contenteditable="true"><p>${L4}</p><p>${L1}</p></div>
+    </div>
+  </div>
+  <div class="black-bar" contenteditable="true">Continued — Full Economic Report: twinriverstimes.com/report</div>`,
+  footer(7)
+),
+
+art10: ()=> wrap(
+  header('Weekend Magazine'),
+  `${ce('banner-head','The Many Faces of Flaming Gorge')}
+  ${ce('banner-sub','One photographer, four seasons, one of America\'s most dramatic landscapes')}
+  <hr class="rule">
+  ${ce('kicker','Photo Feature')}
+  ${ce('art-head lg','A Year at the Edge of the Canyon')}
+  ${ce('art-byline','By M. Siewney | Photo Correspondent | '+getCity())}
+  <hr class="rule" style="margin:4px 0;">
+  <div class="grid" style="grid-template-columns:1fr 1.4fr 1fr; flex:1; align-items:stretch;">
+    <div class="gc">
+      ${imgBox(155,'Photo — Spring')}
+      ${ce('caption','Spring runoff, May 2025')}
+      ${imgBox(145,'Photo — Summer')}
+      ${ce('caption','Summer low water, August 2025')}
+      <div class="art-body" contenteditable="true"><p>${L1}</p></div>
+    </div>
+    <div class="gc">
+      ${imgBox(240,'Main Feature Photo')}
+      ${ce('caption','The dam at golden hour, October 2025. Utah Press Photo of the Year.')}
+      <div class="pullquote" contenteditable="true">"There is no landscape on earth quite like the canyon country of Utah at dusk."</div>
+      <div class="art-body" contenteditable="true"><p>${L2}</p></div>
+    </div>
+    <div class="gc">
+      ${imgBox(155,'Photo — Autumn')}
+      ${ce('caption','Autumn colours, October 2025')}
+      ${imgBox(145,'Photo — Winter')}
+      ${ce('caption','Winter freeze, January 2026')}
+      <div class="art-body" contenteditable="true"><p>${L3}</p></div>
+    </div>
+  </div>`,
+  footer(8)
+),
+
+front: ()=> wrap(
+  header(),
+  `<div style="background:#000;color:#fff;text-align:center;padding:5px;font-family:Arial,sans-serif;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:5px;" contenteditable="true">★ Late City Final Edition ★ All the News Worth Printing ★</div>
+  ${ce('banner-head','Dam Breaks: Town Braces for the Worst')}
+  ${ce('banner-sub','Governor declares state of emergency as officials warn of catastrophic flooding downstream')}
+  <hr class="rule">
+  ${ce('kicker','Breaking — State of Emergency')}
+  ${ce('art-head lg','Hour by Hour: A Crisis Unfolds at Flaming Gorge')}
+  ${ce('art-byline','By Staff Reporters | '+getCity())}
+  <hr class="rule" style="margin:4px 0;">
+  <div class="grid" style="grid-template-columns:1.5fr 1fr; flex:1; align-items:stretch;">
+    <div class="gc">
+      ${imgBox(230,'Lead Front Page Photo')}
+      ${ce('caption','Water surges over the eastern spillway for the first time in recorded history. Photo: AP, Sunday.')}
+      <div class="art-body" contenteditable="true"><p>${L1}</p><p>${L2}</p><p>${L3}</p></div>
+    </div>
+    <div class="gc">
+      <div class="pullquote" contenteditable="true">"We have never seen anything like this in 60 years." — Dam Director Carl Webb</div>
+      ${imgBox(130,'Secondary Photo')}
+      ${ce('caption','Residents evacuate with belongings on Sunday evening.')}
+      <div class="art-body" contenteditable="true"><p>${L4}</p><p>${L1}</p><p>${L2}</p></div>
+    </div>
+  </div>
+  <div class="black-bar" contenteditable="true">Continued on Page 2: The Full Story — Hour by Hour Account of the Crisis</div>`,
+  footer(2)
+),
+
+comics: ()=>`
+  <div class="page-header">
+    ${ce('page-edition','Sunday Comics Section')}
+    <div class="page-masthead" contenteditable="true" style="font-size:42px;">Twin Rivers Sunday Funnies</div>
+    <div class="page-meta">
+      ${ce('meta-ed',getEd())}
+      ${ce('','')}
+      ${ce('meta-date',getDate())}
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="page-grow">
+      <div style="text-align:center;font-size:9px;font-family:Arial;color:#888;margin:6px 0 4px;">Click any panel to upload your comic strip image</div>
+      ${comicZone(160,'Strip 1 — Full Width')}
+      <div class="grid" style="grid-template-columns:1fr 1fr; gap:6px; margin-top:5px;">
+        <div>${comicZone(140,'Strip 2')}</div>
+        <div>${comicZone(140,'Strip 3')}</div>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr 1fr; gap:6px; margin-top:5px;">
+        <div>${comicZone(100,'Strip 4')}</div>
+        <div>${comicZone(100,'Strip 5')}</div>
+        <div>${comicZone(100,'Strip 6')}</div>
+      </div>
+      ${comicZone(155,'Strip 7 — Full Width')}
+    </div>
+    <div class="page-footer">
+      <span contenteditable="true">All comics © their respective creators</span>
+      <span contenteditable="true">${getDate()}</span>
+    </div>
+  </div>`,
+
+opinion: ()=> wrap(
+  header('Opinion & Editorial'),
+  `${ce('banner-head','Opinion: The Dam We Deserve')}
+  ${ce('banner-sub','Decades of deferred maintenance have led us here. Now we must decide what comes next.')}
+  <hr class="rule">
+  <div class="grid" style="grid-template-columns:1fr 1.8fr; flex:1; align-items:stretch;">
+    <div class="gc">
+      ${imgBox(175,'Columnist Headshot')}
+      ${ce('caption','Dr. Ellen Marsh, Hydrologist, University of Utah')}
+      <div class="pullquote" contenteditable="true">"Infrastructure is the quiet language of civilization."</div>
+      <div style="font-size:8.5px;font-family:Arial;color:#555;margin-top:8px;" contenteditable="true">Dr. Ellen Marsh is a professor of hydrology at the University of Utah. She has advised the Bureau of Reclamation for over 20 years.</div>
+    </div>
+    <div class="gc">
+      ${ce('kicker','Guest Column')}
+      ${ce('art-head lg','A Dam Is Only as Strong as Our Political Will')}
+      ${ce('art-byline','By Dr. Ellen Marsh, Hydrologist | University of Utah')}
+      <div class="art-body" contenteditable="true"><p>${L1}</p><p>${L2}</p><p>${L3}</p><p>${L4}</p></div>
+    </div>
+  </div>
+  <hr class="rule-dbl">
+  <div style="font-size:8.5px;font-family:Arial;color:#555;padding:4px 0;" contenteditable="true">Letters to the editor: letters@twinriverstimes.com — Opinions expressed are those of the authors and do not represent the views of this publication.</div>`,
+  footer(8)
+),
+
+sports: ()=> wrap(
+  header('Sports'),
+  `<div style="background:#000;color:#fff;text-align:center;padding:7px;font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;" contenteditable="true">SPORTS</div>
+  ${ce('banner-head','Dam Drillers Win Regional Championship')}
+  ${ce('banner-sub','Local team clinches title in overtime thriller before sold-out crowd')}
+  <hr class="rule">
+  ${ce('kicker','Championship')}
+  ${ce('art-head lg','Drillers Take It All: A Night No One Will Forget')}
+  ${ce('art-byline','By Staff Sports Reporter | '+getCity())}
+  <hr class="rule" style="margin:4px 0;">
+  <div class="grid" style="grid-template-columns:1.4fr 1fr; flex:1; align-items:stretch;">
+    <div class="gc">
+      ${imgBox(215,'Game Action Photo')}
+      ${ce('caption','The Drillers celebrate after clinching the regional title in double overtime. Photo: Staff')}
+      <div class="art-body" contenteditable="true"><p>${L1}</p><p>${L2}</p><p>${L3}</p></div>
+    </div>
+    <div class="gc">
+      <div class="pullquote" contenteditable="true">"This team never quit. Never. That\'s the dam spirit." — Head Coach Bill Hoover</div>
+      ${imgBox(120,'Coach Photo')}
+      ${ce('caption','Head Coach Bill Hoover addresses the team after the win.')}
+      <div class="art-body" contenteditable="true"><p>${L4}</p><p>${L1}</p></div>
+    </div>
+  </div>`,
+  footer(9)
+),
+
+obituary: ()=> wrap(
+  header('Obituaries'),
+  `${ce('banner-head','In Memoriam')}
+  <hr class="rule">
+  <div class="grid" style="grid-template-columns:0.65fr 1fr; flex:1; align-items:stretch;">
+    <div class="gc">
+      ${imgBox(215,'Portrait Photograph')}
+      ${ce('caption','Harold R. Finch, 1942 – 2026')}
+      <div class="pullquote" contenteditable="true">"He gave his life to these waters, and these waters gave life to all of us."</div>
+      <div style="font-size:8.5px;font-family:Arial;color:#555;margin-top:8px;line-height:1.5;" contenteditable="true">Memorial service: Saturday, April 19, 2026 at 2:00 p.m. — First Presbyterian Church, Flaming Gorge. Reception to follow. In lieu of flowers, donations to the Green River Conservation Fund.</div>
+    </div>
+    <div class="gc">
+      ${ce('kicker','Obituary')}
+      ${ce('art-head lg','Harold R. Finch, 85, Dam Engineer Who Shaped the West')}
+      ${ce('art-byline','Staff Report | '+getCity())}
+      <div class="art-body" contenteditable="true"><p>${L1}</p><p>${L2}</p><p>${L3}</p><p>${L4}</p></div>
+    </div>
+  </div>`,
+  footer(10)
+)
+
+};
+
+document.addEventListener('paste', function(e) {
+  const target = e.target.closest('[contenteditable="true"]');
+  if (!target) return;
+  e.preventDefault();
+  let text = (e.clipboardData || window.clipboardData).getData('text/plain');
+  text = text.replace(/[\r\n\t]+/g, ' ').replace(/ {2,}/g, ' ').trim();
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+  const textNode = document.createTextNode(text);
+  range.insertNode(textNode);
+  range.setStartAfter(textNode);
+  range.setEndAfter(textNode);
+  sel.removeAllRanges();
+  sel.addRange(range);
+});
+
+function applyDropCaps() {
+  document.querySelectorAll('.art-body').forEach(body => {
+    const firstP = body.querySelector('p');
+    if (!firstP) return;
+    const text = firstP.textContent.trim();
+    if (!text.length) return;
+    if (firstP.querySelector('.drop-cap')) return;
+    const first = text[0];
+    const rest = firstP.innerHTML.slice(firstP.innerHTML.indexOf(first) + 1);
+    firstP.innerHTML = `<span class="drop-cap">${first}</span>${rest}`;
+  });
+}
+
+function load(name, btn) {
+  document.getElementById('page').innerHTML = templates[name]();
+  document.querySelectorAll('.tpl-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  applyDropCaps();
+  // Re-apply current text size after loading a new template
+  applyTextSize(document.getElementById('i-textsize').value);
+}
+
+load('art1', document.querySelector('.tpl-btn'));
+
+let placingPhoto = false;
+
+function startPhotoPlace() {
+  placingPhoto = !placingPhoto;
+  document.body.classList.toggle('placing-photo', placingPhoto);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && placingPhoto) {
+    placingPhoto = false;
+    document.body.classList.remove('placing-photo');
+  }
+});
+
+document.querySelector('.canvas-wrap').addEventListener('click', function(e) {
+  if (!placingPhoto) return;
+  const page = document.getElementById('page');
+  const pageRect = page.getBoundingClientRect();
+  const x = e.clientX - pageRect.left;
+  const y = e.clientY - pageRect.top;
+  if (x < 0 || y < 0 || x > pageRect.width || y > pageRect.height) return;
+  e.stopPropagation();
+  placingPhoto = false;
+  document.body.classList.remove('placing-photo');
+  createPlacedPhoto(Math.round(x - 80), Math.round(y - 60), 160, 120);
+});
+
+function createPlacedPhoto(x, y, w, h) {
+  const page = document.getElementById('page');
+  const box = document.createElement('div');
+  box.className = 'placed-photo';
+  box.style.cssText = 'left:' + x + 'px; top:' + y + 'px; width:' + w + 'px; height:' + h + 'px;';
+  box.innerHTML =
+    '<div class="ph-controls">' +
+      '<button class="ph-btn" onclick="triggerUpload(this)">&#128247; Upload</button>' +
+      '<button class="ph-btn" onclick="removePhoto(this)">&#x2715; Remove</button>' +
+    '</div>' +
+    '<div class="ph-inner">' +
+      '<div class="ph-hint">' +
+        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>' +
+        'Click to upload' +
+      '</div>' +
+      '<input class="ph-upload" type="file" accept="image/*" onchange="loadPlacedImg(event,this)">' +
+    '</div>' +
+    '<div class="ph-resize"></div>';
+  page.appendChild(box);
+  box.querySelector('.ph-inner').addEventListener('click', function(e) {
+    if (e.target.classList.contains('ph-resize')) return;
+    box.querySelector('.ph-upload').click();
+  });
+  makeDraggable(box);
+  makeResizable(box);
+}
+
+function triggerUpload(btn) {
+  btn.closest('.placed-photo').querySelector('.ph-upload').click();
+}
+
+function removePhoto(btn) {
+  btn.closest('.placed-photo').remove();
+}
+
+function loadPlacedImg(ev, input) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = function(e2) {
+    const inner = input.closest('.ph-inner');
+    const hint = inner.querySelector('.ph-hint');
+    if (hint) hint.style.display = 'none';
+    let img = inner.querySelector('img');
+    if (!img) {
+      img = document.createElement('img');
+      img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;';
+      inner.insertBefore(img, input);
+    }
+    img.src = e2.target.result;
+    ev.target.value = '';
+  };
+  r.readAsDataURL(file);
+}
+
+function makeDraggable(el) {
+  var ox, oy, startX, startY, dragging = false;
+  el.addEventListener('mousedown', function(e) {
+    if (e.target.classList.contains('ph-resize') ||
+        e.target.classList.contains('ph-upload') ||
+        e.target.classList.contains('ph-btn')) return;
+    dragging = true;
+    startX = e.clientX; startY = e.clientY;
+    ox = el.offsetLeft; oy = el.offsetTop;
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    var page = document.getElementById('page');
+    var pr = page.getBoundingClientRect();
+    var nx = ox + (e.clientX - startX);
+    var ny = oy + (e.clientY - startY);
+    nx = Math.max(0, Math.min(nx, pr.width - el.offsetWidth));
+    ny = Math.max(0, Math.min(ny, pr.height - el.offsetHeight));
+    el.style.left = nx + 'px';
+    el.style.top  = ny + 'px';
+  });
+  document.addEventListener('mouseup', function() { dragging = false; });
+}
+
+function makeResizable(el) {
+  var handle = el.querySelector('.ph-resize');
+  var startX, startY, startW, startH, resizing = false;
+  handle.addEventListener('mousedown', function(e) {
+    resizing = true;
+    startX = e.clientX; startY = e.clientY;
+    startW = el.offsetWidth; startH = el.offsetHeight;
+    e.preventDefault(); e.stopPropagation();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!resizing) return;
+    var nw = Math.max(80, startW + (e.clientX - startX));
+    var nh = Math.max(60, startH + (e.clientY - startY));
+    el.style.width  = nw + 'px';
+    el.style.height = nh + 'px';
+  });
+  document.addEventListener('mouseup', function() { resizing = false; });
+}
+
+async function exportBothSizes() {
+  const overlay = document.getElementById('export-overlay');
+  const bar     = document.getElementById('exp-bar');
+  const status  = document.getElementById('exp-status');
+  overlay.classList.add('active');
+
+  const page = document.getElementById('page');
+
+  function setProgress(pct, msg) {
+    bar.style.width = pct + '%';
+    status.textContent = msg;
+  }
+
+  async function captureCondensed() {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:fixed;left:0;top:0;width:900px;height:1200px;z-index:-9999;pointer-events:none;overflow:hidden;';
+    const clone = page.cloneNode(true);
+    clone.style.cssText = 'position:absolute;left:0;top:0;width:900px;height:1200px;margin:0;padding:36px 44px 36px;box-shadow:none;overflow:hidden;';
+    wrap.appendChild(clone);
+    document.body.appendChild(wrap);
+
+    const result = await html2canvas(clone, {
+      scale: 4,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: 900,
+      height: 1200,
+      windowWidth: 900,
+      windowHeight: 1200,
+      scrollX: 0,
+      scrollY: 0,
+      x: 0,
+      y: 0
+    });
+
+    document.body.removeChild(wrap);
+    return result;
+  }
+
+  async function captureFull() {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:fixed;left:0;top:0;width:900px;z-index:-9999;pointer-events:none;overflow:visible;';
+    const clone = page.cloneNode(true);
+    clone.style.cssText = 'position:absolute;left:0;top:0;width:900px;height:auto;min-height:1200px;margin:0;padding:36px 44px 36px;box-shadow:none;overflow:visible;';
+    clone.querySelectorAll('*').forEach(el => {
+      const s = el.style;
+      if (s.overflow === 'hidden' || s.overflow === 'auto') s.overflow = 'visible';
+      if (s.maxHeight) s.maxHeight = 'none';
+    });
+    const style = document.createElement('style');
+    style.textContent = `.page-body,.page-grow,.grid,.gc{overflow:visible!important;height:auto!important;max-height:none!important;flex:unset!important;min-height:0!important;}`;
+    clone.appendChild(style);
+    wrap.appendChild(clone);
+    document.body.appendChild(wrap);
+
+    await new Promise(r => setTimeout(r, 80));
+    const fullH = Math.max(clone.scrollHeight, clone.offsetHeight, 1200);
+    wrap.style.height = fullH + 'px';
+
+    const result = await html2canvas(clone, {
+      scale: 4,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: 900,
+      height: fullH,
+      windowWidth: 900,
+      windowHeight: fullH,
+      scrollX: 0,
+      scrollY: 0,
+      x: 0,
+      y: 0
+    });
+
+    document.body.removeChild(wrap);
+    return result;
+  }
+
+  function scaleFill(src, outW, outH) {
+    const out = document.createElement('canvas');
+    out.width  = outW;
+    out.height = outH;
+    const ctx = out.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, outW, outH);
+    ctx.drawImage(src, 0, 0, src.width, src.height, 0, 0, outW, outH);
+    return out;
+  }
+
+  try {
+    setProgress(10, 'Capturing condensed page (9×12)...');
+    const condensed = await captureCondensed();
+
+    setProgress(42, 'Building 9×12 @ 300dpi export...');
+    // 9×12 @ 300dpi = 2700×3600
+    const canvas9x12 = scaleFill(condensed, 2700, 3600);
+
+    setProgress(58, 'Capturing full page (12×18)...');
+    const full = await captureFull();
+
+    setProgress(78, 'Building 12×18 @ 300dpi export...');
+    // 12×18 @ 300dpi = 3600×5400
+    const canvas12x18 = scaleFill(full, 3600, 5400);
+
+    setProgress(88, 'Building ZIP...');
+
+    const blob9x12  = await new Promise(res => canvas9x12.toBlob(res,  'image/png'));
+    const blob12x18 = await new Promise(res => canvas12x18.toBlob(res, 'image/png'));
+
+    const zip = new JSZip();
+    const masthead = (document.querySelector('.page-masthead') || {}).textContent || 'newspaper';
+    const safe = masthead.replace(/[^a-z0-9]/gi, '_').slice(0, 30);
+    zip.file(safe + '_9x12.png',  blob9x12);
+    zip.file(safe + '_12x18.png', blob12x18);
+
+    setProgress(96, 'Downloading...');
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(zipBlob);
+    a.download = safe + '_export.zip';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+
+    setProgress(100, 'Done!');
+    setTimeout(() => { overlay.classList.remove('active'); bar.style.width = '0%'; }, 1200);
+
+  } catch(err) {
+    status.textContent = 'Error: ' + err.message;
+    bar.style.background = '#c00';
+    setTimeout(() => { overlay.classList.remove('active'); bar.style.background = ''; bar.style.width = '0%'; }, 3000);
+  }
+}
+</script>
+</body>
+</html>
