@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quadratic Practice Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,300;9..144,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f0e8;
+    --surface: #fffdf8;
+    --border: #d4c9b0;
+    --border-light: #e8e0cc;
+    --text: #1a1612;
+    --text-muted: #7a6e5f;
+    --text-faint: #b0a491;
+    --accent: #2d5016;
+    --accent-light: #4a7c28;
+    --accent-bg: #edf5e1;
+    --red: #8b1a1a;
+    --red-bg: #fdf0f0;
+    --blue: #1a3a5c;
+    --blue-bg: #eef4fb;
+    --amber: #7a4f00;
+    --amber-bg: #fdf5e0;
+    --mono: 'DM Mono', monospace;
+    --serif: 'Fraunces', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--mono);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  header {
+    background: var(--text);
+    color: var(--bg);
+    padding: 18px 32px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+
+  header h1 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+  }
+
+  header span {
+    font-size: 11px;
+    opacity: 0.5;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    min-height: calc(100vh - 58px);
+  }
+
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .main {
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .control-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  select, input[type=number] {
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text);
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6e5f'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+  }
+
+  select:focus, input:focus {
+    outline: 2px solid var(--accent-light);
+    outline-offset: 1px;
+  }
+
+  .btn-generate {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    padding: 11px 20px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-generate:hover { background: #333; }
+  .btn-generate:active { transform: scale(0.98); }
+
+  .divider {
+    height: 1px;
+    background: var(--border-light);
+  }
+
+  .toggle-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.1s, border-color 0.1s;
+    user-select: none;
+  }
+  .toggle-row:hover { background: var(--bg); }
+  .toggle-row.on { background: var(--accent-bg); border-color: #b8d494; }
+
+  .toggle-row span {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .toggle-row.on span { color: var(--accent); }
+
+  .toggle-switch {
+    width: 28px; height: 15px;
+    background: var(--border);
+    border-radius: 8px;
+    position: relative;
+    transition: background 0.15s;
+  }
+  .toggle-row.on .toggle-switch { background: var(--accent-light); }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 11px; height: 11px;
+    background: white;
+    border-radius: 50%;
+    top: 2px; left: 2px;
+    transition: left 0.15s;
+  }
+  .toggle-row.on .toggle-switch::after { left: 15px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg);
+  }
+
+  .card-title {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .card-body { padding: 16px; }
+
+  .formula-display {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--text);
+    text-align: center;
+    padding: 20px 16px;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+
+  .form-badge {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 1px solid;
+  }
+
+  .badge-standard { color: var(--blue); background: var(--blue-bg); border-color: #c0d4eb; }
+  .badge-vertex { color: var(--accent); background: var(--accent-bg); border-color: #b8d494; }
+  .badge-factored { color: var(--amber); background: var(--amber-bg); border-color: #e8d090; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead th {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 8px 12px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  tbody td {
+    padding: 8px 12px;
+    text-align: center;
+    border-bottom: 1px solid var(--border-light);
+    font-family: var(--mono);
+  }
+
+  tr.vertex-row td {
+    background: var(--text);
+    color: var(--bg);
+    font-weight: 500;
+  }
+
+  td.blurred {
+    color: transparent;
+    text-shadow: 0 0 6px rgba(26,22,18,0.5);
+    user-select: none;
+    cursor: default;
+    position: relative;
+  }
+
+  .t-controls {
+    display: flex;
+    gap: 6px;
+  }
+
+  .mini-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .mini-btn:hover { background: var(--bg); }
+  .mini-btn.hiding { background: var(--red-bg); color: var(--red); border-color: #e8c0c0; }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  .info-item {
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+  }
+
+  .info-item-label {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+  }
+
+  .info-item-value {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .roots-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .root-card {
+    padding: 10px 12px;
+    background: var(--red-bg);
+    border: 1px solid #e8c0c0;
+    border-radius: 4px;
+  }
+  .root-card.no-roots {
+    background: var(--amber-bg);
+    border-color: #e8d090;
+  }
+
+  .root-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--red); margin-bottom: 3px; }
+  .root-label.no { color: var(--amber); }
+  .root-value { font-size: 13px; font-weight: 500; color: var(--text); }
+
+  .all-forms {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .form-card {
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+  }
+
+  .form-card-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-faint); margin-bottom: 4px; }
+  .form-card-val { font-size: 12px; color: var(--text); line-height: 1.5; font-family: var(--mono); }
+
+  #chartWrapper {
+    position: relative;
+    width: 100%;
+    height: 300px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-faint);
+    font-size: 13px;
+  }
+
+  .empty-state .big {
+    font-family: var(--serif);
+    font-size: 48px;
+    font-weight: 300;
+    opacity: 0.3;
+    margin-bottom: 12px;
+  }
+
+  .disc-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    margin-top: 8px;
+    font-size: 12px;
+  }
+  .disc-label { color: var(--text-muted); }
+  .disc-val { font-weight: 500; color: var(--text); }
+  .disc-interp { color: var(--text-muted); font-size: 11px; }
+
+  .legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 8px 0 0;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Quadratic Practice</h1>
+  <span>Generator</span>
+</header>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="control-group">
+      <div class="control-label">Form</div>
+      <select id="formType">
+        <option value="standard">Standard — ax² + bx + c</option>
+        <option value="vertex">Vertex — a(x − h)² + k</option>
+        <option value="factored">Factored — a(x − r₁)(x − r₂)</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">Leading coefficient a</div>
+      <select id="aMode">
+        <option value="random">Random</option>
+        <option value="custom">Custom value</option>
+      </select>
+      <div id="aCustomDiv" style="display:none">
+        <input type="number" id="aCustom" value="1" step="0.5" placeholder="Enter a value">
+      </div>
+    </div>
+
+    <button class="btn-generate" onclick="generate()">↻ Generate Problem</button>
+
+    <div class="divider"></div>
+
+    <div class="control-label" style="margin-bottom:2px">Display</div>
+    <div class="toggle-group">
+      <div class="toggle-row" id="tog-graph" onclick="togglePanel('graph')">
+        <span>Graph</span>
+        <div class="toggle-switch"></div>
+      </div>
+      <div class="toggle-row" id="tog-table" onclick="togglePanel('table')">
+        <span>T-table</span>
+        <div class="toggle-switch"></div>
+      </div>
+      <div class="toggle-row" id="tog-info" onclick="togglePanel('info')">
+        <span>Key features</span>
+        <div class="toggle-switch"></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="control-label" style="margin-bottom:2px">T-table practice</div>
+    <div style="font-size:11px;color:var(--text-faint);line-height:1.5;margin-bottom:6px">
+      Blur the input/output values near the vertex for fill-in practice.
+    </div>
+    <div class="toggle-group">
+      <div class="toggle-row" id="tog-hidex" onclick="toggleHide('x')">
+        <span>Blur x values</span>
+        <div class="toggle-switch"></div>
+      </div>
+      <div class="toggle-row" id="tog-hidey" onclick="toggleHide('y')">
+        <span>Blur y values</span>
+        <div class="toggle-switch"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main" id="mainContent">
+    <div class="empty-state">
+      <div class="big">f(x)</div>
+      <div>Click <strong>Generate Problem</strong> to begin</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let Q = null;
+let chartInst = null;
+let panels = { graph: false, table: false, info: false };
+let hideX = false, hideY = false;
+
+document.getElementById('aMode').addEventListener('change', function() {
+  document.getElementById('aCustomDiv').style.display = this.value === 'custom' ? '' : 'none';
+});
+
+function rnd(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+function fmt(n) {
+  if (n === Math.round(n)) return n.toString();
+  return parseFloat(n.toFixed(2)).toString();
+}
+
+function generate() {
+  const form = document.getElementById('formType').value;
+  const aMode = document.getElementById('aMode').value;
+  let a;
+  if (aMode === 'custom') {
+    a = parseFloat(document.getElementById('aCustom').value) || 1;
+  } else {
+    const opts = [-2, -1, -1, 1, 1, 2, 0.5, -0.5];
+    a = opts[rnd(0, opts.length - 1)];
+  }
+
+  let h, k;
+  if (form === 'factored') {
+    const r1 = rnd(-6, 6), r2 = rnd(-6, 6);
+    h = (r1 + r2) / 2;
+    k = a * (r1 - h) * (r2 - h);
+  } else {
+    h = rnd(-5, 5);
+    k = rnd(-8, 8);
+    if (-k / a < 0) k = -a * rnd(1, 9);
+  }
+
+  h = parseFloat(h.toFixed(2));
+  k = parseFloat(k.toFixed(2));
+  const b = parseFloat((-2 * a * h).toFixed(4));
+  const c = parseFloat((a * h * h + k).toFixed(4));
+  const disc = parseFloat((b * b - 4 * a * c).toFixed(4));
+  const hasRoots = disc >= 0;
+  const r1 = hasRoots ? parseFloat((h - Math.sqrt(disc / (4 * a * a)) * Math.sign(a) * (a > 0 ? 1 : -1) * Math.sign(disc >= 0 ? 1 : 0)).toFixed(2)) : null;
+  // simpler root calc
+  const sqrtDisc = hasRoots ? Math.sqrt(Math.abs(disc)) : 0;
+  const root1 = hasRoots ? parseFloat(((-b - sqrtDisc) / (2 * a)).toFixed(2)) : null;
+  const root2 = hasRoots ? parseFloat(((-b + sqrtDisc) / (2 * a)).toFixed(2)) : null;
+
+  Q = { a, b, c, h, k, disc, hasRoots, root1, root2, form };
+
+  renderAll();
+}
+
+function f(x) { return Q.a * x * x + Q.b * x + Q.c; }
+
+function formulaStr(form) {
+  const { a, b, c, h, k, root1, root2 } = Q;
+  if (form === 'standard') {
+    let s = a === 1 ? '' : a === -1 ? '−' : fmt(a);
+    s += 'x²';
+    if (b !== 0) s += (b > 0 ? ' + ' : ' − ') + fmt(Math.abs(b)) + 'x';
+    if (c !== 0) s += (c > 0 ? ' + ' : ' − ') + fmt(Math.abs(c));
+    return 'f(x) = ' + s;
+  } else if (form === 'vertex') {
+    const aS = a === 1 ? '' : a === -1 ? '−' : fmt(a);
+    const hS = h === 0 ? '' : (h > 0 ? ' − ' + fmt(h) : ' + ' + fmt(-h));
+    const kS = k === 0 ? '' : (k > 0 ? ' + ' + fmt(k) : ' − ' + fmt(-k));
+    return `f(x) = ${aS}(x${hS})²${kS}`;
+  } else {
+    if (!Q.hasRoots) return formulaStr('standard');
+    const aS = a === 1 ? '' : a === -1 ? '−' : fmt(a);
+    const r1S = root1 >= 0 ? `x − ${fmt(root1)}` : `x + ${fmt(-root1)}`;
+    const r2S = root2 >= 0 ? `x − ${fmt(root2)}` : `x + ${fmt(-root2)}`;
+    return `f(x) = ${aS}(${r1S})(${r2S})`;
+  }
+}
+
+function renderAll() {
+  const main = document.getElementById('mainContent');
+  main.innerHTML = '';
+
+  // Problem card
+  const prob = document.createElement('div');
+  prob.className = 'card';
+  const badgeClass = Q.form === 'standard' ? 'badge-standard' : Q.form === 'vertex' ? 'badge-vertex' : 'badge-factored';
+  const badgeLabel = Q.form.charAt(0).toUpperCase() + Q.form.slice(1) + ' Form';
+  prob.innerHTML = `
+    <div class="card-header">
+      <div class="card-title">Problem</div>
+      <span class="form-badge ${badgeClass}">${badgeLabel}</span>
+    </div>
+    <div class="formula-display" id="formulaDisplay">${formulaStr(Q.form)}</div>
+  `;
+  main.appendChild(prob);
+
+  // Graph
+  const graphCard = document.createElement('div');
+  graphCard.className = 'card';
+  graphCard.id = 'graphCard';
+  graphCard.style.display = panels.graph ? '' : 'none';
+  graphCard.innerHTML = `
+    <div class="card-header"><div class="card-title">Graph</div></div>
+    <div class="card-body">
+      <div id="chartWrapper"><canvas id="quadChart"></canvas></div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#1a3a5c"></div><span>Parabola</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#2d5016"></div><span>Vertex</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#639922"></div><span>Y-intercept</span></div>
+        ${Q.hasRoots ? '<div class="legend-item"><div class="legend-dot" style="background:#8b1a1a"></div><span>X-intercepts (roots)</span></div>' : ''}
+      </div>
+    </div>
+  `;
+  main.appendChild(graphCard);
+
+  // T-table
+  const tableCard = document.createElement('div');
+  tableCard.className = 'card';
+  tableCard.id = 'tableCard';
+  tableCard.style.display = panels.table ? '' : 'none';
+  const hRound = parseFloat(Q.h.toFixed(1));
+  const xs = [hRound - 3, hRound - 2, hRound - 1, hRound, hRound + 1, hRound + 2, hRound + 3];
+  let rows = '';
+  xs.forEach(x => {
+    const y = parseFloat(f(x).toFixed(2));
+    const isVertex = Math.abs(x - hRound) < 0.001;
+    const isNear = !isVertex && Math.abs(x - hRound) <= 1;
+    const rowClass = isVertex ? 'vertex-row' : '';
+    const xClass = !isVertex && hideX && isNear ? 'blurred' : '';
+    const yClass = !isVertex && hideY && isNear ? 'blurred' : '';
+    rows += `<tr class="${rowClass}"><td class="${xClass}">${fmt(x)}</td><td class="${yClass}">${fmt(y)}</td></tr>`;
+  });
+  tableCard.innerHTML = `
+    <div class="card-header">
+      <div class="card-title">T-table <span style="color:var(--text-faint);font-size:10px;margin-left:8px">centered on vertex · ±1 values blurred for practice</span></div>
+    </div>
+    <div class="card-body" style="padding:0">
+      <table>
+        <thead><tr><th>x</th><th>f(x)</th></tr></thead>
+        <tbody id="tableBody">${rows}</tbody>
+      </table>
+    </div>
+  `;
+  main.appendChild(tableCard);
+
+  // Info
+  const infoCard = document.createElement('div');
+  infoCard.className = 'card';
+  infoCard.id = 'infoCard';
+  infoCard.style.display = panels.info ? '' : 'none';
+
+  const minMax = Q.a > 0 ? 'Minimum' : 'Maximum';
+  const opening = Q.a > 0 ? 'Upward ∪' : 'Downward ∩';
+  const width = Math.abs(Q.a) > 1 ? 'Narrower than x²' : Math.abs(Q.a) < 1 ? 'Wider than x²' : 'Same width as x²';
+  const range = Q.a > 0 ? `[${fmt(Q.k)}, ∞)` : `(−∞, ${fmt(Q.k)}]`;
+  const discInterp = Q.disc > 0 ? '2 real roots' : Q.disc === 0 ? '1 repeated root' : 'No real roots (complex)';
+
+  let rootsHTML = '';
+  if (Q.hasRoots) {
+    const sameRoot = Math.abs(Q.root1 - Q.root2) < 0.001;
+    rootsHTML = `
+      <div class="roots-section">
+        <div class="root-card">
+          <div class="root-label">X-intercept 1</div>
+          <div class="root-value">(${fmt(Q.root1)}, 0)</div>
+        </div>
+        <div class="root-card">
+          <div class="root-label">${sameRoot ? 'Double root' : 'X-intercept 2'}</div>
+          <div class="root-value">${sameRoot ? 'Same — repeated root' : '(' + fmt(Q.root2) + ', 0)'}</div>
+        </div>
+      </div>`;
+  } else {
+    rootsHTML = `<div class="roots-section">
+      <div class="root-card no-roots" style="grid-column:1/-1">
+        <div class="root-label no">No real x-intercepts</div>
+        <div class="root-value" style="font-size:12px;color:var(--text-muted)">Discriminant < 0 → complex roots only</div>
+      </div>
+    </div>`;
+  }
+
+  infoCard.innerHTML = `
+    <div class="card-header"><div class="card-title">Key features</div></div>
+    <div class="card-body">
+      <div class="info-grid">
+        <div class="info-item"><div class="info-item-label">Vertex</div><div class="info-item-value">(${fmt(Q.h)}, ${fmt(Q.k)})</div></div>
+        <div class="info-item"><div class="info-item-label">Axis of symmetry</div><div class="info-item-value">x = ${fmt(Q.h)}</div></div>
+        <div class="info-item"><div class="info-item-label">${minMax}</div><div class="info-item-value">${fmt(Q.k)}</div></div>
+        <div class="info-item"><div class="info-item-label">Y-intercept</div><div class="info-item-value">(0, ${fmt(Q.c)})</div></div>
+        <div class="info-item"><div class="info-item-label">Domain</div><div class="info-item-value">(−∞, ∞)</div></div>
+        <div class="info-item"><div class="info-item-label">Range</div><div class="info-item-value">${range}</div></div>
+        <div class="info-item"><div class="info-item-label">Opens</div><div class="info-item-value">${opening}</div></div>
+        <div class="info-item"><div class="info-item-label">|a| = ${fmt(Math.abs(Q.a))}</div><div class="info-item-value">${width}</div></div>
+        <div class="info-item"><div class="info-item-label">Roots</div><div class="info-item-value">${Q.hasRoots ? (Math.abs(Q.root1 - Q.root2) < 0.001 ? '1 (repeated)' : '2 real') : 'None (complex)'}</div></div>
+      </div>
+
+      <div class="disc-row">
+        <span class="disc-label">Discriminant b² − 4ac =</span>
+        <span class="disc-val">${fmt(Q.disc)}</span>
+        <span class="disc-interp">→ ${discInterp}</span>
+      </div>
+
+      ${rootsHTML}
+
+      <div style="margin-top:12px">
+        <div class="control-label" style="margin-bottom:6px">All equivalent forms</div>
+        <div class="all-forms">
+          <div class="form-card">
+            <div class="form-card-label">Standard</div>
+            <div class="form-card-val">${formulaStr('standard')}</div>
+          </div>
+          <div class="form-card">
+            <div class="form-card-label">Vertex</div>
+            <div class="form-card-val">${formulaStr('vertex')}</div>
+          </div>
+          <div class="form-card">
+            <div class="form-card-label">Factored</div>
+            <div class="form-card-val">${Q.hasRoots ? formulaStr('factored') : 'No real factored form'}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  main.appendChild(infoCard);
+
+  if (panels.graph) renderChart();
+}
+
+function renderChart() {
+  if (!Q) return;
+  const h = Q.h;
+  const spread = Math.max(7, Math.abs((Q.root1 || 0) - (Q.root2 || 0)) + 4, 6);
+  const xMin = h - spread, xMax = h + spread;
+  const pts = 200, step = (xMax - xMin) / pts;
+  const xs = [], ys = [];
+  for (let i = 0; i <= pts; i++) {
+    const x = xMin + i * step;
+    xs.push(parseFloat(x.toFixed(3)));
+    ys.push(parseFloat(f(x).toFixed(4)));
+  }
+
+  if (chartInst) { chartInst.destroy(); chartInst = null; }
+  const canvas = document.getElementById('quadChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  chartInst = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: xs,
+      datasets: [{
+        data: ys,
+        borderColor: '#1a3a5c',
+        borderWidth: 2.5,
+        pointRadius: 0,
+        tension: 0,
+        fill: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: items => `x = ${parseFloat(items[0].label).toFixed(2)}`,
+            label: item => `f(x) = ${parseFloat(item.raw).toFixed(2)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          min: xMin, max: xMax,
+          ticks: { maxTicksLimit: 11, callback: v => parseFloat(v.toFixed(1)) },
+          grid: { color: ctx => ctx.tick.value === 0 ? 'rgba(26,22,18,0.55)' : 'rgba(100,90,70,0.12)', lineWidth: ctx => ctx.tick.value === 0 ? 2 : 1 }
+        },
+        y: {
+          ticks: { maxTicksLimit: 9, callback: v => parseFloat(v.toFixed(1)) },
+          grid: { color: ctx => ctx.tick.value === 0 ? 'rgba(26,22,18,0.55)' : 'rgba(100,90,70,0.12)', lineWidth: ctx => ctx.tick.value === 0 ? 2 : 1 }
+        }
+      }
+    }
+  });
+
+  setTimeout(() => {
+    if (!chartInst || !Q) return;
+    const canvas2 = document.getElementById('quadChart');
+    if (!canvas2) return;
+    const c2 = canvas2.getContext('2d');
+    const xScale = chartInst.scales.x;
+    const yScale = chartInst.scales.y;
+
+    function drawDot(xVal, yVal, color, label, labelOffset) {
+      const px = xScale.getPixelForValue(xVal);
+      const py = yScale.getPixelForValue(yVal);
+      c2.beginPath();
+      c2.arc(px, py, 5.5, 0, 2 * Math.PI);
+      c2.fillStyle = color;
+      c2.fill();
+      c2.strokeStyle = 'white';
+      c2.lineWidth = 1.5;
+      c2.stroke();
+      if (label) {
+        c2.fillStyle = color;
+        c2.font = '10.5px DM Mono, monospace';
+        c2.fillText(label, px + (labelOffset || 8), py - 5);
+      }
+    }
+
+    drawDot(Q.h, Q.k, '#2d5016', `(${fmt(Q.h)}, ${fmt(Q.k)})`);
+    drawDot(0, Q.c, '#639922', `(0, ${fmt(Q.c)})`);
+    if (Q.hasRoots) {
+      drawDot(Q.root1, 0, '#8b1a1a', `(${fmt(Q.root1)}, 0)`);
+      if (Math.abs(Q.root1 - Q.root2) > 0.01) {
+        drawDot(Q.root2, 0, '#8b1a1a', `(${fmt(Q.root2)}, 0)`);
+      }
+    }
+  }, 350);
+}
+
+function togglePanel(name) {
+  panels[name] = !panels[name];
+  const row = document.getElementById('tog-' + name);
+  row.classList.toggle('on', panels[name]);
+  const el = document.getElementById(name + 'Card');
+  if (el) el.style.display = panels[name] ? '' : 'none';
+  if (name === 'graph' && panels.graph && Q) renderChart();
+}
+
+function toggleHide(col) {
+  if (col === 'x') hideX = !hideX;
+  else hideY = !hideY;
+  const row = document.getElementById('tog-hide' + col);
+  row.classList.toggle('on', col === 'x' ? hideX : hideY);
+  if (Q) {
+    const hRound = parseFloat(Q.h.toFixed(1));
+    const xs = [hRound - 3, hRound - 2, hRound - 1, hRound, hRound + 1, hRound + 2, hRound + 3];
+    const tbody = document.getElementById('tableBody');
+    if (!tbody) return;
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach((tr, i) => {
+      const x = xs[i];
+      const y = parseFloat(f(x).toFixed(2));
+      const isVertex = Math.abs(x - hRound) < 0.001;
+      const isNear = !isVertex && Math.abs(x - hRound) <= 1;
+      const tds = tr.querySelectorAll('td');
+      if (!isVertex) {
+        tds[0].className = hideX && isNear ? 'blurred' : '';
+        tds[1].className = hideY && isNear ? 'blurred' : '';
+      }
+    });
+  }
+}
+</script>
+</body>
+</html>
