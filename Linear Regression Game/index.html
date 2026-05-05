@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Line of Best Fit</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #18181f;
+    --surface2: #22222c;
+    --border: rgba(255,255,255,0.08);
+    --text: #f0eff5;
+    --muted: #7a7a8c;
+    --accent: #c8b8ff;
+    --user-line: #f0c040;
+    --reg-line: #ff4444;
+    --dot: #5ba4f5;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+
+  .stats {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .stat {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    flex: 1;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 3px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .stat-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 20px;
+    color: var(--text);
+  }
+
+  .stat-value.grade { font-size: 14px; }
+
+  canvas {
+    display: block;
+    border-radius: 12px;
+    border: 0.5px solid var(--border);
+    max-width: 720px;
+    width: 100%;
+    cursor: crosshair;
+  }
+
+  canvas.drag-mode { cursor: grab; }
+  canvas.dragging { cursor: grabbing; }
+
+  #msg {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 10px;
+    min-height: 18px;
+    max-width: 720px;
+    width: 100%;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+
+  .btns {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+    max-width: 720px;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  button {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 0.5px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 9px 18px;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  button:hover { background: var(--surface2); border-color: rgba(255,255,255,0.35); }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.3; cursor: default; transform: none; }
+
+  #btn-lock {
+    background: var(--accent);
+    color: #1a1030;
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+  #btn-lock:hover { background: #d8ccff; }
+  #btn-lock:disabled { background: transparent; color: var(--text); border-color: rgba(255,255,255,0.2); }
+  #btn-next {
+    background: var(--accent);
+    color: #1a1030;
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+  #btn-next:hover { background: #d8ccff; }
+  #btn-next:disabled { background: transparent; color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    max-width: 720px;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+  .legend-dot {
+    width: 24px;
+    height: 3px;
+    border-radius: 2px;
+  }
+  .legend-dot.dashed {
+    background: repeating-linear-gradient(90deg, #ff4444 0, #ff4444 6px, transparent 6px, transparent 11px);
+  }
+</style>
+</head>
+<body>
+
+<h1>Line of Best Fit</h1>
+
+<div class="stats">
+  <div class="stat"><div class="stat-label">Round</div><div class="stat-value" id="sr">1 / 5</div></div>
+  <div class="stat"><div class="stat-label">Score</div><div class="stat-value" id="ss">—</div></div>
+  <div class="stat"><div class="stat-label">Degrees off</div><div class="stat-value" id="sd">—</div></div>
+  <div class="stat"><div class="stat-label">Total</div><div class="stat-value" id="st">0</div></div>
+  <div class="stat"><div class="stat-label">Grade</div><div class="stat-value grade" id="sg">—</div></div>
+</div>
+
+<canvas id="c" width="720" height="440"></canvas>
+
+<div id="msg">Click anywhere to place your first point.</div>
+
+<div class="btns">
+  <button id="btn-lock" disabled>Lock in guess</button>
+  <button id="btn-next" disabled>Next round</button>
+  <button id="btn-restart">Restart</button>
+</div>
+
+<div class="legend" id="legend" style="display:none">
+  <div class="legend-item"><div class="legend-dot dashed"></div>true regression</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f0c040"></div>your line</div>
+</div>
+
+<script>
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const W = 720, H = 440, PAD = 56;
+cv.width = W; cv.height = H;
+
+const ZONES = [
+  { halfDeg: 4,  score: 100, color: '#1D9E75', label: 'Bullseye!' },
+  { halfDeg: 10, score: 75,  color: '#8ab82a', label: 'Great' },
+  { halfDeg: 18, score: 50,  color: '#EF9F27', label: 'Good' },
+  { halfDeg: 28, score: 25,  color: '#D85A30', label: 'Close' },
+  { halfDeg: 40, score: 10,  color: '#A32D2D', label: 'Miss' },
+];
+
+const HIT_R = 14;
+
+let data, reg;
+let pts = [];          // user's two canvas points [{x,y},{x,y}]
+let locked = false;
+let revealed = false;
+let dragging = null;   // index of pt being dragged, or null
+let hovering = null;
+let round = 1, total = 0;
+const ROUNDS = 5;
+
+// ---- math ----
+function linReg(raw) {
+  const n = raw.length; let sx=0,sy=0,sxx=0,sxy=0;
+  for (const p of raw) { sx+=p.x; sy+=p.y; sxx+=p.x*p.x; sxy+=p.x*p.y; }
+  const m = (n*sxy - sx*sy) / (n*sxx - sx*sx);
+  return { m, b: (sy - m*sx)/n };
+}
+
+function mkData() {
+  const n = 18 + Math.floor(Math.random()*12);
+  const trueM = (Math.random()*2.6 - 1.3) * 2.2;
+  const trueB = Math.random()*80 + 60;
+  const noise = 22 + Math.random()*38;
+  const raw = [];
+  for (let i=0; i<n; i++) {
+    const x = Math.random()*160 + 20;
+    const y = trueM*x + trueB + (Math.random()-0.5)*noise*2;
+    raw.push({x,y});
+  }
+  const xs=raw.map(p=>p.x), ys=raw.map(p=>p.y);
+  return { raw, minX:Math.min(...xs)-12, maxX:Math.max(...xs)+12, minY:Math.min(...ys)-12, maxY:Math.max(...ys)+12 };
+}
+
+function tc(dx,dy) {
+  return {
+    cx: PAD + (dx-data.minX)/(data.maxX-data.minX)*(W-2*PAD),
+    cy: H-PAD - (dy-data.minY)/(data.maxY-data.minY)*(H-2*PAD)
+  };
+}
+
+function slopeToCanvasAngle(m) {
+  const sx = (data.maxX-data.minX)/(W-2*PAD);
+  const sy = (data.maxY-data.minY)/(H-2*PAD);
+  return Math.atan2(-m*sx/sy, 1);
+}
+
+function ptAngle() {
+  if (pts.length < 2) return null;
+  return Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+}
+
+function angleDiffDeg(a,b) {
+  let d = (a-b)*180/Math.PI;
+  while (d > 90) d -= 180;
+  while (d < -90) d += 180;
+  return Math.abs(d);
+}
+
+function getZone(deg) {
+  for (const z of ZONES) if (deg <= z.halfDeg) return z;
+  return { score: 0, color: '#666', label: 'Way off' };
+}
+
+function hitTest(cx,cy) {
+  for (let i=0; i<pts.length; i++) {
+    const dx = cx - pts[i].x, dy = cy - pts[i].y;
+    if (Math.sqrt(dx*dx+dy*dy) <= HIT_R) return i;
+  }
+  return null;
+}
+
+// ---- drawing ----
+function drawWedges(cx,cy,regAngle) {
+  ctx.save();
+  ctx.beginPath(); ctx.rect(PAD,PAD,W-2*PAD,H-2*PAD); ctx.clip();
+  for (let i=ZONES.length-1; i>=0; i--) {
+    const z = ZONES[i];
+    const half = z.halfDeg * Math.PI/180;
+    for (const base of [regAngle, regAngle+Math.PI]) {
+      ctx.beginPath();
+      ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,2000,base-half,base+half);
+      ctx.closePath();
+      ctx.fillStyle = z.color + '44';
+      ctx.fill();
+    }
+  }
+  // zone score labels
+  for (const z of ZONES) {
+    const half = z.halfDeg * Math.PI/180;
+    const r = Math.min(W,H)*0.34;
+    for (const base of [regAngle, regAngle+Math.PI]) {
+      const lx = cx + Math.cos(base+half)*r;
+      const ly = cy + Math.sin(base+half)*r;
+      ctx.font = '500 11px Space Mono, monospace';
+      ctx.fillStyle = z.color + 'cc';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(z.score, lx, ly);
+    }
+  }
+  ctx.restore();
+}
+
+function drawClippedLine(angle, cx, cy, color, dash, width) {
+  const R = 3000;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(PAD,PAD,W-2*PAD,H-2*PAD); ctx.clip();
+  ctx.beginPath();
+  ctx.moveTo(cx + Math.cos(angle)*R, cy + Math.sin(angle)*R);
+  ctx.lineTo(cx + Math.cos(angle+Math.PI)*R, cy + Math.sin(angle+Math.PI)*R);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.setLineDash(dash||[]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawUserLine() {
+  if (pts.length < 2) return;
+  const a = ptAngle();
+  const cx = (pts[0].x+pts[1].x)/2, cy = (pts[0].y+pts[1].y)/2;
+  drawClippedLine(a, cx, cy, '#f0c040', [], 2.5);
+}
+
+function drawHandle(pt, idx) {
+  const isHover = hovering === idx;
+  const isLocked = locked;
+  ctx.beginPath();
+  ctx.arc(pt.x, pt.y, isHover && !isLocked ? HIT_R+2 : HIT_R, 0, Math.PI*2);
+  ctx.fillStyle = isLocked ? '#f0c04033' : (isHover ? '#f0c040cc' : '#f0c04088');
+  ctx.fill();
+  ctx.strokeStyle = '#f0c040';
+  ctx.lineWidth = isLocked ? 1 : 2;
+  ctx.stroke();
+  // lock icon when locked
+  if (isLocked) {
+    ctx.fillStyle = '#f0c040';
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, 4, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function render() {
+  ctx.clearRect(0,0,W,H);
+
+  // background
+  ctx.fillStyle = '#0f0f13';
+  ctx.fillRect(0,0,W,H);
+
+  // grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 0.5;
+  for (let i=0; i<=6; i++) {
+    const y = PAD + i*(H-2*PAD)/6;
+    ctx.beginPath(); ctx.moveTo(PAD,y); ctx.lineTo(W-PAD,y); ctx.stroke();
+    const x = PAD + i*(W-2*PAD)/6;
+    ctx.beginPath(); ctx.moveTo(x,PAD); ctx.lineTo(x,H-PAD); ctx.stroke();
+  }
+
+  // axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(PAD,PAD); ctx.lineTo(PAD,H-PAD); ctx.lineTo(W-PAD,H-PAD);
+  ctx.stroke();
+
+  const regAngle = slopeToCanvasAngle(reg.m);
+  const cx = W/2, cy = H/2;
+
+  // wedges (only after reveal)
+  if (revealed) {
+    drawWedges(cx, cy, regAngle);
+    drawClippedLine(regAngle, cx, cy, '#ff4444', [9,5], 2.5);
+    // label
+    ctx.save();
+    ctx.beginPath(); ctx.rect(PAD,PAD,W-2*PAD,H-2*PAD); ctx.clip();
+    ctx.font = '700 11px Space Mono, monospace';
+    ctx.fillStyle = '#ff4444';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('TRUE REGRESSION', PAD+8, PAD+8);
+    ctx.restore();
+  }
+
+  // data points
+  for (const p of data.raw) {
+    const {cx:px, cy:py} = tc(p.x, p.y);
+    ctx.beginPath(); ctx.arc(px, py, 4.5, 0, Math.PI*2);
+    ctx.fillStyle = '#5ba4f5cc';
+    ctx.fill();
+    ctx.strokeStyle = '#5ba4f533';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // user line
+  if (pts.length === 2) {
+    drawUserLine();
+    if (!locked) {
+      drawHandle(pts[0], 0);
+      drawHandle(pts[1], 1);
+    } else {
+      // just small locked dots
+      for (const pt of pts) {
+        ctx.beginPath(); ctx.arc(pt.x, pt.y, 5, 0, Math.PI*2);
+        ctx.fillStyle = '#f0c040';
+        ctx.fill();
+      }
+    }
+    // user line label
+    ctx.save();
+    ctx.beginPath(); ctx.rect(PAD,PAD,W-2*PAD,H-2*PAD); ctx.clip();
+    ctx.font = '700 11px Space Mono, monospace';
+    ctx.fillStyle = '#f0c040';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('YOUR LINE', PAD+8, PAD + (revealed ? 24 : 8));
+    ctx.restore();
+  } else if (pts.length === 1) {
+    drawHandle(pts[0], 0);
+  }
+}
+
+// ---- interaction ----
+function evPos(e) {
+  const r = cv.getBoundingClientRect();
+  const sx = W / r.width;
+  const src = e.touches ? e.touches[0] : e;
+  return { x: (src.clientX - r.left)*sx, y: (src.clientY - r.top)*sx };
+}
+
+function inPlot(p) {
+  return p.x >= PAD && p.x <= W-PAD && p.y >= PAD && p.y <= H-PAD;
+}
+
+cv.addEventListener('mousedown', e => {
+  if (locked || revealed) return;
+  const p = evPos(e);
+  const hit = hitTest(p.x, p.y);
+  if (hit !== null) {
+    dragging = hit;
+    cv.classList.add('dragging');
+    return;
+  }
+  if (!inPlot(p)) return;
+  if (pts.length < 2) {
+    pts.push({x:p.x, y:p.y});
+    if (pts.length === 2) {
+      document.getElementById('btn-lock').disabled = false;
+      setMsg('Drag the endpoints to adjust your line, then lock in your guess.');
+    } else {
+      setMsg('Click a second point to complete your line.');
+    }
+    render();
+  }
+});
+
+cv.addEventListener('mousemove', e => {
+  if (locked || revealed) return;
+  const p = evPos(e);
+  if (dragging !== null) {
+    if (inPlot(p)) {
+      pts[dragging] = {x:p.x, y:p.y};
+    }
+    render();
+    return;
+  }
+  const hit = hitTest(p.x, p.y);
+  if (hit !== hovering) {
+    hovering = hit;
+    cv.classList.toggle('drag-mode', hit !== null);
+    render();
+  }
+});
+
+cv.addEventListener('mouseup', e => {
+  if (dragging !== null) {
+    dragging = null;
+    cv.classList.remove('dragging');
+    render();
+  }
+});
+
+cv.addEventListener('mouseleave', () => {
+  if (dragging !== null) { dragging = null; cv.classList.remove('dragging'); }
+  hovering = null;
+  render();
+});
+
+document.getElementById('btn-lock').addEventListener('click', () => {
+  if (pts.length < 2) return;
+  locked = true;
+  revealed = true;
+  hovering = null;
+  cv.style.cursor = 'default';
+  document.getElementById('btn-lock').disabled = true;
+
+  const regAngle = slopeToCanvasAngle(reg.m);
+  const userA = ptAngle();
+  const diff = angleDiffDeg(userA, regAngle);
+  const zone = getZone(diff);
+  total += zone.score;
+
+  document.getElementById('ss').textContent = zone.score;
+  document.getElementById('ss').style.color = zone.color;
+  document.getElementById('sd').textContent = diff.toFixed(1) + '°';
+  document.getElementById('st').textContent = total;
+  document.getElementById('sg').textContent = zone.label;
+  document.getElementById('sg').style.color = zone.color;
+  document.getElementById('legend').style.display = 'flex';
+
+  if (round >= ROUNDS) {
+    setMsg('Game over! Total: ' + total + ' / ' + (ROUNDS*100) + '. Hit Restart to play again.');
+  } else {
+    setMsg(zone.label + ' — ' + diff.toFixed(1) + '° off the true line. ' + zone.score + ' pts. Next round when ready.');
+    document.getElementById('btn-next').disabled = false;
+  }
+  render();
+});
+
+document.getElementById('btn-next').addEventListener('click', () => {
+  if (round >= ROUNDS) return;
+  round++;
+  newRound();
+});
+
+document.getElementById('btn-restart').addEventListener('click', () => {
+  round = 1; total = 0;
+  document.getElementById('st').textContent = '0';
+  document.getElementById('btn-next').disabled = true;
+  document.getElementById('legend').style.display = 'none';
+  newRound();
+});
+
+function newRound() {
+  data = mkData(); reg = linReg(data.raw);
+  pts = []; locked = false; revealed = false; dragging = null; hovering = null;
+  cv.style.cursor = 'crosshair';
+  document.getElementById('btn-lock').disabled = true;
+  document.getElementById('btn-next').disabled = true;
+  document.getElementById('sr').textContent = round + ' / ' + ROUNDS;
+  document.getElementById('ss').textContent = '—';
+  document.getElementById('ss').style.color = '';
+  document.getElementById('sd').textContent = '—';
+  document.getElementById('sg').textContent = '—';
+  document.getElementById('sg').style.color = '';
+  setMsg('Click anywhere to place your first point.');
+  render();
+}
+
+function setMsg(t) { document.getElementById('msg').textContent = t; }
+
+data = mkData(); reg = linReg(data.raw); render();
+</script>
+</body>
+</html>
