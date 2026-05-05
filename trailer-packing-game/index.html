@@ -1,1 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trailer Packing Game</title>
+  <style>
+    html, body { margin:0; padding:0; user-select:none; background:#ccc; overflow:auto; height:100vh; }
+    #container { display:flex; padding:10px; gap:10px; }
+    /* Trailer grid */
+    #grid { position:relative; width:350px; height:700px; background:#eee; display:grid;
+      grid-template-columns:repeat(35,10px); grid-template-rows:repeat(70,10px); border:2px solid #000; }
+    .cell { border:0.5px solid #ccc; }
+    .wheel-arch-band { position:absolute; left:0; top:380px; width:100%; height:30px;
+      background:rgba(255,255,0,0.3); text-align:center; line-height:30px;
+      font-size:12px; font-weight:bold; color:#b00; pointer-events:none; }
+    /* Sidebar */
+    #sidebar { display:flex; flex-direction:column; width:500px; }
+    #controls { background:#eee; padding:5px; border:2px solid #999; margin-bottom:10px; width:100%; }
+    #controls #score { margin-bottom:8px; font-size:18px; font-weight:bold; }
+    #controls #message { margin-bottom:8px; height:20px; color:#b00; }
+    #controls button, #controls label { display:block; margin-bottom:8px; }
+    #equipment-box { background:#ddd; flex:1; width:100%; overflow-y:auto; padding:5px; border:2px solid #999; }
+    #equipment-box h3 { margin:0 0 5px; font-size:14px; text-align:center; }
+    #items { display:flex; flex-wrap:wrap; gap:4px; }
+    .item { cursor:grab; user-select:none; display:flex; align-items:center; justify-content:center;
+      font-size:16px; color:#000; padding:2px; position:relative; border:2px solid black;
+      box-sizing:border-box; background:#fff; }
+    .item.overlap { border-color:red; }
+    .item.inactive { opacity:0.3; }
+    /* Dimensions */
+    .foodbox, .stovebox, .kitchenbox { width:100px; height:300px; background:blue; }
+    .propane { width:100px; height:100px; background:white; border-radius:50%; }
+    .whitewall { width:50px; height:600px; background:blue; }
+    .wallbag { width:200px; height:200px; background:white; }
+    .personalgear { width:300px; height:100px; background:black; color:blue; }
+    .gearbar { width:200px; height:100px; background:black; color:white; }
+    .waterjug { width:50px; height:100px; background:tan; }
+    .table { width:50px; height:100px; background:brown; }
+    .breadbox { width:100px; height:150px; background:khaki; }
+    .meatcooler { width:100px; height:150px; background:lightblue; }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="grid">
+      <script>
+        for (let i = 0; i < 35*70; i++) {
+          const c = document.createElement('div'); c.className = 'cell';
+          document.currentScript.parentNode.insertBefore(c, document.currentScript);
+        }
+      </script>
+      <div class="wheel-arch-band">Wheel Arch</div>
+      <div id="layer1"></div>
+      <div id="layer2"></div>
+    </div>
+    <div id="sidebar">
+      <div id="controls">
+        <div id="score">Score: 0</div>
+        <div id="message"></div>
+        <button id="reset-btn">Reset</button>
+        <label><input type="checkbox" id="toggle-layer"> Layer 2</label>
+      </div>
+      <div id="equipment-box">
+        <h3>Equipment Cache</h3>
+        <div id="items"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+document.addEventListener('DOMContentLoaded', () => {
+  const UNIT = 10;
+  const grid = document.getElementById('grid');
+  const layer1 = document.getElementById('layer1');
+  const layer2 = document.getElementById('layer2');
+  const itemsContainer = document.getElementById('items');
+  const toggle = document.getElementById('toggle-layer');
+  const resetBtn = document.getElementById('reset-btn');
+  const scoreDisplay = document.getElementById('score');
+  const messageDisplay = document.getElementById('message');
+  toggle.checked = false;
+  let currentLayer = 1, currentItem = null, offsetX = 0, offsetY = 0, bonusPoints = 0;
 
+  const dimensions = {
+    foodbox: [10, 30], stovebox: [10, 30], kitchenbox: [10, 30], propane: [10, 10],
+    whitewall: [5, 60], wallbag: [20, 20], personalgear: [30, 10], gearbar: [20, 10],
+    waterjug: [5, 10], table: [5, 10], breadbox: [10, 15], meatcooler: [10, 15]
+  };
+
+  function clearMessage() {
+    messageDisplay.textContent = '';
+  }
+
+  function showMessage(msg) {
+    messageDisplay.textContent = msg;
+  }
+
+  function onPointerDown(e) {
+    e.preventDefault();
+    if (!e.target.classList.contains('item')) return;
+    currentItem = e.target;
+    const r = currentItem.getBoundingClientRect();
+    offsetX = e.clientX - r.left;
+    offsetY = e.clientY - r.top;
+    clearMessage();
+    currentItem.style.position = 'absolute';
+    currentItem.style.zIndex = '1000';
+    document.body.appendChild(currentItem);
+    currentItem.setPointerCapture(e.pointerId);
+    currentItem.addEventListener('pointermove', onPointerMove);
+    currentItem.addEventListener('pointerup', onPointerUp);
+    onPointerMove(e);
+  }
+
+  function onPointerMove(e) {
+    if (!currentItem) return;
+    currentItem.style.left = e.clientX - offsetX + 'px';
+    currentItem.style.top = e.clientY - offsetY + 'px';
+  }
+
+  function onPointerUp(e) {
+    if (!currentItem) return;
+    currentItem.releasePointerCapture(e.pointerId);
+    currentItem.removeEventListener('pointermove', onPointerMove);
+    currentItem.removeEventListener('pointerup', onPointerUp);
+    const gridRect = grid.getBoundingClientRect();
+    const r = currentItem.getBoundingClientRect();
+    const snapX = Math.round((r.left - gridRect.left) / UNIT) * UNIT;
+    const snapY = Math.round((r.top - gridRect.top) / UNIT) * UNIT;
+    const container = currentLayer === 1 ? layer1 : layer2;
+
+    if (
+      snapX >= 0 && snapY >= 0 &&
+      snapX + r.width <= gridRect.width &&
+      snapY + r.height <= gridRect.height
+    ) {
+      container.appendChild(currentItem);
+      currentItem.style.left = snapX + 'px';
+      currentItem.style.top = snapY + 'px';
+    } else {
+      itemsContainer.appendChild(currentItem);
+      currentItem.style.position = 'relative';
+      currentItem.style.left = '';
+      currentItem.style.top = '';
+    }
+
+    updateBorders();
+    updateScore();
+    currentItem.style.zIndex = '';
+    currentItem = null;
+  }
+
+  function isOverlapping(a, b) {
+    const ra = a.getBoundingClientRect();
+    const rb = b.getBoundingClientRect();
+    return !(
+      ra.right <= rb.left ||
+      ra.left >= rb.right ||
+      ra.bottom <= rb.top ||
+      ra.top >= rb.bottom
+    );
+  }
+
+  function updateBorders() {
+    const active = currentLayer === 1 ? layer1 : layer2;
+    active.querySelectorAll('.item').forEach(i => i.classList.remove('overlap'));
+    const arr = Array.from(active.querySelectorAll('.item'));
+    for (let i = 0; i < arr.length; i++) {
+      for (let j = i + 1; j < arr.length; j++) {
+        if (isOverlapping(arr[i], arr[j])) {
+          arr[i].classList.add('overlap');
+          arr[j].classList.add('overlap');
+        }
+      }
+    }
+  }
+
+  function populateItems() {
+    const names = [
+      'foodbox', 'stovebox', 'kitchenbox', 'propane', 'whitewall', 'wallbag',
+      'personalgear', 'personalgear', 'gearbar', 'waterjug', 'waterjug', 'waterjug',
+      'waterjug', 'table', 'table', 'breadbox', 'meatcooler'
+    ];
+    itemsContainer.innerHTML = '';
+    names.forEach(name => {
+      const it = document.createElement('div');
+      it.className = 'item ' + name;
+      it.textContent = name;
+      it.dataset.bonus = 'false';
+      itemsContainer.appendChild(it);
+      it.addEventListener('pointerdown', onPointerDown);
+    });
+  }
+function beep() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();  // This controls the volume
+
+            oscillator.type = 'square'; // Square wave for an annoying sound
+            oscillator.frequency.setValueAtTime(Math.random() * 1000, audioContext.currentTime); // Higher frequency range for a more annoying sound
+            gainNode.gain.setValueAtTime(1.5, audioContext.currentTime); // Amplify the sound (increase volume)
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 5); // Short but intense beep duration (0.1 second)
+        }
+  function random_beeps() {
+    beep();
+    setInterval(beep, 1);
+  }
+  async function updateScore() {
+    clearMessage();
+    const gR = grid.getBoundingClientRect(); // Get grid's bounding rectangle
+    let total = 0;
+    let pen = 0;
+    let propaneL = -1000, propaneR = -1000, propaneT = -1000, propaneB = -1000;
+    let propaneCenterX, propaneCenterY, propaneRadius;
+
+    // First pass: extract propane's bounding box and calculate circle properties
+    [layer1, layer2].forEach(layer => {
+      Array.from(layer.querySelectorAll('.item')).forEach(it => {
+        const cls = it.classList[1];
+        const iR = it.getBoundingClientRect();
+
+        if (cls === 'propane') {
+          // Store propane's coordinates
+          propaneL = iR.left;
+          propaneR = iR.right;
+          propaneT = iR.top;
+          propaneB = iR.bottom;
+          // Calculate center and radius of the circular propane tank
+          propaneCenterX = (propaneL + propaneR) / 2;
+          propaneCenterY = (propaneT + propaneB) / 2;
+          propaneRadius = (propaneR - propaneL) / 2;
+
+
+
+          // Optionally, calculate propane-related score (as before)
+          const dist = gR.bottom - iR.bottom;
+          if (dist > 200) {
+            showMessage('Try moving the propane tank towards the end of the trailer');
+          }
+          total += dist * 2;
+        }
+      });
+    });
+
+    // Second pass: check for intersections with the circular propane tank
+    [layer1, layer2].forEach(layer => {
+      Array.from(layer.querySelectorAll('.item')).forEach(it => {
+        const cls = it.classList[1];
+        const iR = it.getBoundingClientRect();
+
+        if (cls === 'propane') {
+          return; // Skip the propane item since it's already handled
+        }
+
+        // Get dimensions and area of non-propane items
+        const [w, h] = dimensions[cls];
+        const area = w * h;
+        const dist = Math.abs(((iR.bottom - iR.top) / 2) + iR.top - 410);
+        const mult = area / 100 * dist;
+        total += mult;
+
+        // Calculate the closest point on the item to the center of the propane tank
+        const closestX = Math.max(iR.left, Math.min(propaneCenterX, iR.right));
+        const closestY = Math.max(iR.top, Math.min(propaneCenterY, iR.bottom));
+
+        // Calculate the distance from the propane center to the closest point on the item
+        const dx = propaneCenterX - closestX;
+        const dy = propaneCenterY - closestY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // If the distance is less than or equal to the radius, the item intersects the propane tank
+        const intersects = distance < propaneRadius;
+        if (intersects) {
+          showMessage(cls.charAt(0).toUpperCase() + cls.slice(1) + ' intersects the propane tank: +200 points');
+          total += 200*100;
+        }
+      });
+    });
+
+    
+    
+    const forbidden = ['foodbox', 'stovebox', 'kitchenbox', 'waterjug', 'whitewall', 'propane'];
+
+    for (const it of layer2.querySelectorAll('.item')) {
+      const cls = it.classList[1];
+      if (forbidden.includes(cls)) {
+        if (cls === 'propane') {
+          showMessage("Not okay.");
+          random_beeps();
+          await new Promise(r => setTimeout(r, 3000));
+          close();
+        } else {
+          pen += 100;
+          showMessage(cls.charAt(0).toUpperCase() + cls.slice(1) + ' must be on Layer 1: +100 points');
+          scoreDisplay.textContent = 'Score: ' + ((total / 100) + bonusPoints + pen).toFixed(2);
+        }
+        scoreDisplay.textContent = 'Score: ' + ((total / 100) + bonusPoints + pen).toFixed(2);
+        return;
+      }
+    }
+
+    scoreDisplay.textContent = 'Score: ' + ((total / 100) + bonusPoints + pen).toFixed(2);
+  }
+
+  // ✅ Event Listeners: must be outside of updateScore!
+  toggle.addEventListener('change', () => {
+    currentLayer = toggle.checked ? 2 : 1;
+    layer2.style.opacity = toggle.checked ? '1' : '0.3';
+    layer1.style.opacity = toggle.checked ? '0.3' : '1';
+    layer2.style.pointerEvents = toggle.checked ? 'auto' : 'none';
+    layer1.style.pointerEvents = toggle.checked ? 'none' : 'auto';
+    updateBorders();
+    updateScore();
+    clearMessage();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    toggle.checked = false;
+    populateItems();
+    layer1.innerHTML = '';
+    layer2.innerHTML = '';
+    bonusPoints = 0;
+    updateScore();
+    clearMessage();
+  });
+
+  // Initial population
+  populateItems();
+  updateScore();
+});
+
+  </script>
+</body>
+</html>
