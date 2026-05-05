@@ -110,6 +110,44 @@ header {
 .state-title { font-family:'Bebas Neue',sans-serif; font-size:1.4rem; letter-spacing:.05em; color:var(--muted); }
 .state-sub   { font-family:'DM Mono',monospace; font-size:.62rem; letter-spacing:.12em; color:#333; max-width:28rem; line-height:1.8; }
 
+/* QOTD + DATETIME */
+.hero-widgets {
+  display: flex; gap: 1.5rem; flex-wrap: wrap;
+  margin-bottom: 3rem;
+  opacity: 0; animation: up .7s .55s forwards;
+}
+.widget {
+  background: #111;
+  border: 1px solid var(--border);
+  padding: 1.1rem 1.4rem;
+  display: flex; flex-direction: column; gap: 0.3rem;
+  min-width: 180px;
+}
+.widget-label {
+  font-family: 'DM Mono', monospace;
+  font-size: .58rem; letter-spacing: .22em;
+  text-transform: uppercase; color: var(--accent);
+}
+.widget-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.25rem; letter-spacing: .04em;
+  color: var(--white); line-height: 1.15;
+}
+.widget-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: .62rem; color: var(--muted);
+  line-height: 1.5; margin-top: .2rem;
+}
+.widget-answer {
+  font-family: 'DM Mono', monospace;
+  font-size: .68rem; color: var(--accent);
+  margin-top: .3rem; opacity: 0;
+  transition: opacity .3s;
+  cursor: pointer;
+}
+.widget-answer.revealed { opacity: 1; cursor: default; }
+.widget-answer:not(.revealed)::before { content: 'tap to reveal answer'; color: var(--muted); font-size: .6rem; }
+
 /* FOOTER */
 footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
 .foot-logo { font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:.15em; color:#222; }
@@ -141,7 +179,21 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
   <div class="hero-bg" aria-hidden="true">4</div>
   <p class="hero-eyebrow">room&#8202;—&#8202;004</p>
   <h1 class="hero-title">Enter<br>The <span class="hollow">Room</span></h1>
-  <p class="hero-desc">Everything for this class in one place. Add a folder to the repo and it appears here automatically.</p>
+  <p class="hero-desc" style="font-size:.9rem;color:var(--muted);max-width:26rem;line-height:1.75;margin-bottom:2rem;opacity:0;animation:up .7s .45s forwards;">Everything for this class in one place.</p>
+
+  <div class="hero-widgets">
+    <div class="widget">
+      <span class="widget-label">Date</span>
+      <span class="widget-val" id="dateVal">—</span>
+      <span class="widget-sub" id="timeVal">—</span>
+    </div>
+    <div class="widget" style="flex:1;min-width:220px;">
+      <span class="widget-label">Question of the Day — <span id="qotdDay" style="color:var(--muted);font-weight:300;letter-spacing:.1em;"></span></span>
+      <span class="widget-val" id="qotdQ">—</span>
+      <span class="widget-answer" id="qotdA" onclick="revealAnswer()"></span>
+    </div>
+  </div>
+
   <p class="hero-scroll">scroll to explore</p>
 </section>
 
@@ -249,6 +301,395 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
   }
 
   loadFolders();
+
+  // ── Date & Time ──
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('dateVal').textContent = now.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+    document.getElementById('timeVal').textContent = now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ── QOTD — 365 Algebra 1 questions, one per day of the year ──
+  const questions = [
+    { day: "Jan 1 — New Year", q: "If x = 2026, what is x − 2000?", a: "26" },
+    { day: "Jan 2", q: "Simplify: 3 + 4 × 2", a: "11" },
+    { day: "Jan 3", q: "Evaluate: 5² − 3²", a: "16" },
+    { day: "Jan 4", q: "Solve: x + 7 = 15", a: "x = 8" },
+    { day: "Jan 5", q: "What is the value of |−13|?", a: "13" },
+    { day: "Jan 6", q: "Simplify: 2(3 + 4) − 5", a: "9" },
+    { day: "Jan 7", q: "Solve: 2x = 18", a: "x = 9" },
+    { day: "Jan 8", q: "Which property justifies a + b = b + a?", a: "Commutative Property of Addition" },
+    { day: "Jan 9", q: "Evaluate: 4³ ÷ 8", a: "8" },
+    { day: "Jan 10", q: "Simplify: −3 × (−4)", a: "12" },
+    { day: "Jan 11", q: "Solve: x − 9 = −2", a: "x = 7" },
+    { day: "Jan 12", q: "What is the additive inverse of −5?", a: "5" },
+    { day: "Jan 13", q: "Simplify: (−2)⁴", a: "16" },
+    { day: "Jan 14", q: "Evaluate: 3(5 − 2)² + 1", a: "28" },
+    { day: "Jan 15", q: "Solve: x/4 = −3", a: "x = −12" },
+    { day: "Jan 16", q: "Which property: 3(x + 2) = 3x + 6?", a: "Distributive Property" },
+    { day: "Jan 17", q: "Simplify: −|−8| + 3", a: "−5" },
+    { day: "Jan 18", q: "Solve: 3x + 1 = 10", a: "x = 3" },
+    { day: "Jan 19", q: "Evaluate: (−3)² − (−3)", a: "12" },
+    { day: "Jan 20", q: "Simplify: 5 − 2(3 − 7)", a: "13" },
+    { day: "Jan 21", q: "Solve: 4x − 3 = 9", a: "x = 3" },
+    { day: "Jan 22", q: "What is the multiplicative inverse of ¼?", a: "4" },
+    { day: "Jan 23", q: "Evaluate: 2³ × 3²", a: "72" },
+    { day: "Jan 24", q: "Solve: −5x = 35", a: "x = −7" },
+    { day: "Jan 25", q: "Simplify: 6 − (−2) + (−8)", a: "0" },
+    { day: "Jan 26", q: "Which property: (2·3)·4 = 2·(3·4)?", a: "Associative Property of Multiplication" },
+    { day: "Jan 27", q: "Evaluate: 50 − 2⁴ × 3", a: "2" },
+    { day: "Jan 28", q: "Solve: x/−3 = 6", a: "x = −18" },
+    { day: "Jan 29", q: "Simplify: −(−(−4))", a: "−4" },
+    { day: "Jan 30", q: "Evaluate: (2 + 3)² − 4²", a: "9" },
+    { day: "Jan 31", q: "Solve: 2(x − 3) = 10", a: "x = 8" },
+    { day: "Feb 1", q: "What is the slope of y = 3x − 7?", a: "3" },
+    { day: "Feb 2", q: "Solve: 5x + 2 = 3x + 10", a: "x = 4" },
+    { day: "Feb 3", q: "What is the y-intercept of y = −2x + 5?", a: "(0, 5)" },
+    { day: "Feb 4", q: "Find the slope between (1, 2) and (3, 8)", a: "3" },
+    { day: "Feb 5", q: "Solve: 7 − 3x = 22", a: "x = −5" },
+    { day: "Feb 6", q: "Write in slope-intercept form: 2x + y = 6", a: "y = −2x + 6" },
+    { day: "Feb 7", q: "What is the slope of a horizontal line?", a: "0" },
+    { day: "Feb 8", q: "Solve: 4(x + 2) = 3(x − 1)", a: "x = −11" },
+    { day: "Feb 9", q: "What is the slope of a vertical line?", a: "Undefined" },
+    { day: "Feb 10", q: "Find the x-intercept of y = 2x − 8", a: "(4, 0)" },
+    { day: "Feb 11", q: "Solve: (x/3) + 5 = 9", a: "x = 12" },
+    { day: "Feb 12", q: "Are y = 2x + 1 and y = 2x − 3 parallel?", a: "Yes — same slope (m = 2)" },
+    { day: "Feb 13", q: "Find the slope of the line: 3x − y = 9", a: "3" },
+    { day: "Feb 14", q: "Two lines are perpendicular. One has slope 2. What is the other slope?", a: "−½" },
+    { day: "Feb 15", q: "Solve: 2x/5 = 4", a: "x = 10" },
+    { day: "Feb 16", q: "What is the slope between (−2, 3) and (4, 3)?", a: "0" },
+    { day: "Feb 17", q: "Write the equation of a line with slope 3 through (0, −1)", a: "y = 3x − 1" },
+    { day: "Feb 18", q: "Solve: 3x − 4 = 5x + 6", a: "x = −5" },
+    { day: "Feb 19", q: "Find the slope between (0, 0) and (−3, 9)", a: "−3" },
+    { day: "Feb 20", q: "Write in standard form: y = ½x + 3", a: "x − 2y = −6" },
+    { day: "Feb 21", q: "Solve: −2(3x − 1) = 4x + 10", a: "x = −1" },
+    { day: "Feb 22", q: "What is the y-intercept of 4x − 2y = 8?", a: "(0, −4)" },
+    { day: "Feb 23", q: "Find the slope between (2, −5) and (2, 3)", a: "Undefined" },
+    { day: "Feb 24", q: "Solve: 5x − (2x + 3) = 9", a: "x = 4" },
+    { day: "Feb 25", q: "Write the equation of a line through (1, 4) with slope −2", a: "y = −2x + 6" },
+    { day: "Feb 26", q: "Solve: 0.5x + 3 = 7", a: "x = 8" },
+    { day: "Feb 27", q: "What is the slope of x = −4?", a: "Undefined" },
+    { day: "Feb 28", q: "Solve: 6x + 9 = 3x", a: "x = −3" },
+    { day: "Mar 1", q: "Solve the system: y = x + 1 and y = 2x − 3", a: "x = 4, y = 5" },
+    { day: "Mar 2", q: "Solve the inequality: x > −2. Is x = 0 a solution?", a: "Yes" },
+    { day: "Mar 3", q: "Solve by substitution: y = 3x and x + y = 8", a: "x = 2, y = 6" },
+    { day: "Mar 4", q: "Solve: 2x + 3 > 11", a: "x > 4" },
+    { day: "Mar 5", q: "Solve the system: x + y = 6 and x − y = 2", a: "x = 4, y = 2" },
+    { day: "Mar 6", q: "Solve: −3x ≤ 12", a: "x ≥ −4" },
+    { day: "Mar 7", q: "Solve by elimination: 2x + y = 7 and x − y = 2", a: "x = 3, y = 1" },
+    { day: "Mar 8", q: "Solve: 5 − 2x < 13", a: "x > −4" },
+    { day: "Mar 9", q: "How many solutions: y = 2x + 1 and y = 2x − 5?", a: "No solution — parallel lines" },
+    { day: "Mar 10", q: "Solve: |x| = 7", a: "x = 7 or x = −7" },
+    { day: "Mar 11", q: "Solve by substitution: x = 2y and 3x − y = 10", a: "y = 2, x = 4" },
+    { day: "Mar 12", q: "Solve: 3|x − 1| = 12", a: "x = 5 or x = −3" },
+    { day: "Mar 13", q: "Solve the system: 2x + 3y = 12 and x = 3", a: "x = 3, y = 2" },
+    { day: "Mar 14 — Pi Day!", q: "Solve: πx = 3π", a: "x = 3" },
+    { day: "Mar 15", q: "Solve: −2x + 5 ≥ −3", a: "x ≤ 4" },
+    { day: "Mar 16", q: "Solve by elimination: 3x + 2y = 16 and 3x − y = 7", a: "x = 3, y = 3.5" },
+    { day: "Mar 17", q: "How many solutions: 2x + 2y = 4 and x + y = 2?", a: "Infinitely many — same line" },
+    { day: "Mar 18", q: "Solve: |2x + 3| = 9", a: "x = 3 or x = −6" },
+    { day: "Mar 19", q: "Solve: 4x − 1 ≤ 2x + 7", a: "x ≤ 4" },
+    { day: "Mar 20", q: "Solve the system: y = −x + 4 and y = x − 2", a: "x = 3, y = 1" },
+    { day: "Mar 21", q: "Solve: 2(x − 3) > x + 1", a: "x > 7" },
+    { day: "Mar 22", q: "Solve by substitution: y = 4 − x and 2x + y = 7", a: "x = 3, y = 1" },
+    { day: "Mar 23", q: "Solve: |x + 4| < 3", a: "−7 < x < −1" },
+    { day: "Mar 24", q: "Solve the system: x + 2y = 8 and 2x + 4y = 16", a: "Infinitely many solutions" },
+    { day: "Mar 25", q: "Solve: 3 − |2x| = −5", a: "x = 4 or x = −4" },
+    { day: "Mar 26", q: "Solve by elimination: x + y = 9 and 2x − y = 3", a: "x = 4, y = 5" },
+    { day: "Mar 27", q: "Solve: 7 − 3x > 1 and x + 2 > 0", a: "−2 < x < 2" },
+    { day: "Mar 28", q: "Solve the system: 3x − y = 5 and x + 2y = 11", a: "x = 3, y = 4" },
+    { day: "Mar 29", q: "Solve: |3x − 6| ≥ 9", a: "x ≥ 5 or x ≤ −1" },
+    { day: "Mar 30", q: "Solve by substitution: 2x + y = 10 and y = x − 1", a: "x = 11/3, y = 8/3" },
+    { day: "Mar 31", q: "Solve: −4 ≤ 2x + 2 ≤ 10", a: "−3 ≤ x ≤ 4" },
+    { day: "Apr 1 — April Fools!", q: "Is x² + 2x + 1 = (x + 1)² a trick?", a: "No trick — it is TRUE!" },
+    { day: "Apr 2", q: "Simplify: x³ × x⁴", a: "x⁷" },
+    { day: "Apr 3", q: "Expand: (x + 3)(x + 4)", a: "x² + 7x + 12" },
+    { day: "Apr 4", q: "Simplify: x⁵ ÷ x²", a: "x³" },
+    { day: "Apr 5", q: "Factor: x² + 5x + 6", a: "(x + 2)(x + 3)" },
+    { day: "Apr 6", q: "Simplify: (2x²)³", a: "8x⁶" },
+    { day: "Apr 7", q: "Expand: (x − 5)(x + 5)", a: "x² − 25" },
+    { day: "Apr 8", q: "Factor: x² − 9", a: "(x + 3)(x − 3)" },
+    { day: "Apr 9", q: "Simplify: x⁰ + 2⁰ + 5⁰", a: "3" },
+    { day: "Apr 10", q: "Factor: x² − 7x + 12", a: "(x − 3)(x − 4)" },
+    { day: "Apr 11", q: "Simplify: (3x²y)(2xy³)", a: "6x³y⁴" },
+    { day: "Apr 12", q: "Expand: (x + 4)²", a: "x² + 8x + 16" },
+    { day: "Apr 13", q: "Factor: 2x² + 8x", a: "2x(x + 4)" },
+    { day: "Apr 14", q: "Simplify: (x⁻²)(x⁵)", a: "x³" },
+    { day: "Apr 15 — Tax Day!", q: "Factor x² + 5x + 6 = 0 to find when your algebra grade is at zero.", a: "x = −2 or x = −3" },
+    { day: "Apr 16", q: "Expand: (2x − 3)(x + 1)", a: "2x² − x − 3" },
+    { day: "Apr 17", q: "Factor: x² + 2x − 15", a: "(x + 5)(x − 3)" },
+    { day: "Apr 18", q: "Simplify: 4x³ ÷ 2x", a: "2x²" },
+    { day: "Apr 19", q: "Factor: 3x² − 12", a: "3(x + 2)(x − 2)" },
+    { day: "Apr 20", q: "Expand: (x − 3)²", a: "x² − 6x + 9" },
+    { day: "Apr 21", q: "Factor: x² − x − 6", a: "(x − 3)(x + 2)" },
+    { day: "Apr 22 — Earth Day!", q: "A square garden has area x² + 10x + 25 sq ft. What is the side length?", a: "x + 5 feet" },
+    { day: "Apr 23", q: "Simplify: (2x²)² ÷ 4x", a: "x³" },
+    { day: "Apr 24", q: "Factor: 4x² − 1", a: "(2x + 1)(2x − 1)" },
+    { day: "Apr 25", q: "Expand: (x + 1)(x² − x + 1)", a: "x³ + 1" },
+    { day: "Apr 26", q: "Factor: x³ − 8", a: "(x − 2)(x² + 2x + 4)" },
+    { day: "Apr 27", q: "Simplify: (x²)³ × x⁻⁴", a: "x²" },
+    { day: "Apr 28", q: "Factor: 6x² + 11x + 3", a: "(2x + 3)(3x + 1)" },
+    { day: "Apr 29", q: "Expand: (3x − 1)²", a: "9x² − 6x + 1" },
+    { day: "Apr 30", q: "Factor completely: 2x³ − 8x", a: "2x(x + 2)(x − 2)" },
+    { day: "May 1", q: "Solve by factoring: x² − 5x + 6 = 0", a: "x = 2 or x = 3" },
+    { day: "May 2", q: "What is the vertex of y = x² + 4x + 1?", a: "(−2, −3)" },
+    { day: "May 3", q: "Solve: x² − 16 = 0", a: "x = 4 or x = −4" },
+    { day: "May 4 — Star Wars Day!", q: "Solve: x² + 4 = 0 in real numbers. May the force help you.", a: "No real solutions" },
+    { day: "May 5", q: "Solve by factoring: x² + x − 12 = 0", a: "x = 3 or x = −4" },
+    { day: "May 6", q: "What is the axis of symmetry of y = x² − 6x + 5?", a: "x = 3" },
+    { day: "May 7", q: "Solve using the quadratic formula: x² − 5x + 4 = 0", a: "x = 1 or x = 4" },
+    { day: "May 8", q: "Find the discriminant of x² − 4x + 4 = 0", a: "0 — one real solution" },
+    { day: "May 9", q: "Complete the square: x² + 6x + ___ = (x + ___)²", a: "9; (x + 3)²" },
+    { day: "May 10", q: "Solve: 2x² − 8 = 0", a: "x = 2 or x = −2" },
+    { day: "May 11", q: "What does a negative discriminant tell you?", a: "No real solutions" },
+    { day: "May 12", q: "Solve: x² + 4x − 5 = 0 by factoring", a: "x = 1 or x = −5" },
+    { day: "May 13", q: "Convert to vertex form: y = x² − 4x + 7", a: "y = (x − 2)² + 3" },
+    { day: "May 14", q: "Solve using the quadratic formula: 2x² + 3x − 2 = 0", a: "x = ½ or x = −2" },
+    { day: "May 15", q: "What is the vertex of y = −(x − 3)² + 5?", a: "(3, 5)" },
+    { day: "May 16", q: "Solve: x² = 12x − 36", a: "x = 6 (double root)" },
+    { day: "May 17", q: "Find the zeros of f(x) = x² − 3x", a: "x = 0 or x = 3" },
+    { day: "May 18", q: "Solve by completing the square: x² + 8x − 9 = 0", a: "x = 1 or x = −9" },
+    { day: "May 19", q: "A ball's height: h = −16t² + 32t. When does it hit the ground?", a: "t = 2 seconds" },
+    { day: "May 20", q: "Solve: 3x² − 27 = 0", a: "x = 3 or x = −3" },
+    { day: "May 21", q: "What is the minimum value of y = (x + 1)² − 4?", a: "−4" },
+    { day: "May 22", q: "Solve: x² + 6x + 9 = 0", a: "x = −3 (double root)" },
+    { day: "May 23", q: "How many real solutions: x² + 2x + 5 = 0?", a: "None — discriminant is negative" },
+    { day: "May 24", q: "Solve: 4x² − 4x + 1 = 0", a: "x = ½ (double root)" },
+    { day: "May 25", q: "Find the maximum of y = −2x² + 8x − 3", a: "5, at x = 2" },
+    { day: "May 26", q: "Solve using the quadratic formula: x² − 2x − 8 = 0", a: "x = 4 or x = −2" },
+    { day: "May 27", q: "Write a quadratic with roots x = 3 and x = −1", a: "x² − 2x − 3 = 0" },
+    { day: "May 28", q: "Solve: 5x² = 45", a: "x = 3 or x = −3" },
+    { day: "May 29", q: "What is the y-intercept of f(x) = 2x² − 3x + 1?", a: "(0, 1)" },
+    { day: "May 30", q: "Solve: x² − 10x + 21 = 0", a: "x = 7 or x = 3" },
+    { day: "May 31", q: "If a parabola opens down, does it have a max or min?", a: "Maximum" },
+    { day: "Jun 1", q: "Simplify: √72", a: "6√2" },
+    { day: "Jun 2", q: "Evaluate: f(x) = 3x − 1 when x = 4", a: "11" },
+    { day: "Jun 3", q: "Simplify: √50 + √8", a: "7√2" },
+    { day: "Jun 4", q: "What is the domain of f(x) = 1/(x − 3)?", a: "All real numbers except x = 3" },
+    { day: "Jun 5", q: "Simplify: ∛27", a: "3" },
+    { day: "Jun 6", q: "Simplify: (√5)(√20)", a: "10" },
+    { day: "Jun 7", q: "Is f = {(1,2),(2,2),(3,2)} a function?", a: "Yes — each input has exactly one output" },
+    { day: "Jun 8", q: "Simplify: √(x²)", a: "|x|" },
+    { day: "Jun 9", q: "Find f(−2) if f(x) = x² + 3x − 1", a: "−3" },
+    { day: "Jun 10", q: "Simplify: 3√2 × 4√3", a: "12√6" },
+    { day: "Jun 11", q: "What is the range of f(x) = x²?", a: "y ≥ 0" },
+    { day: "Jun 12", q: "Rationalize: 6/√3", a: "2√3" },
+    { day: "Jun 13", q: "Simplify: √(49x⁴)", a: "7x²" },
+    { day: "Jun 14 — Flag Day!", q: "A flagpole shadow and √3: if tan(θ) = √3 and shadow = 3 ft, what is the height?", a: "3√3 feet" },
+    { day: "Jun 15", q: "Simplify: (√6 + √2)(√6 − √2)", a: "4" },
+    { day: "Jun 16", q: "Find g(3) if g(x) = (x² − 1)/(x + 1)", a: "2" },
+    { day: "Jun 17", q: "Simplify: ∜(81x⁸)", a: "3x²" },
+    { day: "Jun 18", q: "What is the domain of f(x) = √(x − 5)?", a: "x ≥ 5" },
+    { day: "Jun 19", q: "Simplify: 5√3 − 2√3 + √3", a: "4√3" },
+    { day: "Jun 20", q: "If f(x) = 2x + 1 and g(x) = x − 3, find f(g(x))", a: "2x − 5" },
+    { day: "Jun 21 — Summer Solstice!", q: "Longest day: if d(t) = −0.5t + 15.5 hours of light, what is d(0)?", a: "15.5 hours" },
+    { day: "Jun 22", q: "Simplify: √18 ÷ √2", a: "3" },
+    { day: "Jun 23", q: "Is f(x) = |x| a one-to-one function?", a: "No — two inputs can give the same output" },
+    { day: "Jun 24", q: "Simplify: (2 + √3)²", a: "7 + 4√3" },
+    { day: "Jun 25", q: "Find the inverse of f(x) = 2x + 6", a: "f⁻¹(x) = (x − 6)/2" },
+    { day: "Jun 26", q: "Simplify: √(12x³)", a: "2x√(3x)" },
+    { day: "Jun 27", q: "What is f(f⁻¹(7)) for any invertible function?", a: "7" },
+    { day: "Jun 28", q: "Simplify: (√x + 1)(√x − 1)", a: "x − 1" },
+    { day: "Jun 29", q: "Find the inverse of f(x) = x² + 1 for x ≥ 0", a: "f⁻¹(x) = √(x − 1)" },
+    { day: "Jun 30", q: "Simplify: ∛(8x⁶y³)", a: "2x²y" },
+    { day: "Jul 1", q: "Solve: 3(2x − 1) = 2(x + 5)", a: "x = 13/4" },
+    { day: "Jul 2", q: "What is the slope perpendicular to y = ½x + 3?", a: "−2" },
+    { day: "Jul 3", q: "Factor: x² − 4x − 21", a: "(x − 7)(x + 3)" },
+    { day: "Jul 4 — Independence Day!", q: "If freedom = 1776 and x + 1776 = 2026, solve for x.", a: "x = 250" },
+    { day: "Jul 5", q: "Solve the system: y = −x + 5 and y = 2x − 1", a: "x = 2, y = 3" },
+    { day: "Jul 6", q: "Simplify: (3x²)³ ÷ 9x⁴", a: "3x²" },
+    { day: "Jul 7", q: "Solve: |2x − 5| = 11", a: "x = 8 or x = −3" },
+    { day: "Jul 8", q: "What is the vertex of y = 2(x − 1)² + 3?", a: "(1, 3)" },
+    { day: "Jul 9", q: "Solve: x² − 6x = 0", a: "x = 0 or x = 6" },
+    { day: "Jul 10", q: "Write the equation of a line through (2, 5) and (4, 9)", a: "y = 2x + 1" },
+    { day: "Jul 11", q: "Simplify: √75 − √27", a: "2√3" },
+    { day: "Jul 12", q: "Solve by elimination: 4x + y = 9 and 2x − y = 3", a: "x = 2, y = 1" },
+    { day: "Jul 13", q: "Find f(0) for f(x) = x³ − 2x² + x − 5", a: "−5" },
+    { day: "Jul 14", q: "Factor: 9x² − 24x + 16", a: "(3x − 4)²" },
+    { day: "Jul 15", q: "Solve: (x + 2)/3 = (x − 1)/2", a: "x = 7" },
+    { day: "Jul 16", q: "Simplify: (x² − 9)/(x + 3)", a: "x − 3" },
+    { day: "Jul 17", q: "Solve: 2x² + 5x − 3 = 0", a: "x = ½ or x = −3" },
+    { day: "Jul 18", q: "What is the y-intercept of 5x − 2y = 10?", a: "(0, −5)" },
+    { day: "Jul 19", q: "Simplify: (4x³y²)/(2x²y)", a: "2xy" },
+    { day: "Jul 20 — Moon Landing!", q: "Rocket height: h = −5t² + 100t. What is the maximum height?", a: "500 feet at t = 10 sec" },
+    { day: "Jul 21", q: "Solve: 3 − 2x ≤ 7 + x", a: "x ≥ −4/3" },
+    { day: "Jul 22", q: "Factor: 2x³ + 6x² − 8x", a: "2x(x + 4)(x − 1)" },
+    { day: "Jul 23", q: "Find the domain of f(x) = √(2x − 6)", a: "x ≥ 3" },
+    { day: "Jul 24", q: "Solve: (2x − 1)² = 25", a: "x = 3 or x = −2" },
+    { day: "Jul 25", q: "Write in vertex form: y = x² + 2x − 3", a: "y = (x + 1)² − 4" },
+    { day: "Jul 26", q: "Solve the system: 3x + 2y = 1 and x − y = 2", a: "x = 1, y = −1" },
+    { day: "Jul 27", q: "Simplify: (x² + 5x + 6)/(x + 2)", a: "x + 3" },
+    { day: "Jul 28", q: "Solve: 5x + 3 > 2x − 6", a: "x > −3" },
+    { day: "Jul 29", q: "Find the inverse of f(x) = 3x − 9", a: "f⁻¹(x) = (x + 9)/3" },
+    { day: "Jul 30", q: "Expand and simplify: (x + y)² + (x − y)²", a: "2x² + 2y²" },
+    { day: "Jul 31", q: "Solve: x/2 + x/3 = 5", a: "x = 6" },
+    { day: "Aug 1", q: "Solve: 3x² − 12x + 9 = 0", a: "x = 1 or x = 3" },
+    { day: "Aug 2", q: "Find the slope between (−3, 7) and (5, −1)", a: "−1" },
+    { day: "Aug 3", q: "Simplify: (2x − 3)(x + 4) − (x² + x)", a: "x² + 2x − 12" },
+    { day: "Aug 4", q: "Solve: |4x + 3| ≤ 11", a: "−3.5 ≤ x ≤ 2" },
+    { day: "Aug 5", q: "What is the sum of roots of x² − 7x + 10 = 0?", a: "7" },
+    { day: "Aug 6", q: "Simplify: (3√2)² + (2√3)²", a: "30" },
+    { day: "Aug 7", q: "Solve the system: y = x² and y = 2x", a: "(0, 0) and (2, 4)" },
+    { day: "Aug 8", q: "Factor: 4x² + 12x + 9", a: "(2x + 3)²" },
+    { day: "Aug 9", q: "Solve: (x − 3)(x + 4) = 0", a: "x = 3 or x = −4" },
+    { day: "Aug 10", q: "If f(x) = x² and g(x) = x + 2, find f(g(x))", a: "x² + 4x + 4" },
+    { day: "Aug 11", q: "Solve: 4/(x − 1) = 2", a: "x = 3" },
+    { day: "Aug 12", q: "Find two consecutive integers whose product is 72", a: "8 and 9" },
+    { day: "Aug 13", q: "Evaluate: x⁻¹ + y⁻¹ when x = 2 and y = 4", a: "¾" },
+    { day: "Aug 14", q: "Solve: x² + x − 2 = 0 using the quadratic formula", a: "x = 1 or x = −2" },
+    { day: "Aug 15", q: "What is the product of the roots of 2x² − 6x + 4 = 0?", a: "2" },
+    { day: "Aug 16", q: "Solve: √(2x + 1) = 5", a: "x = 12" },
+    { day: "Aug 17", q: "Expand and simplify: (x + 3)² − (x − 3)²", a: "12x" },
+    { day: "Aug 18", q: "Solve: 3(x − 2) = 2(x + 1) + x", a: "No solution" },
+    { day: "Aug 19", q: "Write the equation of a line through (0, 4) perpendicular to y = 2x", a: "y = −½x + 4" },
+    { day: "Aug 20", q: "Solve: √(x + 4) = x − 2", a: "x = 5" },
+    { day: "Aug 21", q: "Factor: x⁴ − 16", a: "(x² + 4)(x + 2)(x − 2)" },
+    { day: "Aug 22", q: "Solve: 2/x + 3/(2x) = 7/4", a: "x = 2" },
+    { day: "Aug 23", q: "If f(x) = 2x − 3, find f⁻¹(7)", a: "5" },
+    { day: "Aug 24", q: "Solve: (x + 1)/(x − 1) = 3", a: "x = 2" },
+    { day: "Aug 25", q: "What are the roots of f(x) = x(x − 4)(x + 2)?", a: "x = 0, 4, or −2" },
+    { day: "Aug 26", q: "Solve: 2√x − 3 = 7", a: "x = 25" },
+    { day: "Aug 27", q: "Find k if x = 3 is a root of x² − kx + 6 = 0", a: "k = 5" },
+    { day: "Aug 28", q: "Simplify: (x² − 1)/(x² + 2x + 1)", a: "(x − 1)/(x + 1)" },
+    { day: "Aug 29", q: "Solve: (x − 2)² = 9", a: "x = 5 or x = −1" },
+    { day: "Aug 30", q: "What does it mean when two linear equations have infinitely many solutions?", a: "They are the same line" },
+    { day: "Aug 31", q: "Solve: 3x² = 75", a: "x = 5 or x = −5" },
+    { day: "Sep 1", q: "Is y = x² a function? Is it one-to-one?", a: "Yes it's a function; no, not one-to-one" },
+    { day: "Sep 2", q: "Find the next term: 3, 7, 11, 15, ...", a: "19 (arithmetic, d = 4)" },
+    { day: "Sep 3", q: "Write the explicit formula for: 2, 5, 8, 11, ...", a: "aₙ = 3n − 1" },
+    { day: "Sep 4", q: "Evaluate: f(x) = −x² + 2x + 3 at x = −1", a: "0" },
+    { day: "Sep 5", q: "Is the sequence 5, 10, 20, 40 arithmetic or geometric?", a: "Geometric (ratio = 2)" },
+    { day: "Sep 6", q: "Find the 10th term of aₙ = 4n − 3", a: "37" },
+    { day: "Sep 7", q: "If f(x) = 5 − 2x, solve f(x) = −3", a: "x = 4" },
+    { day: "Sep 8", q: "Find the sum of the first 5 terms: 1, 4, 7, 10, 13", a: "35" },
+    { day: "Sep 9", q: "Write the explicit formula for: 3, 6, 12, 24, ...", a: "aₙ = 3 · 2^(n−1)" },
+    { day: "Sep 10", q: "If g(x) = x² − 4 and g(a) = 0, find all values of a", a: "a = 2 or a = −2" },
+    { day: "Sep 11", q: "What is the common ratio of: 100, 50, 25, 12.5?", a: "½" },
+    { day: "Sep 12", q: "Solve: f(x) = g(x) where f(x) = 2x + 1 and g(x) = x² − 1", a: "x = 2 or x = −1" },
+    { day: "Sep 13", q: "Find the 20th term of: aₙ = 7 + 3(n − 1)", a: "64" },
+    { day: "Sep 14", q: "If h(x) = √(x + 9), find h(7) and h(0)", a: "h(7) = 4; h(0) = 3" },
+    { day: "Sep 15", q: "Is 4, 9, 16, 25, 36 arithmetic, geometric, or neither?", a: "Neither — they are perfect squares" },
+    { day: "Sep 16", q: "Write a recursive formula for: 5, 8, 11, 14, ...", a: "a₁ = 5, aₙ = aₙ₋₁ + 3" },
+    { day: "Sep 17", q: "Find f(g(2)) if f(x) = x + 3 and g(x) = x²", a: "7" },
+    { day: "Sep 18", q: "Find the 6th term of: 2, 6, 18, 54, ...", a: "486" },
+    { day: "Sep 19", q: "If f(x) = |x − 3|, find f(−1), f(3), and f(7)", a: "4, 0, and 4" },
+    { day: "Sep 20", q: "An arithmetic sequence has a₁ = 8 and d = −3. Find a₇.", a: "−10" },
+    { day: "Sep 21", q: "Solve: 2f(x) = 10 where f(x) = x − 1", a: "x = 6" },
+    { day: "Sep 22", q: "Find the sum of first 10 terms of aₙ = 2n", a: "110" },
+    { day: "Sep 23", q: "A sequence starts at 1 and doubles each time. What is the 8th term?", a: "128" },
+    { day: "Sep 24", q: "If f(x) = 3x + 1, find x when f(x) = f(2x − 1)", a: "x = 2" },
+    { day: "Sep 25", q: "Write the general term for: −3, 0, 3, 6, 9, ...", a: "aₙ = 3n − 6" },
+    { day: "Sep 26", q: "What is the 100th term of: 7, 7, 7, 7, ...?", a: "7 — it is constant!" },
+    { day: "Sep 27", q: "If f(x) = 2x and g(x) = x + 5, find (f ∘ g)(3)", a: "16" },
+    { day: "Sep 28", q: "Which term of 4, 7, 10, 13, ... equals 64?", a: "21st term" },
+    { day: "Sep 29", q: "If aₙ = 5 · (−1)ⁿ, list the first 4 terms", a: "−5, 5, −5, 5" },
+    { day: "Sep 30", q: "Find f⁻¹(x) if f(x) = (x + 4)/3", a: "f⁻¹(x) = 3x − 4" },
+    { day: "Oct 1", q: "Simplify: (2³)² × 2", a: "128" },
+    { day: "Oct 2", q: "Write 8 as a power of 2", a: "2³" },
+    { day: "Oct 3", q: "Simplify: (x²y³)⁴", a: "x⁸y¹²" },
+    { day: "Oct 4", q: "Which is larger: 2¹⁰ or 10²?", a: "2¹⁰ = 1024 > 100 = 10²" },
+    { day: "Oct 5", q: "Solve: 2ˣ = 32", a: "x = 5" },
+    { day: "Oct 6", q: "Simplify: (a⁻²b³)⁻¹", a: "a²/b³" },
+    { day: "Oct 7", q: "Solve: 3ˣ = 81", a: "x = 4" },
+    { day: "Oct 8", q: "A population doubles every year from 100. Write the equation.", a: "P(t) = 100 · 2ᵗ" },
+    { day: "Oct 9", q: "Solve: 4ˣ = 64", a: "x = 3" },
+    { day: "Oct 10", q: "Simplify: (2x⁻¹y²)³", a: "8y⁶/x³" },
+    { day: "Oct 11", q: "What is log₂(8)?", a: "3" },
+    { day: "Oct 12", q: "Solve: 5ˣ = 1/25", a: "x = −2" },
+    { day: "Oct 13", q: "What is log₁₀(1000)?", a: "3" },
+    { day: "Oct 14", q: "Simplify: (x^½)²", a: "x" },
+    { day: "Oct 15", q: "What is log₃(27)?", a: "3" },
+    { day: "Oct 16", q: "Solve: 2ˣ⁺¹ = 16", a: "x = 3" },
+    { day: "Oct 17", q: "What is log₅(1)?", a: "0" },
+    { day: "Oct 18", q: "A $1000 investment grows at 5% annually. Write the formula.", a: "A = 1000(1.05)ᵗ" },
+    { day: "Oct 19", q: "Solve: 9ˣ = 3ˣ⁺¹", a: "x = 1" },
+    { day: "Oct 20", q: "What is log₂(1/4)?", a: "−2" },
+    { day: "Oct 21", q: "Simplify: log(100) + log(10)", a: "3" },
+    { day: "Oct 22", q: "Solve: 4²ˣ = 64", a: "x = 1.5" },
+    { day: "Oct 23", q: "What is the y-intercept of y = 3 · 2ˣ?", a: "(0, 3)" },
+    { day: "Oct 24", q: "Solve: log₂(x) = 5", a: "x = 32" },
+    { day: "Oct 25", q: "What is log₄(64)?", a: "3" },
+    { day: "Oct 26", q: "Simplify: 2⁵ × 2⁻³ ÷ 2", a: "2" },
+    { day: "Oct 27", q: "Is y = (½)ˣ growing or decaying?", a: "Decaying — base is less than 1" },
+    { day: "Oct 28", q: "Solve: 25ˣ = 125", a: "x = 3/2" },
+    { day: "Oct 29", q: "What is log₁₀(0.01)?", a: "−2" },
+    { day: "Oct 30", q: "Solve: 2^(2x) − 4 · 2^x + 4 = 0", a: "x = 1" },
+    { day: "Oct 31 — Halloween!", q: "A witch starts with 2 bats and doubles them each hour for 10 hours. How many?", a: "2¹⁰ = 1024 bats" },
+    { day: "Nov 1", q: "Simplify: (x² − 4)/(x − 2)", a: "x + 2" },
+    { day: "Nov 2", q: "Solve: 3/x = 12", a: "x = ¼" },
+    { day: "Nov 3", q: "Simplify: (2x/(x²−1)) × ((x+1)/4)", a: "1/(2(x−1))" },
+    { day: "Nov 4", q: "Solve: 1/x + 1/3 = 5/6", a: "x = 2" },
+    { day: "Nov 5", q: "Simplify: (x² + 3x)/(x² − 9)", a: "x/(x − 3)" },
+    { day: "Nov 6", q: "Solve: 6/(x + 2) = 3/(x − 1)", a: "x = 4" },
+    { day: "Nov 7", q: "Simplify: (3/x) ÷ (9/x²)", a: "x/3" },
+    { day: "Nov 8", q: "Two workers finish a job in 4 and 6 hours. How long working together?", a: "2.4 hours" },
+    { day: "Nov 9", q: "Simplify: ((x²−x−6)/(x²−4)) ÷ ((x−3)/(x+2))", a: "1" },
+    { day: "Nov 10", q: "Solve: x/(x + 2) = 3/5", a: "x = 3" },
+    { day: "Nov 11 — Veterans Day!", q: "A battalion of 11x soldiers splits into 11 equal groups. How many per group?", a: "x soldiers" },
+    { day: "Nov 12", q: "Simplify: 1/(x+1) + 1/(x−1)", a: "2x/(x²−1)" },
+    { day: "Nov 13", q: "Solve: 2/(x − 3) + 1 = 5/(x − 3)", a: "x = 6" },
+    { day: "Nov 14", q: "If rate r = 120/x and it increases by 10, write the new time expression.", a: "t = 120/(r + 10)" },
+    { day: "Nov 15", q: "Simplify: x/(x+1) − 1/(x+1)", a: "(x−1)/(x+1)" },
+    { day: "Nov 16", q: "Solve: 5/(2x) − 1/x = 3/4", a: "x = 2" },
+    { day: "Nov 17", q: "Simplify: (2/x + 3) ÷ (4/x − 1) for x ≠ 0", a: "(2 + 3x)/(4 − x)" },
+    { day: "Nov 18", q: "Solve: x + 3/x = 4", a: "x = 1 or x = 3" },
+    { day: "Nov 19", q: "Simplify: (x² − 9)/((x + 3)²)", a: "(x − 3)/(x + 3)" },
+    { day: "Nov 20", q: "A pipe fills a tank in 5 hrs; another drains it in 8. Time to fill with both open?", a: "40/3 ≈ 13.3 hours" },
+    { day: "Nov 21", q: "Solve: 3/(x + 1) = x/(x + 1) + 1", a: "x = 1" },
+    { day: "Nov 22", q: "Expand: (x + 1/x)²", a: "x² + 2 + 1/x²" },
+    { day: "Nov 23", q: "Solve: (x − 1)/(x + 2) = (x + 1)/(x + 4)", a: "x = −3" },
+    { day: "Nov 24", q: "Simplify: (3x − 6)/(x² − 4) × (x + 2)/9", a: "1/3" },
+    { day: "Nov 25", q: "Solve: 1/(x+3) + 1/(x−3) = 1/4", a: "x = (4 ± √28)/2 ≈ 4.65 or −0.65" },
+    { day: "Nov 26", q: "Simplify: (a/b) ÷ (a²/b²)", a: "b/a" },
+    { day: "Nov 27", q: "Solve: 4/x = 1 + 3/(x + 1)", a: "x = 4" },
+    { day: "Nov 28 — Thanksgiving!", q: "Turkey needs 20 min/lb. Dinner is in 5 hours. Solve 20x = 300 for x.", a: "x = 15 lbs" },
+    { day: "Nov 29", q: "Simplify: (2x+4)/(x+2) + (x−1)/(x+2)", a: "3(x+1)/(x+2)" },
+    { day: "Nov 30", q: "Solve: (2x)/(x − 5) = 3 + 10/(x − 5)", a: "x = 10" },
+    { day: "Dec 1", q: "Solve the system: x² + y² = 25 and y = x + 1", a: "(3, 4) and (−4, −3)" },
+    { day: "Dec 2", q: "If f(x) = x² − 2x and f(a) = 8, find all values of a.", a: "a = 4 or a = −2" },
+    { day: "Dec 3", q: "Solve: √(x + 5) = x − 1", a: "x = 4 (x = −1 is extraneous)" },
+    { day: "Dec 4", q: "Find all x: (x² − 4)(x + 3) = 0", a: "x = 2, −2, or −3" },
+    { day: "Dec 5", q: "Solve: 2^(x²) = 2^(3x)", a: "x = 0 or x = 3" },
+    { day: "Dec 6", q: "Find a quadratic with vertex (2, −3) passing through (0, 1).", a: "y = (x − 2)² − 3" },
+    { day: "Dec 7", q: "Solve: log₂(x) + log₂(x − 2) = 3", a: "x = 4" },
+    { day: "Dec 8", q: "If 3^(x+1) = 9^(x−1), solve for x.", a: "x = 3" },
+    { day: "Dec 9", q: "Solve: √(x + 3) + √x = 3", a: "x = 1" },
+    { day: "Dec 10", q: "What is the range of f(x) = 2/(x² + 1)?", a: "0 < f(x) ≤ 2" },
+    { day: "Dec 11", q: "Solve: (x²−5x+6)/(x−2) = 0", a: "x = 3 (x = 2 is excluded)" },
+    { day: "Dec 12", q: "If f(x) = ax + b, f(1) = 5, and f(3) = 11, find a and b.", a: "a = 3, b = 2" },
+    { day: "Dec 13", q: "Solve: |x² − 5| = 4", a: "x = 3, −3, 1, or −1" },
+    { day: "Dec 14", q: "A rectangle has area x² + 7x + 10. Factor to find possible dimensions.", a: "(x + 2) and (x + 5)" },
+    { day: "Dec 15", q: "Solve: 4ˣ − 2 · 2ˣ − 8 = 0 (let u = 2ˣ)", a: "x = 2" },
+    { day: "Dec 16", q: "Find all solutions: x⁴ − 13x² + 36 = 0", a: "x = 2, −2, 3, or −3" },
+    { day: "Dec 17", q: "Solve: √(5 − x) = √(x + 3)", a: "x = 1" },
+    { day: "Dec 18", q: "If f(x) = x + 2 and (f ∘ g)(x) = 2x + 3, find g(x).", a: "g(x) = 2x + 1" },
+    { day: "Dec 19", q: "Solve: 2x/(x+1) + 1 = 3/(x+1)", a: "x = 0" },
+    { day: "Dec 20", q: "Find x where f(x) = g(x): f(x) = x² and g(x) = −x + 6", a: "x = 2 or x = −3" },
+    { day: "Dec 21 — Winter Solstice!", q: "If d = 9.5 + 3sin(t) and sin(t) = −1 (shortest day), what is d?", a: "6.5 hours" },
+    { day: "Dec 22", q: "Solve the system: y = x² and x + y = 6", a: "x = 2, y = 4 or x = −3, y = 9" },
+    { day: "Dec 23", q: "Simplify: (x³ − 8)/(x − 2)", a: "x² + 2x + 4" },
+    { day: "Dec 24", q: "Factor: x⁶ − 1 completely", a: "(x+1)(x−1)(x²+x+1)(x²−x+1)" },
+    { day: "Dec 25 — Christmas!", q: "Santa's route covers x² + 6x + 9 miles — a perfect square. Factor it!", a: "(x + 3)²" },
+    { day: "Dec 26", q: "Solve: x + 1/x = 10/3", a: "x = 3 or x = 1/3" },
+    { day: "Dec 27", q: "Solve the system: y = 2x − 1 and x² + y² = 10", a: "Substitute y=2x−1: x²+(2x−1)²=10 → 5x²−4x−9=0 → x=−1 or x=9/5" },
+    { day: "Dec 28", q: "Find the inverse of f(x) = (2x − 1)/(x + 3)", a: "f⁻¹(x) = (3x + 1)/(2 − x)" },
+    { day: "Dec 29", q: "Solve: 3^(2x) − 10 · 3^x + 9 = 0", a: "x = 0 or x = 2" },
+    { day: "Dec 30", q: "The sum of two numbers is 10 and their product is 21. What are they?", a: "3 and 7" },
+    { day: "Dec 31 — New Year's Eve!", q: "Solve the grand finale: x² − 2026x + 2025 = 0", a: "x = 1 or x = 2025" },
+  ];
+
+  const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  const qotd = questions[Math.min(dayOfYear - 1, questions.length - 1)];
+  document.getElementById('qotdQ').textContent = qotd.q;
+  document.getElementById('qotdDay').textContent = qotd.day;
+
+  const answerEl = document.getElementById('qotdA');
+  window.revealAnswer = function() {
+    answerEl.textContent = 'Answer: ' + qotd.a;
+    answerEl.classList.add('revealed');
+  };
 </script>
 </body>
 </html>
