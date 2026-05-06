@@ -975,8 +975,15 @@ function newMission() {
   SUN_CY = earthY + 90;
 
   // Init planet angles once, preserve across missions so orbits are continuous
+  // Add random offset each new mission so we don't always get the same planet
   if (planetAngles.length === 0) {
-    planetAngles = SOLAR_PLANETS.map(p => p.phase);
+    planetAngles = SOLAR_PLANETS.map(p => p.phase + Math.random() * Math.PI * 2);
+  } else {
+    // Advance angles by a random amount so a different planet is in position
+    const skip = 200 + Math.floor(Math.random() * 600);
+    for (let i = 0; i < SOLAR_PLANETS.length; i++) {
+      planetAngles[i] += SOLAR_PLANETS[i].speed * 3 * skip;
+    }
   }
 
   // Pick target planet: any outer planet (idx 2+) positioned in the reachable zone
@@ -992,11 +999,13 @@ function newMission() {
     }
   }
 
-  // Fast-forward orbits until a planet lands in range
+  // Fast-forward orbits until a planet lands in range — try ALL planets before looping
   if (candidates.length === 0) {
-    for (let step = 0; step < 1000 && candidates.length === 0; step++) {
+    outer: for (let step = 0; step < 1000; step++) {
       for (let i = 0; i < SOLAR_PLANETS.length; i++) planetAngles[i] += SOLAR_PLANETS[i].speed * 60;
-      for (let i = 2; i < SOLAR_PLANETS.length; i++) {
+      // Shuffle check order so we don't always resolve to the same planet
+      const order = [2,3,4,5,6].sort(() => Math.random() - 0.5);
+      for (const i of order) {
         const pos = planetCanvasPos(i, planetAngles[i]);
         const wx = (pos.cx - earthX) / scale;
         const wy = (earthY - pos.cy) / scale;
@@ -1004,13 +1013,14 @@ function newMission() {
             pos.cx > earthX + 80 && pos.cx < W - 50 &&
             pos.cy > margin + 20 && pos.cy < H - margin - 50) {
           candidates.push({ i, pos, wx, wy });
-          break;
+          break outer;
         }
       }
     }
   }
 
-  const chosen = candidates[Math.floor(Math.random() * Math.min(candidates.length, 3))];
+  // Pick randomly from all valid candidates
+  const chosen = candidates[Math.floor(Math.random() * candidates.length)];
   if (!chosen) { setTimeout(newMission, 100); return; }
 
   targetPlanetIdx = chosen.i;
