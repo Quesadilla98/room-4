@@ -158,6 +158,11 @@ header {
 .widget-answer.revealed { opacity: 1; cursor: default; }
 .widget-answer:not(.revealed)::before { content: 'tap to reveal answer'; color: var(--muted); font-size: .6rem; }
 
+/* SECTION DIVIDER */
+.section + .section {
+  border-top: 1px solid var(--border);
+}
+
 /* FOOTER */
 footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
 .foot-logo { font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:.15em; color:#222; }
@@ -211,12 +216,24 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
   <p class="hero-scroll">scroll to explore</p>
 </section>
 
-<section class="section" id="pages">
+<section class="section" id="tools">
   <div class="section-label">
-    Pages
-    <span class="page-count" id="countBadge"></span>
+    Tools
+    <span class="page-count" id="toolsBadge"></span>
   </div>
-  <div class="grid" id="grid">
+  <div class="grid" id="toolsGrid">
+    <div class="skeleton"><div class="sk-line" style="height:52px;width:60px"></div><div class="sk-line" style="height:24px;width:70%"></div><div class="sk-line" style="height:12px;width:90%"></div></div>
+    <div class="skeleton"><div class="sk-line" style="height:52px;width:60px"></div><div class="sk-line" style="height:24px;width:55%"></div><div class="sk-line" style="height:12px;width:85%"></div></div>
+    <div class="skeleton"><div class="sk-line" style="height:52px;width:60px"></div><div class="sk-line" style="height:24px;width:65%"></div><div class="sk-line" style="height:12px;width:80%"></div></div>
+  </div>
+</section>
+
+<section class="section" id="games">
+  <div class="section-label">
+    Games
+    <span class="page-count" id="gamesBadge"></span>
+  </div>
+  <div class="grid" id="gamesGrid">
     <div class="skeleton"><div class="sk-line" style="height:52px;width:60px"></div><div class="sk-line" style="height:24px;width:70%"></div><div class="sk-line" style="height:12px;width:90%"></div></div>
     <div class="skeleton"><div class="sk-line" style="height:52px;width:60px"></div><div class="sk-line" style="height:24px;width:55%"></div><div class="sk-line" style="height:12px;width:85%"></div></div>
     <div class="skeleton"><div class="sk-line" style="height:52px;width:60px"></div><div class="sk-line" style="height:24px;width:65%"></div><div class="sk-line" style="height:12px;width:80%"></div></div>
@@ -255,9 +272,56 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
     requestAnimationFrame(animRing);
   })();
 
+  // Folders whose names start with "games-" go to the Games section.
+  // Everything else goes to the Tools section.
+  const GAMES_PREFIX = 'games-';
+
+  function renderCards(folders, gridEl, badgeEl, emptyIcon, emptyTitle, emptyMsg) {
+    gridEl.innerHTML = '';
+
+    if (folders.length === 0) {
+      badgeEl.textContent = '0';
+      gridEl.innerHTML = `
+        <div class="state-box">
+          <div class="state-icon">${emptyIcon}</div>
+          <p class="state-title">${emptyTitle}</p>
+          <p class="state-sub">${emptyMsg}</p>
+        </div>`;
+      return;
+    }
+
+    badgeEl.textContent = `${folders.length} ${folders.length !== 1 ? 'items' : 'item'}`;
+
+    folders.forEach((folder, i) => {
+      const num  = String(i + 1).padStart(2, '0');
+      // Strip the "games-" prefix for display
+      const displayName = folder.name.startsWith(GAMES_PREFIX)
+        ? prettify(folder.name.slice(GAMES_PREFIX.length))
+        : prettify(folder.name);
+      const card = document.createElement('a');
+      card.className = 'card';
+      card.href = `${folder.name}/`;
+      card.style.animationDelay = `${i * 0.07}s`;
+      card.innerHTML = `
+        <div class="card-top">
+          <span class="card-num">${num}</span>
+          <span class="card-arrow">↗</span>
+        </div>
+        <div>
+          <p class="card-name">${displayName}</p>
+          <p class="card-desc">Open this section to explore its content.</p>
+        </div>
+        <span class="card-meta">${folder.name}/index.html</span>`;
+      gridEl.appendChild(card);
+    });
+  }
+
   async function loadFolders() {
-    const grid  = document.getElementById('grid');
-    const badge = document.getElementById('countBadge');
+    const gamesGrid  = document.getElementById('gamesGrid');
+    const toolsGrid  = document.getElementById('toolsGrid');
+    const gamesBadge = document.getElementById('gamesBadge');
+    const toolsBadge = document.getElementById('toolsBadge');
+
     try {
       const res = await fetch(
         `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/`,
@@ -268,49 +332,31 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
       const items   = await res.json();
       const folders = items.filter(i => i.type === 'dir' && !IGNORE.has(i.name));
 
-      grid.innerHTML = '';
+      const games = folders.filter(f => f.name.startsWith(GAMES_PREFIX));
+      const tools = folders.filter(f => !f.name.startsWith(GAMES_PREFIX));
 
-      if (folders.length === 0) {
-        badge.textContent = '0 pages';
-        grid.innerHTML = `
-          <div class="state-box">
-            <div class="state-icon">4</div>
-            <p class="state-title">No pages yet</p>
-            <p class="state-sub">Create a folder inside the room-4 repo, add an index.html to it, push — and it will appear here automatically.</p>
-          </div>`;
-        return;
-      }
+      renderCards(
+        games, gamesGrid, gamesBadge,
+        '🎮', 'No games yet',
+        'Create a folder prefixed with "games-" (e.g. games-trivia/), add an index.html, push — and it will appear here.'
+      );
 
-      badge.textContent = `${folders.length} page${folders.length !== 1 ? 's' : ''}`;
-
-      folders.forEach((folder, i) => {
-        const num  = String(i + 1).padStart(2, '0');
-        const name = prettify(folder.name);
-        const card = document.createElement('a');
-        card.className = 'card';
-        card.href = `${folder.name}/`;
-        card.style.animationDelay = `${i * 0.07}s`;
-        card.innerHTML = `
-          <div class="card-top">
-            <span class="card-num">${num}</span>
-            <span class="card-arrow">↗</span>
-          </div>
-          <div>
-            <p class="card-name">${name}</p>
-            <p class="card-desc">Open this section to explore its content.</p>
-          </div>
-          <span class="card-meta">${folder.name}/index.html</span>`;
-        grid.appendChild(card);
-      });
+      renderCards(
+        tools, toolsGrid, toolsBadge,
+        '4', 'No tools yet',
+        'Create a folder inside the room-4 repo, add an index.html to it, push — and it will appear here automatically.'
+      );
 
     } catch (err) {
       console.error(err);
-      grid.innerHTML = `
+      const errHtml = `
         <div class="state-box">
           <div class="state-icon">!</div>
-          <p class="state-title">Could not load pages</p>
+          <p class="state-title">Could not load content</p>
           <p class="state-sub">Make sure the room-4 repo is set to public on GitHub, then reload.<br><br>${err.message}</p>
         </div>`;
+      gamesGrid.innerHTML = errHtml;
+      toolsGrid.innerHTML = errHtml;
     }
   }
 
