@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pass the Pigs</title>
+<link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #1a0e2e;
+  --card: #251636;
+  --card2: #2e1a40;
+  --pink: #ff6eb4;
+  --pink2: #ff9fd4;
+  --teal: #3fffd8;
+  --gold: #ffd166;
+  --red: #ff4d6d;
+  --green: #06d6a0;
+  --text: #f5e6ff;
+  --muted: #9d7fbf;
+  --border: rgba(255,110,180,0.18);
+  --glow: 0 0 18px rgba(255,110,180,0.25);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:var(--bg);font-family:'Quicksand',sans-serif;color:var(--text);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:20px 12px 50px;
+  background-image:
+    radial-gradient(ellipse at 10% 0%,rgba(63,255,216,0.07) 0%,transparent 55%),
+    radial-gradient(ellipse at 90% 100%,rgba(255,110,180,0.1) 0%,transparent 55%);
+}
+
+/* ── SETUP SCREEN ── */
+#setupScreen{
+  display:flex;flex-direction:column;align-items:center;gap:20px;
+  max-width:480px;width:100%;padding-top:30px;
+}
+.game-title{
+  font-family:'Boogaloo',cursive;font-size:clamp(2.6rem,8vw,4rem);
+  color:var(--pink);text-shadow:0 0 30px rgba(255,110,180,0.5);
+  letter-spacing:2px;text-align:center;line-height:1;
+}
+.game-title span{color:var(--teal);}
+.setup-card{
+  background:var(--card);border:1px solid var(--border);border-radius:24px;
+  padding:28px 24px;width:100%;box-shadow:var(--glow);
+}
+.setup-label{font-size:0.85rem;color:var(--muted);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;}
+.player-btns{display:flex;gap:10px;flex-wrap:wrap;}
+.player-btn{
+  flex:1;min-width:64px;padding:12px 6px;border-radius:14px;
+  background:var(--card2);border:2px solid transparent;
+  color:var(--muted);font-family:'Boogaloo',cursive;font-size:1.3rem;
+  cursor:pointer;transition:all 0.18s;text-align:center;
+}
+.player-btn:hover{border-color:var(--pink);color:var(--pink);}
+.player-btn.active{background:rgba(255,110,180,0.15);border-color:var(--pink);color:var(--pink);box-shadow:0 0 12px rgba(255,110,180,0.3);}
+.name-inputs{display:flex;flex-direction:column;gap:10px;margin-top:4px;}
+.name-row{display:flex;align-items:center;gap:10px;}
+.name-swatch{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+.name-input{
+  flex:1;background:var(--card2);border:1px solid var(--border);border-radius:10px;
+  color:var(--text);font-family:'Quicksand',sans-serif;font-size:0.95rem;font-weight:600;
+  padding:8px 12px;outline:none;transition:border-color 0.2s;
+}
+.name-input:focus{border-color:var(--pink);}
+.start-btn{
+  width:100%;padding:16px;border-radius:18px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--pink),#c040a0);
+  color:white;font-family:'Boogaloo',cursive;font-size:1.6rem;letter-spacing:1px;
+  box-shadow:0 6px 24px rgba(255,110,180,0.4);transition:transform 0.15s,box-shadow 0.15s;
+}
+.start-btn:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(255,110,180,0.5);}
+.start-btn:active{transform:scale(0.97);}
+
+/* ── GAME SCREEN ── */
+#gameScreen{display:none;width:100%;max-width:900px;flex-direction:column;align-items:center;gap:14px;}
+
+/* Player scoreboard */
+.scoreboard{
+  display:flex;gap:8px;width:100%;flex-wrap:wrap;justify-content:center;
+}
+.player-tile{
+  flex:1;min-width:90px;max-width:160px;
+  background:var(--card);border:2px solid transparent;border-radius:18px;
+  padding:10px 8px;text-align:center;transition:all 0.25s;
+  position:relative;overflow:hidden;
+}
+.player-tile.active-player{
+  border-color:var(--pink);
+  box-shadow:0 0 20px rgba(255,110,180,0.35);
+}
+.player-tile.active-player::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--pink),var(--teal));
+}
+.player-tile-name{font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.player-tile-score{font-family:'Boogaloo',cursive;font-size:1.9rem;line-height:1;color:var(--text);}
+.player-tile.active-player .player-tile-score{color:var(--pink);}
+.player-tile-turn{font-size:0.7rem;color:var(--gold);font-weight:700;min-height:14px;}
+.player-color-bar{height:4px;border-radius:2px;margin-top:6px;}
+
+/* Current turn banner */
+.turn-banner{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--card);border:1px solid var(--border);border-radius:18px;
+  padding:12px 18px;width:100%;gap:12px;
+}
+.turn-info{display:flex;flex-direction:column;gap:2px;}
+.turn-name{font-family:'Boogaloo',cursive;font-size:1.35rem;letter-spacing:0.5px;}
+.turn-sub{font-size:0.8rem;color:var(--muted);font-weight:600;}
+.turn-pts{font-family:'Boogaloo',cursive;font-size:1.1rem;color:var(--gold);}
+
+/* Pig stages */
+.pig-row{display:flex;gap:14px;width:100%;justify-content:center;}
+.pig-stage{
+  background:var(--card);border:1px solid var(--border);border-radius:22px;
+  padding:18px 14px 14px;flex:1;min-width:160px;max-width:280px;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  position:relative;overflow:hidden;
+}
+.pig-stage::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--pink),var(--teal),var(--gold));
+}
+.pig-stage-label{font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+canvas.pig-canvas{display:block;width:160px;height:160px;}
+.result-pill{
+  font-family:'Boogaloo',cursive;font-size:1rem;padding:5px 16px;border-radius:50px;
+  background:rgba(255,110,180,0.12);border:1px solid var(--border);color:var(--text);
+  min-width:130px;text-align:center;transition:all 0.3s;
+}
+.result-pill.pop{background:rgba(255,110,180,0.28);border-color:var(--pink);color:var(--pink);transform:scale(1.08);}
+
+/* Combo message */
+.combo-area{
+  min-height:36px;display:flex;align-items:center;justify-content:center;
+  font-family:'Boogaloo',cursive;font-size:1.3rem;letter-spacing:0.5px;
+  text-align:center;
+}
+.combo-area.good{color:var(--teal);}
+.combo-area.bad{color:var(--red);}
+.combo-area.great{color:var(--gold);}
+
+/* Action buttons */
+.action-row{display:flex;gap:12px;width:100%;justify-content:center;flex-wrap:wrap;}
+.btn-roll{
+  padding:14px 40px;border-radius:50px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--pink),#c040a0);color:white;
+  font-family:'Boogaloo',cursive;font-size:1.4rem;letter-spacing:1px;
+  box-shadow:0 6px 20px rgba(255,110,180,0.35);transition:transform 0.13s,box-shadow 0.13s,opacity 0.13s;
+  flex:1;max-width:220px;
+}
+.btn-roll:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(255,110,180,0.5);}
+.btn-roll:active{transform:scale(0.97);}
+.btn-roll:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-pass{
+  padding:14px 28px;border-radius:50px;border:2px solid var(--teal);cursor:pointer;
+  background:rgba(63,255,216,0.08);color:var(--teal);
+  font-family:'Boogaloo',cursive;font-size:1.4rem;letter-spacing:1px;
+  transition:all 0.13s;flex:1;max-width:200px;
+}
+.btn-pass:hover{background:rgba(63,255,216,0.18);box-shadow:0 0 16px rgba(63,255,216,0.2);}
+.btn-pass:active{transform:scale(0.97);}
+.btn-pass:disabled{opacity:0.3;cursor:not-allowed;}
+.btn-new{
+  padding:10px 22px;border-radius:50px;border:1px solid var(--border);cursor:pointer;
+  background:transparent;color:var(--muted);font-family:'Boogaloo',cursive;font-size:1.1rem;
+  transition:all 0.13s;
+}
+.btn-new:hover{color:var(--text);border-color:var(--muted);}
+
+/* History */
+.history-panel{
+  background:var(--card);border:1px solid var(--border);border-radius:18px;
+  padding:14px 16px;width:100%;
+}
+.history-title{font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;}
+.history-entries{display:flex;flex-direction:column;gap:4px;max-height:100px;overflow-y:auto;}
+.h-entry{font-size:0.82rem;font-weight:600;color:var(--muted);display:flex;gap:8px;align-items:baseline;}
+.h-entry .h-who{font-weight:700;}
+.h-entry .h-pts{color:var(--gold);}
+.h-entry .h-pigout{color:var(--red);}
+
+/* Win overlay */
+#winOverlay{
+  display:none;position:fixed;inset:0;background:rgba(10,4,20,0.88);
+  flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:100;
+}
+.win-card{
+  background:var(--card);border:2px solid var(--gold);border-radius:28px;
+  padding:40px 48px;text-align:center;box-shadow:0 0 50px rgba(255,209,102,0.3);
+  max-width:380px;width:90%;
+}
+.win-title{font-family:'Boogaloo',cursive;font-size:2.8rem;color:var(--gold);margin-bottom:6px;}
+.win-name{font-family:'Boogaloo',cursive;font-size:2rem;color:var(--pink);margin-bottom:4px;}
+.win-score{font-size:1rem;font-weight:700;color:var(--muted);}
+.btn-play-again{
+  margin-top:20px;padding:13px 36px;border-radius:50px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--gold),#f0a000);color:#1a0e2e;
+  font-family:'Boogaloo',cursive;font-size:1.4rem;
+  box-shadow:0 6px 20px rgba(255,209,102,0.35);transition:transform 0.13s;
+}
+.btn-play-again:hover{transform:translateY(-2px);}
+
+/* player colors */
+.pc-0{color:#ff6eb4;} .pc-1{color:#3fffd8;} .pc-2{color:#ffd166;} .pc-3{color:#a78bfa;}
+.pb-0{background:#ff6eb4;} .pb-1{background:#3fffd8;} .pb-2{background:#ffd166;} .pb-3{background:#a78bfa;}
+.bb-0{border-color:#ff6eb4;} .bb-1{border-color:#3fffd8;} .bb-2{border-color:#ffd166;} .bb-3{border-color:#a78bfa;}
+
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.6;}}
+.rolling-pulse{animation:pulse 0.4s ease-in-out infinite;}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setupScreen">
+  <div class="game-title">Pass the<br><span>Pigs</span></div>
+  <div class="setup-card">
+    <div class="setup-label">Number of Players</div>
+    <div class="player-btns">
+      <button class="player-btn" onclick="setNumPlayers(1)">1</button>
+      <button class="player-btn active" onclick="setNumPlayers(2)">2</button>
+      <button class="player-btn" onclick="setNumPlayers(3)">3</button>
+      <button class="player-btn" onclick="setNumPlayers(4)">4</button>
+    </div>
+  </div>
+  <div class="setup-card">
+    <div class="setup-label">Player Names</div>
+    <div class="name-inputs" id="nameInputs"></div>
+  </div>
+  <div class="setup-card">
+    <div class="setup-label">Win Condition</div>
+    <div class="player-btns">
+      <button class="player-btn active" onclick="setWin(100)" id="w100">100 pts</button>
+      <button class="player-btn" onclick="setWin(50)" id="w50">50 pts</button>
+      <button class="player-btn" onclick="setWin(200)" id="w200">200 pts</button>
+      <button class="player-btn" onclick="setWin(0)" id="w0">No limit</button>
+    </div>
+  </div>
+  <button class="start-btn" onclick="startGame()">Let's Play!</button>
+</div>
+
+<!-- GAME -->
+<div id="gameScreen">
+  <div class="scoreboard" id="scoreboard"></div>
+  <div class="turn-banner">
+    <div class="turn-info">
+      <div class="turn-name" id="turnName">Player 1</div>
+      <div class="turn-sub" id="turnSub">Your turn — roll or pass</div>
+    </div>
+    <div class="turn-pts" id="turnPts"></div>
+  </div>
+  <div class="pig-row">
+    <div class="pig-stage">
+      <div class="pig-stage-label">Pig One</div>
+      <canvas class="pig-canvas" id="pig1" width="160" height="160"></canvas>
+      <div class="result-pill" id="badge1">—</div>
+    </div>
+    <div class="pig-stage">
+      <div class="pig-stage-label">Pig Two</div>
+      <canvas class="pig-canvas" id="pig2" width="160" height="160"></canvas>
+      <div class="result-pill" id="badge2">—</div>
+    </div>
+  </div>
+  <div class="combo-area" id="comboMsg">Roll to start your turn!</div>
+  <div class="action-row">
+    <button class="btn-roll" id="rollBtn" onclick="doRoll()">Roll</button>
+    <button class="btn-pass" id="passBtn" onclick="passToNext()" disabled>Pass</button>
+  </div>
+  <div class="action-row">
+    <button class="btn-new" onclick="backToSetup()">New Game</button>
+  </div>
+  <div class="history-panel">
+    <div class="history-title">Roll History</div>
+    <div class="history-entries" id="historyList"><div style="font-size:0.82rem;color:var(--muted);font-weight:600;">No rolls yet.</div></div>
+  </div>
+</div>
+
+<!-- WIN -->
+<div id="winOverlay">
+  <div class="win-card">
+    <div class="win-title">Winner!</div>
+    <div class="win-name" id="winName"></div>
+    <div class="win-score" id="winScore"></div>
+    <button class="btn-play-again" onclick="backToSetup()">Play Again</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  DRAWING ENGINE
+// ═══════════════════════════════════════════════
+const PC = { // pig colors
+  body:'#ffb3d1', stroke:'#d45e8a', belly:'#ffdccc',
+  ear:'#e0507a', earInner:'rgba(255,180,210,0.55)',
+  snout:'#ffd4b3', snoutStroke:'#c8826a', nostril:'#b06050',
+  eye:'#1a0d1a', shine:'#fff',
+  hoof:'#e8a0b8', hoofStroke:'#c07090',
+  tail:'#d45e8a', dot:'#b03060',
+  shadow:'rgba(200,80,120,0.13)',
+  star:'#ffd166', starStroke:'#c09000',
+  ground:'rgba(63,255,216,0.08)'
+};
+
+function ell(c,x,y,rx,ry,a=0){c.beginPath();c.ellipse(x,y,rx,ry,a,0,Math.PI*2);}
+function fs(c,f,s,lw=2){c.fillStyle=f;c.fill();c.strokeStyle=s;c.lineWidth=lw;c.stroke();}
+function arc(c,x,y,r,s,e){c.beginPath();c.arc(x,y,r,s,e);}
+
+function ear(c,x,y,rx=7,ry=10,a=0){
+  c.save();c.translate(x,y);c.rotate(a);
+  ell(c,0,0,rx,ry);c.fillStyle=PC.ear;c.fill();
+  ell(c,0,2,rx*.55,ry*.5);c.fillStyle=PC.earInner;c.fill();
+  c.restore();
+}
+function snout(c,x,y,rx=10,ry=8,a=0){
+  c.save();c.translate(x,y);c.rotate(a);
+  ell(c,0,0,rx,ry);fs(c,PC.snout,PC.snoutStroke,1.5);
+  ell(c,-rx*.32,ry*.22,rx*.22,ry*.28);c.fillStyle=PC.nostril;c.fill();
+  ell(c, rx*.32,ry*.22,rx*.22,ry*.28);c.fillStyle=PC.nostril;c.fill();
+  c.restore();
+}
+function eye(c,x,y,r=3.2){
+  c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fillStyle=PC.eye;c.fill();
+  c.beginPath();c.arc(x-r*.3,y-r*.3,r*.35,0,Math.PI*2);c.fillStyle=PC.shine;c.fill();
+}
+function leg(c,x,y,w=9,h=18,a=0){
+  c.save();c.translate(x,y);c.rotate(a);
+  c.beginPath();c.roundRect(-w/2,0,w,h,[3,3,5,5]);
+  fs(c,PC.hoof,PC.hoofStroke,1.5);c.restore();
+}
+function tail(c,x,y,a=0){
+  c.save();c.translate(x,y);c.rotate(a);
+  c.beginPath();
+  for(let t=0;t<=Math.PI*1.7;t+=0.04){
+    const r=2+t*2.5,px=Math.cos(t)*r,py=Math.sin(t)*r*.65;
+    t<0.04?c.moveTo(px,py):c.lineTo(px,py);
+  }
+  c.strokeStyle=PC.tail;c.lineWidth=2.3;c.lineCap='round';c.stroke();
+  c.restore();
+}
+function shadow(c,x,y,rx=44,ry=6){
+  ell(c,x,y,rx,ry);c.fillStyle=PC.shadow;c.fill();
+}
+function star(c,x,y,o=8,i=4,n=5){
+  c.beginPath();
+  for(let k=0;k<n*2;k++){const r=k%2?i:o,a=(Math.PI/n)*k-Math.PI/2;k?c.lineTo(x+r*Math.cos(a),y+r*Math.sin(a)):c.moveTo(x+r*Math.cos(a),y+r*Math.sin(a));}
+  c.closePath();c.fillStyle=PC.star;c.fill();c.strokeStyle=PC.starStroke;c.lineWidth=1;c.stroke();
+}
+
+// ─── POSE DRAWING FUNCTIONS ───────────────────
+// Each takes (ctx, animT) where animT is frames since landing (0 = just landed, used for entry anim)
+
+function poseSide(c,hasDot,T){
+  // Gentle breathing bob
+  const bob=Math.sin(T*.055)*1.5, squeeze=Math.max(0,1-T*.05);
+  c.save();c.translate(80,90+bob);
+  c.scale(1+squeeze*.06,1-squeeze*.04); // entry squash
+  shadow(c,0,34,50,6);
+  ell(c,0,8,50,29);fs(c,PC.body,PC.stroke,2.5);
+  ell(c,2,14,32,17);c.fillStyle=PC.belly;c.fill();
+  leg(c,-20,30,9,17);leg(c,4,31,9,15);
+  ell(c,48,1,21,17,0.15);fs(c,PC.body,PC.stroke,2.5);
+  ear(c,44,-13,6,9,-0.4);
+  snout(c,62,3,10,8);
+  eye(c,52,-5,3.2);
+  if(hasDot){ell(c,-8,3,6.5,6.5);c.fillStyle=PC.dot;c.fill();}
+  tail(c,-48,2,0.2);
+  c.restore();
+}
+
+function poseRazorback(c,T){
+  // On back, legs wiggling — legs sway sinusoidally
+  const wiggle=Math.sin(T*.1)*.22, sq=Math.max(0,1-T*.05);
+  c.save();c.translate(80,92);
+  c.scale(1+sq*.05,1-sq*.04);
+  shadow(c,0,30,52,7);
+  ell(c,0,8,51,27);fs(c,PC.body,PC.stroke,2.5);
+  ell(c,0,3,33,17);c.fillStyle=PC.belly;c.fill();
+  // legs kicking
+  leg(c,-30,-6,9,20,-0.28+wiggle);
+  leg(c,-10,-12,9,22,-0.09+wiggle*.7);
+  leg(c,10,-12,9,22, 0.09-wiggle*.7);
+  leg(c,30,-6,9,20, 0.28-wiggle);
+  ell(c,48,5,19,15,0.2);fs(c,PC.body,PC.stroke,2.5);
+  ear(c,46,-6,6,9,0.3);
+  snout(c,61,8,9,7);
+  eye(c,52,-1,3);
+  tail(c,-50,11,-0.3);
+  c.restore();
+}
+
+function poseTrotter(c,T){
+  // Standing, happy bouncy trot — legs pump alternately
+  const bob=Math.abs(Math.sin(T*.08))*2.5;
+  const lLift=Math.sin(T*.16)*.25; // left pair angle
+  const rLift=-Math.sin(T*.16)*.25; // right pair
+  c.save();c.translate(80,92-bob);
+  shadow(c,0,36+bob,44,6-bob*.25);
+  ell(c,0,0,44,25);fs(c,PC.body,PC.stroke,2.5);
+  ell(c,2,5,27,15);c.fillStyle=PC.belly;c.fill();
+  leg(c,-26,20,9,20,lLift);leg(c,-8,22,9,18,lLift*.4);
+  leg(c,8,22,9,18,rLift*.4);leg(c,26,20,9,20,rLift);
+  ell(c,42,-6,19,15,0.12);fs(c,PC.body,PC.stroke,2.5);
+  ear(c,36,-17,7,10,-0.25);ear(c,48,-17,7,10,0.25);
+  snout(c,55,-3,10,8);eye(c,43,-11,3.2);
+  tail(c,-46,-3,0.1);
+  c.restore();
+}
+
+function poseSnouter(c,T){
+  // Nose-stand: body nearly vertical, wobbling for balance
+  const wobble=Math.sin(T*.1)*.05, sq=Math.max(0,1-T*.05);
+  c.save();c.translate(80,102);c.rotate(wobble);
+  c.scale(1+sq*.04,1-sq*.03);
+  shadow(c,12,24,17,5);
+  c.save();c.rotate(-0.53);
+  ell(c,0,0,43,23);fs(c,PC.body,PC.stroke,2.5);
+  ell(c,0,4,27,14);c.fillStyle=PC.belly;c.fill();
+  tail(c,-41,-13,0.5);
+  c.restore();
+  c.save();c.translate(18,17);c.rotate(0.62);
+  ell(c,0,0,17,13);fs(c,PC.body,PC.stroke,2.5);
+  ear(c,-8,-11,6,9,-0.2);
+  snout(c,0,14,11,8);
+  eye(c,8,-4,2.8);
+  c.restore();
+  leg(c,-12,-28,8,14,-0.5+wobble);
+  leg(c,5,-32,8,14,-0.15+wobble);
+  c.restore();
+}
+
+function poseLeaningJowler(c,T){
+  // Leaning on jowl — stars orbit around it (rare!)
+  const wobble=Math.sin(T*.08)*.04;
+  c.save();c.translate(80,97);c.rotate(-0.88+wobble);
+  shadow(c,0,28,48,6);
+  ell(c,0,10,48,26);fs(c,PC.body,PC.stroke,2.5);
+  ell(c,0,15,31,15);c.fillStyle=PC.belly;c.fill();
+  leg(c,-20,28,9,18, 0.35);leg(c,0,30,9,16, 0.15);
+  leg(c,-33,6,9,15,-0.5);leg(c,20,26,9,16, 0.5);
+  c.save();c.translate(42,-4);c.rotate(0.55);
+  ell(c,0,0,19,14);fs(c,PC.body,PC.stroke,2.5);
+  ell(c,-4,13,17,10,-0.2);fs(c,PC.belly,PC.snoutStroke,1);
+  c.save();c.translate(-12,-10);c.rotate(-0.8);
+  ell(c,0,0,7,11);c.fillStyle=PC.ear;c.fill();c.restore();
+  snout(c,14,0,9,7,0.2);eye(c,4,-8,3.2);
+  c.restore();
+  tail(c,-48,15,0.1);
+  // Orbiting stars
+  for(const[sa,dist,sz] of [[T*.05,32,7],[T*.05+Math.PI*.66,28,5],[T*.05+Math.PI*1.33,34,6]]){
+    const sx=Math.cos(sa)*dist, sy=Math.sin(sa)*dist*.7;
+    star(c,sx-20,sy-50,sz,sz*.5,5);
+  }
+  c.restore();
+}
+
+// ─── FULL DRAW + CLEAR ───
+function drawPose(ctx,name,T){
+  ctx.clearRect(0,0,160,160);
+  const t = T??0;
+  if     (name==='Side (no dot)')  poseSide(ctx,false,t);
+  else if(name==='Side (dot)')     poseSide(ctx,true,t);
+  else if(name==='Razorback')      poseRazorback(ctx,t);
+  else if(name==='Trotter')        poseTrotter(ctx,t);
+  else if(name==='Snouter')        poseSnouter(ctx,t);
+  else if(name==='Leaning Jowler') poseLeaningJowler(ctx,t);
+}
+
+// ═══════════════════════════════════════════════
+//  ANIMATION SYSTEM
+// ═══════════════════════════════════════════════
+// Animation phases per pig:
+//  'idle'    — gentle breathing loop
+//  'launch'  — pig flies up off screen
+//  'tumble'  — pig tumbles through air to landing zone
+//  'land'    — squash + settle into final pose
+//
+// Outcome is pre-calculated before animation starts.
+
+const pigAnim = [
+  {ctx:null,pose:'Side (no dot)',T:0,phase:'idle',
+   x:80,y:80,vx:0,vy:0,angle:0,omega:0,bounces:0,ticks:0,landT:0},
+  {ctx:null,pose:'Side (dot)',   T:0,phase:'idle',
+   x:80,y:80,vx:0,vy:0,angle:0,omega:0,bounces:0,ticks:0,landT:0},
+];
+
+// Compact pig for tumbling
+function drawCompactPig(c){
+  ell(c,0,0,33,20);fs(c,PC.body,PC.stroke,2);
+  ell(c,0,4,21,12);c.fillStyle=PC.belly;c.fill();
+  ell(c,30,-4,13,10,0.1);fs(c,PC.body,PC.stroke,2);
+  ear(c,26,-11,5,7,-0.3);snout(c,40,-1,6,5);eye(c,32,-6,2.2);
+  leg(c,-13,12,7,12, 0.3);leg(c,4,13,7,12,-0.2);
+  tail(c,-32,-2,0.1);
+}
+
+function drawTumble(c,angle,cx,cy){
+  c.clearRect(0,0,160,160);
+  // motion blur ghost
+  c.save();c.globalAlpha=0.1;
+  c.translate(cx-Math.cos(angle)*9,cy-Math.sin(angle)*9);
+  c.rotate(angle-.45);drawCompactPig(c);
+  c.globalAlpha=1;c.restore();
+  c.save();c.translate(cx,cy);c.rotate(angle);
+  drawCompactPig(c);c.restore();
+}
+
+let frameT=0;
+let animRunning=false;
+function animLoop(){
+  frameT++;
+  let anyActive=false;
+  for(const s of pigAnim){
+    if(!s.ctx)continue;
+    if(s.phase==='tumble'){
+      anyActive=true;
+      s.x+=s.vx; s.y+=s.vy; s.vy+=0.42; s.vx*=.993; s.angle+=s.omega; s.ticks++;
+      if(s.y>118){s.y=118;s.vy*=-.38;s.vx*=.6;s.omega*=.55;s.bounces++;}
+      if(s.x<28){s.x=28;s.vx=Math.abs(s.vx)*.5;}
+      if(s.x>132){s.x=132;s.vx=-Math.abs(s.vx)*.5;}
+      const done=s.bounces>=2&&Math.abs(s.vx)<.25&&Math.abs(s.vy)<.4&&s.ticks>50;
+      if(done){s.phase='land';s.landT=0;}
+      else drawTumble(s.ctx,s.angle,s.x,s.y);
+    } else if(s.phase==='land'){
+      anyActive=true;
+      s.landT++;
+      const sq=Math.sin(s.landT*.28)*.13*Math.exp(-s.landT*.09);
+      s.ctx.clearRect(0,0,160,160);
+      s.ctx.save();s.ctx.translate(80,80);
+      s.ctx.scale(1+sq*.08,1-sq*.08);s.ctx.translate(-80,-80);
+      drawPose(s.ctx,s.pose,s.landT);s.ctx.restore();
+      if(s.landT>35){s.phase='idle';s.T=35;}
+    } else {
+      s.T++;
+      drawPose(s.ctx,s.pose,s.T);
+    }
+  }
+  if(anyActive||animRunning) requestAnimationFrame(animLoop);
+  else animLoop._id=requestAnimationFrame(animLoop);
+}
+animLoop._id=requestAnimationFrame(animLoop);
+
+function launchPig(idx,targetPose){
+  const s=pigAnim[idx];
+  s.pose=targetPose;
+  s.phase='tumble';
+  s.x=80;s.y=30;
+  s.vx=(Math.random()-.5)*7;
+  s.vy=-5.5-Math.random()*3;
+  s.omega=(0.16+Math.random()*.26)*(Math.random()<.5?1:-1);
+  s.angle=0;s.bounces=0;s.ticks=0;
+}
+
+// ═══════════════════════════════════════════════
+//  GAME LOGIC
+// ═══════════════════════════════════════════════
+const POSITIONS=[
+  {name:'Side (no dot)',prob:34.9,score:0},
+  {name:'Side (dot)',   prob:30.2,score:0},
+  {name:'Razorback',   prob:22.4,score:5},
+  {name:'Trotter',     prob:8.8, score:5},
+  {name:'Snouter',     prob:3.0, score:10},
+  {name:'Leaning Jowler',prob:.6,score:15},
+];
+function wRand(){
+  let r=Math.random()*100;
+  for(const p of POSITIONS){r-=p.prob;if(r<=0)return p;}
+  return POSITIONS[5];
+}
+function calcScore(p1,p2){
+  if((p1.name==='Side (no dot)'&&p2.name==='Side (dot)')||(p1.name==='Side (dot)'&&p2.name==='Side (no dot)'))
+    return{pts:0,pigOut:true,msg:'PIG OUT! Lose your turn!',cls:'bad'};
+  if(p1.name===p2.name&&p1.score>0){
+    const b={Razorback:20,Trotter:20,Snouter:40,'Leaning Jowler':60};
+    const pts=b[p1.name]||p1.score*2;
+    return{pts,pigOut:false,msg:`Double ${p1.name}! +${pts} pts`,cls:'great'};
+  }
+  if(p1.name===p2.name)return{pts:0,pigOut:false,msg:'Both sides — 0 pts',cls:''};
+  let pts=p1.score+p2.score,msg='',cls='';
+  if(p1.score>0&&p2.score>0){pts+=5;msg=`Mixed combo! +5 bonus = ${pts} pts`;cls='great';}
+  else if(pts>0){msg=`+${pts} pts`;cls='good';}
+  else{msg='0 pts — roll again?';cls='';}
+  return{pts,pigOut:false,msg,cls};
+}
+
+const PLAYER_COLORS=['#ff6eb4','#3fffd8','#ffd166','#a78bfa'];
+const DEFAULT_NAMES=['Player 1','Player 2','Player 3','Player 4'];
+
+let numPlayers=2, winScore=100;
+let players=[], currentIdx=0, busy=false;
+let rollHistory=[];
+
+// Setup state
+let setupPlayers=2;
+let setupWin=100;
+
+function setNumPlayers(n){
+  setupPlayers=n;
+  document.querySelectorAll('.player-btn').forEach((b,i)=>{
+    if(b.parentElement.id==='') return; // skip win buttons
+  });
+  // refresh player buttons
+  document.querySelectorAll('#setupScreen .player-btns:first-of-type .player-btn').forEach((b,i)=>{
+    b.classList.toggle('active',i+1===n);
+  });
+  buildNameInputs(n);
+}
+function setWin(v){
+  setupWin=v;
+  ['w100','w50','w200','w0'].forEach(id=>{document.getElementById(id).classList.remove('active');});
+  const map={100:'w100',50:'w50',200:'w200',0:'w0'};
+  document.getElementById(map[v]).classList.add('active');
+}
+function buildNameInputs(n){
+  const wrap=document.getElementById('nameInputs');
+  wrap.innerHTML='';
+  for(let i=0;i<n;i++){
+    const row=document.createElement('div');row.className='name-row';
+    const sw=document.createElement('div');sw.className='name-swatch';sw.style.background=PLAYER_COLORS[i];
+    const inp=document.createElement('input');inp.className='name-input';
+    inp.type='text';inp.placeholder=DEFAULT_NAMES[i];inp.value=DEFAULT_NAMES[i];
+    inp.dataset.idx=i;
+    row.append(sw,inp);wrap.append(row);
+  }
+}
+
+function startGame(){
+  numPlayers=setupPlayers; winScore=setupWin;
+  players=[];
+  const inputs=document.querySelectorAll('.name-input');
+  for(let i=0;i<numPlayers;i++){
+    players.push({
+      name:inputs[i]?.value.trim()||DEFAULT_NAMES[i],
+      score:0, color:PLAYER_COLORS[i], turnScore:0, rolls:0
+    });
+  }
+  currentIdx=0; rollHistory=[];
+  document.getElementById('setupScreen').style.display='none';
+  const gs=document.getElementById('gameScreen');
+  gs.style.display='flex';
+  pigAnim[0].ctx=document.getElementById('pig1').getContext('2d');
+  pigAnim[1].ctx=document.getElementById('pig2').getContext('2d');
+  pigAnim[0].pose='Side (no dot)';pigAnim[0].phase='idle';pigAnim[0].T=0;
+  pigAnim[1].pose='Side (dot)';pigAnim[1].phase='idle';pigAnim[1].T=0;
+  document.getElementById('badge1').textContent='—';
+  document.getElementById('badge2').textContent='—';
+  document.getElementById('comboMsg').textContent='Roll to start your turn!';
+  document.getElementById('comboMsg').className='combo-area';
+  document.getElementById('passBtn').disabled=true;
+  document.getElementById('rollBtn').disabled=false;
+  renderScoreboard();
+  renderTurnBanner();
+}
+
+function renderScoreboard(){
+  const sb=document.getElementById('scoreboard');
+  sb.innerHTML='';
+  players.forEach((p,i)=>{
+    const t=document.createElement('div');
+    t.className='player-tile'+(i===currentIdx?' active-player':'');
+    t.innerHTML=`
+      <div class="player-tile-name" style="color:${p.color}">${p.name}</div>
+      <div class="player-tile-score">${p.score}</div>
+      <div class="player-tile-turn">${i===currentIdx?'● Rolling':'　'}</div>
+      <div class="player-color-bar pb-${i}"></div>
+    `;
+    sb.append(t);
+  });
+}
+function renderTurnBanner(){
+  const p=players[currentIdx];
+  document.getElementById('turnName').textContent=p.name;
+  document.getElementById('turnName').style.color=p.color;
+  document.getElementById('turnSub').textContent=`Turn score: ${p.turnScore} pts`;
+  document.getElementById('turnPts').textContent=p.score>0?`Total: ${p.score}`:'';
+}
+
+function doRoll(){
+  if(busy)return;
+  // ── 1. CALCULATE OUTCOME FIRST ──
+  const r1=wRand(), r2=wRand();
+  const res=calcScore(r1,r2);
+  // ── 2. PLAY ANIMATIONS ──
+  busy=true;
+  document.getElementById('rollBtn').disabled=true;
+  document.getElementById('passBtn').disabled=true;
+  document.getElementById('comboMsg').textContent='Rolling…';
+  document.getElementById('comboMsg').className='combo-area rolling-pulse';
+  document.getElementById('badge1').textContent='?';
+  document.getElementById('badge2').textContent='?';
+  document.getElementById('badge1').classList.remove('pop');
+  document.getElementById('badge2').classList.remove('pop');
+
+  launchPig(0,r1.name);
+  launchPig(1,r2.name);
+
+  // wait for both to land
+  const wait=setInterval(()=>{
+    const done=pigAnim[0].phase==='idle'&&pigAnim[1].phase==='idle';
+    if(!done)return;
+    clearInterval(wait);
+    // ── 3. SHOW RESULT ──
+    const b1=document.getElementById('badge1'), b2=document.getElementById('badge2');
+    b1.textContent=r1.name; b2.textContent=r2.name;
+    b1.classList.add('pop'); b2.classList.add('pop');
+    setTimeout(()=>{b1.classList.remove('pop');b2.classList.remove('pop');},700);
+
+    const msg=document.getElementById('comboMsg');
+    msg.textContent=res.msg; msg.className='combo-area '+res.cls;
+
+    const p=players[currentIdx];
+    p.rolls++;
+
+    if(res.pigOut){
+      p.turnScore=0; // lose turn score
+      addHistory(p,r1,r2,res,true);
+      renderTurnBanner();
+      // auto-pass after short delay
+      setTimeout(()=>{
+        busy=false;
+        passToNext(true);
+      },1400);
+    } else {
+      p.turnScore+=res.pts;
+      addHistory(p,r1,r2,res,false);
+      renderTurnBanner();
+      busy=false;
+      document.getElementById('rollBtn').disabled=false;
+      document.getElementById('passBtn').disabled=false;
+    }
+  },80);
+}
+
+function addHistory(p,r1,r2,res,isPigOut){
+  rollHistory.unshift({
+    name:p.name, color:p.color,
+    p1:r1.name, p2:r2.name,
+    pts:res.pts, pigOut:isPigOut
+  });
+  if(rollHistory.length>20)rollHistory.pop();
+  const hl=document.getElementById('historyList');
+  hl.innerHTML=rollHistory.map(h=>`
+    <div class="h-entry">
+      <span class="h-who" style="color:${h.color}">${h.name}:</span>
+      <span>${h.p1} + ${h.p2}</span>
+      ${h.pigOut?'<span class="h-pigout">PIG OUT</span>':'<span class="h-pts">+'+h.pts+' pts</span>'}
+    </div>
+  `).join('');
+}
+
+function passToNext(autoPassed=false){
+  if(busy&&!autoPassed)return;
+  busy=true;
+  const p=players[currentIdx];
+  if(!autoPassed){
+    p.score+=p.turnScore;
+  }
+  p.turnScore=0;
+  document.getElementById('passBtn').disabled=true;
+  document.getElementById('rollBtn').disabled=true;
+
+  // check win
+  if(winScore>0&&p.score>=winScore){
+    showWin(p); busy=false; return;
+  }
+
+  currentIdx=(currentIdx+1)%numPlayers;
+  renderScoreboard();
+  renderTurnBanner();
+  document.getElementById('comboMsg').textContent=`${players[currentIdx].name}'s turn!`;
+  document.getElementById('comboMsg').className='combo-area';
+  document.getElementById('badge1').textContent='—';
+  document.getElementById('badge2').textContent='—';
+  // reset pigs to idle side pose
+  pigAnim[0].pose='Side (no dot)';pigAnim[0].phase='idle';pigAnim[0].T=0;
+  pigAnim[1].pose='Side (dot)';pigAnim[1].phase='idle';pigAnim[1].T=0;
+  document.getElementById('rollBtn').disabled=false;
+  busy=false;
+}
+
+function showWin(p){
+  const o=document.getElementById('winOverlay');
+  document.getElementById('winName').textContent=p.name;
+  document.getElementById('winName').style.color=p.color;
+  document.getElementById('winScore').textContent=`Final score: ${p.score} points`;
+  o.style.display='flex';
+}
+
+function backToSetup(){
+  document.getElementById('winOverlay').style.display='none';
+  document.getElementById('gameScreen').style.display='none';
+  document.getElementById('setupScreen').style.display='flex';
+  busy=false;
+}
+
+// ── INIT SETUP ──
+window.addEventListener('DOMContentLoaded',()=>{
+  buildNameInputs(2);
+  // wire up player count buttons in setup
+  document.querySelectorAll('#setupScreen .player-btns:first-of-type .player-btn').forEach((b,i)=>{
+    b.onclick=()=>setNumPlayers(i+1);
+  });
+});
+</script>
+</body>
+</html>
