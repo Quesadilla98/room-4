@@ -1,0 +1,1990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rocket Math: Function Navigator</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #04080f;
+    color: #e0f0ff;
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  #starfield {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #app {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+    min-height: 100vh;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: #7df4ff;
+    text-shadow: 0 0 20px rgba(125,244,255,0.4);
+  }
+
+  .subtitle {
+    font-size: 11px;
+    color: #4a7a8a;
+    letter-spacing: 2px;
+    margin-top: 4px;
+  }
+
+  #main-layout {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    max-width: 1100px;
+    align-items: flex-start;
+  }
+
+  #canvas-container {
+    position: relative;
+    flex: 1;
+    border: 1px solid #1a3a4a;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #060d18;
+    box-shadow: 0 0 40px rgba(0,150,200,0.08), inset 0 0 60px rgba(0,0,0,0.5);
+  }
+
+  canvas {
+    display: block;
+  }
+
+  #side-panel {
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .panel-card {
+    background: rgba(6,18,30,0.95);
+    border: 1px solid #1a3a4a;
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .panel-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: #4a7a8a;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .fn-type-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .fn-btn {
+    flex: 1;
+    padding: 8px;
+    background: transparent;
+    border: 1px solid #1a3a4a;
+    border-radius: 6px;
+    color: #4a7a8a;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .fn-btn.active {
+    background: rgba(125,244,255,0.08);
+    border-color: #7df4ff;
+    color: #7df4ff;
+  }
+
+  .fn-btn:hover:not(.active) {
+    border-color: #3a6a7a;
+    color: #aaa;
+  }
+
+  .eq-entry-wrap {
+    position: relative;
+    margin-bottom: 10px;
+  }
+
+  .eq-prefix {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: #7df4ff;
+    pointer-events: none;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .eq-input {
+    width: 100%;
+    background: rgba(125,244,255,0.05);
+    border: 1px solid #1a3a4a;
+    border-radius: 6px;
+    padding: 12px 12px 12px 52px;
+    color: #e0f0ff;
+    font-family: 'Space Mono', monospace;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    letter-spacing: 1px;
+    min-height: 46px;
+    line-height: 1.4;
+    cursor: text;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .eq-input:empty:before {
+    content: attr(data-placeholder);
+    color: #2a5a6a;
+    pointer-events: none;
+  }
+
+  .eq-input:focus {
+    border-color: #7df4ff;
+    box-shadow: 0 0 0 2px rgba(125,244,255,0.08);
+  }
+
+  .eq-input.valid {
+    border-color: #4fc880;
+  }
+
+  .eq-input.invalid {
+    border-color: #ff6060;
+  }
+
+  .eq-input sup {
+    font-size: 0.65em;
+    vertical-align: super;
+    line-height: 0;
+    color: #ffd080;
+    font-weight: 700;
+  }
+
+  .eq-template {
+    font-size: 10px;
+    color: #2a5a6a;
+    margin-top: 5px;
+    letter-spacing: 1px;
+    padding-left: 2px;
+  }
+
+  .eq-template span {
+    color: #4a8a9a;
+  }
+
+  .parse-status {
+    font-size: 10px;
+    margin-top: 6px;
+    min-height: 16px;
+    padding-left: 2px;
+    letter-spacing: 0.5px;
+  }
+
+  .parse-status.ok { color: #4fc880; }
+  .parse-status.err { color: #ff8060; }
+  .parse-status.neutral { color: #4a7a8a; }
+
+  .fn-preview {
+    background: rgba(125,244,255,0.04);
+    border: 1px dashed #1a3a4a;
+    border-radius: 5px;
+    padding: 10px;
+    text-align: center;
+    font-size: 15px;
+    color: #7df4ff;
+    letter-spacing: 1px;
+    margin-top: 8px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+  }
+
+  #hint-box {
+    font-size: 11px;
+    color: #4a7a8a;
+    line-height: 1.7;
+    margin-top: 6px;
+  }
+
+  #hint-box span {
+    color: #7df4ff;
+  }
+
+  #launch-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #0a3a4a, #0a2a3a);
+    border: 1px solid #7df4ff;
+    border-radius: 8px;
+    color: #7df4ff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 20px rgba(125,244,255,0.1);
+  }
+
+  #launch-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #0d4a5a, #0a3a4a);
+    box-shadow: 0 0 30px rgba(125,244,255,0.25);
+    transform: translateY(-1px);
+  }
+
+  #launch-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  #new-mission-btn {
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 1px solid #1a3a4a;
+    border-radius: 8px;
+    color: #4a7a8a;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  #new-mission-btn:hover {
+    border-color: #3a6a7a;
+    color: #aaa;
+  }
+
+  .mission-info {
+    font-size: 11px;
+    line-height: 1.8;
+    color: #7a9aaa;
+  }
+
+  .mission-info .val {
+    color: #ffd080;
+  }
+
+  #status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    transition: all 0.3s;
+    min-height: 36px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  #overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(4,8,15,0.85);
+    z-index: 10;
+    gap: 12px;
+    text-align: center;
+    padding: 20px;
+  }
+
+  #overlay.hidden { display: none; }
+
+  .overlay-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 2px;
+  }
+
+  .overlay-sub {
+    font-size: 12px;
+    color: #4a7a8a;
+    letter-spacing: 2px;
+    line-height: 1.8;
+  }
+
+  .pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    background: rgba(125,244,255,0.1);
+    border: 1px solid rgba(125,244,255,0.3);
+    color: #7df4ff;
+    margin-bottom: 6px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: #4a7a8a;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 800px) {
+    #main-layout { flex-direction: column; }
+    #side-panel { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<div id="app">
+  <header>
+    <h1>ROCKET MATH</h1>
+    <div class="subtitle">FUNCTION NAVIGATOR — MISSION CONTROL</div>
+  </header>
+
+  <div id="main-layout">
+    <div id="canvas-container">
+      <canvas id="gameCanvas"></canvas>
+      <div id="overlay">
+        <div class="pill">MISSION BRIEFING</div>
+        <div class="overlay-title" style="color:#7df4ff">READY FOR LAUNCH</div>
+        <div class="overlay-sub">
+          Enter <strong style="color:#ffd080">any function of x</strong> to chart your flight path.<br>
+          Navigate from Earth to the target planet.<br>
+          Avoid the moving space debris!<br><br>
+          <em style="color:#2a5a6a">Try: 2x+1 &nbsp;|&nbsp; x^2-3 &nbsp;|&nbsp; sin(x)*3 &nbsp;|&nbsp; sqrt(x)+1</em>
+        </div>
+      </div>
+    </div>
+
+    <div id="side-panel">
+      <div class="panel-card">
+        <div class="panel-label">Mission Target</div>
+        <div class="mission-info" id="mission-info">
+          Generating mission...
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-label">Function Input</div>
+        <div class="eq-entry-wrap">
+          <span class="eq-prefix">y =</span>
+          <div class="eq-input" id="eq-input" contenteditable="true" spellcheck="false"
+               role="textbox" aria-label="Enter equation"
+               data-placeholder="2x + 1"></div>
+        </div>
+        <div class="eq-template">
+          Use <code style="color:#7df4ff;font-size:11px">^</code> for powers &mdash; <span id="eq-format-hint">sin, cos, sqrt, abs, pi, e ok too</span>
+        </div>
+        <div class="parse-status neutral" id="parse-status">Enter your equation above</div>
+
+        <div class="fn-preview" id="fn-preview">y = ?</div>
+
+        <div id="hint-box" style="margin-top:10px">
+          Target at <span id="hint-x">x=?</span>, <span id="hint-y">y=?</span>.<br>
+          Your function must pass through or near that point.
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-label">Navigation Legend</div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#4fc3e8"></div>Earth</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ffd080"></div>Target Planet</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#9060b0"></div>Hazard Planet</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ff4646"></div>Debris</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#a0c8ff;border:1px solid #6090cc"></div>Satellite</div>
+          <div class="legend-item"><div class="legend-dot" style="width:18px;height:3px;border-radius:2px;background:rgba(255,70,70,0.85)"></div>Path</div>
+          <div class="legend-item"><div class="legend-dot" style="width:18px;height:3px;border-radius:2px;background:rgba(255,160,30,0.9)"></div>Danger</div>
+          <div class="legend-item"><div class="legend-dot" style="width:18px;height:3px;border-radius:2px;background:rgba(100,255,120,0.9)"></div>Target</div>
+        </div>
+      </div>
+
+      <div id="status-bar">
+        <div class="status-dot" style="background:#4a7a8a" id="status-dot"></div>
+        <span id="status-text">AWAITING LAUNCH PARAMETERS</span>
+      </div>
+
+      <button id="launch-btn" onclick="launch()">⬆ LAUNCH</button>
+      <button id="new-mission-btn" onclick="newMission()">↺ NEW MISSION</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const starCanvas = document.getElementById('starfield');
+const starCtx = starCanvas.getContext('2d');
+const gameCanvas = document.getElementById('gameCanvas');
+const ctx = gameCanvas.getContext('2d');
+
+let W = 0, H = 0;
+let mission = {};
+let debris = [];
+let satellites = [];
+let hazardPlanets = [];
+let rocket = null;
+let animFrame = null;
+let gameState = 'idle';
+let particles = [];
+let starPos = [];
+let orbitState = null;
+
+const HAZARD_PLANET_STYLES = [
+  { color: '#7a4a8a', glow: '#b060d0', name: 'Pluto',   rings: false },
+  { color: '#3a6a4a', glow: '#50c070', name: 'Kepler',  rings: false },
+  { color: '#8a5a2a', glow: '#d08040', name: 'Titan',   rings: true  },
+  { color: '#4a4a8a', glow: '#6060d0', name: 'Eris',    rings: false },
+  { color: '#6a3a3a', glow: '#c04040', name: 'Ceres',   rings: false },
+  { color: '#3a5a6a', glow: '#4090a0', name: 'Triton',  rings: true  },
+];
+
+// Sun is at a fixed world position off-canvas (upper-left)
+// Planets orbit this sun. World coords: sun ~ (-50, -50) in world units
+// But we define it in canvas pixel space as a fixed off-canvas point.
+// Each SOLAR_PLANET has an orbital radius (canvas px), speed (rad/frame), visual props.
+const SOLAR_PLANETS = [
+  { name: 'Mercury', color: '#b0a090', glow: '#d0c0a0', radius: 12, rings: false, orbitR: 260, speed: 0.0028, phase: 0.0 },
+  { name: 'Venus',   color: '#e8c060', glow: '#ffd040', radius: 18, rings: false, orbitR: 330, speed: 0.0019, phase: 1.1 },
+  { name: 'Mars',    color: '#c1440e', glow: '#ff6030', radius: 20, rings: false, orbitR: 410, speed: 0.0013, phase: 2.3 },
+  { name: 'Jupiter', color: '#c8a060', glow: '#ffc840', radius: 30, rings: false, orbitR: 510, speed: 0.0008, phase: 0.7 },
+  { name: 'Saturn',  color: '#e8d49a', glow: '#ffe090', radius: 26, rings: true,  orbitR: 610, speed: 0.0006, phase: 3.9 },
+  { name: 'Uranus',  color: '#7de8e8', glow: '#80ffff', radius: 22, rings: true,  orbitR: 710, speed: 0.00045, phase: 5.1 },
+  { name: 'Neptune', color: '#4b70dd', glow: '#7090ff', radius: 24, rings: false, orbitR: 800, speed: 0.00035, phase: 4.4 },
+];
+
+// Sun canvas position (off upper-left, so planets orbit into the play area)
+// We compute this relative to canvas size in newMission
+let SUN_CX = 0, SUN_CY = 0;
+let planetAngles = []; // current angle per solar planet (animated)
+let targetPlanetIdx = 0; // which planet is the destination
+
+function initStarfield() {
+  starCanvas.width = window.innerWidth;
+  starCanvas.height = window.innerHeight;
+  starPos = [];
+  for (let i = 0; i < 250; i++) {
+    starPos.push({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      r: Math.random() * 1.5 + 0.2,
+      a: Math.random(),
+      speed: Math.random() * 0.005 + 0.002,
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+}
+
+function drawStarfield(t) {
+  starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+  starPos.forEach(s => {
+    const alpha = s.a * (0.6 + 0.4 * Math.sin(t * s.speed + s.phase));
+    starCtx.beginPath();
+    starCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    starCtx.fillStyle = `rgba(200,230,255,${alpha})`;
+    starCtx.fill();
+  });
+}
+
+function resizeCanvas() {
+  const container = document.getElementById('canvas-container');
+  W = container.clientWidth;
+  H = Math.max(400, Math.min(window.innerHeight - 200, 520));
+  gameCanvas.width = W;
+  gameCanvas.height = H;
+}
+
+function setStatus(msg, color) {
+  document.getElementById('status-text').textContent = msg;
+  document.getElementById('status-dot').style.background = color || '#4a7a8a';
+}
+
+// ── Rich equation editor + universal math evaluator ──────────
+let compiledFn = null;   // compiled JS function  (x) => number
+let lastRawText = '';
+
+// ── Contenteditable helpers ───────────────────────────────────
+function getRawText() {
+  const el = document.getElementById('eq-input');
+  let result = '';
+  el.childNodes.forEach(node => {
+    if (node.nodeType === Node.TEXT_NODE) result += node.textContent;
+    else if (node.nodeName === 'SUP') result += '^' + node.textContent;
+    else if (node.nodeName !== 'BR') result += node.textContent;
+  });
+  return result;
+}
+
+// ── TI-84-style superscript input ────────────────────────────
+// We fully manage the editor content ourselves as a list of tokens.
+// Each token is either { type:'text', val:string } or { type:'sup', val:string }
+// We render them into the div and never let the browser edit freely.
+
+let tokens = [];          // [{type:'text'|'sup', val:string}]
+let curTok = 0;           // index of active token
+let curPos = 0;           // char position within that token
+let inSuperscript = false;
+
+function renderEditor() {
+  const el = document.getElementById('eq-input');
+  el.innerHTML = '';
+  tokens.forEach((tok, ti) => {
+    if (tok.type === 'sup') {
+      const sup = document.createElement('sup');
+      sup.style.cssText = 'font-size:0.65em;vertical-align:super;line-height:0;color:#ffd080;font-weight:700;';
+      sup.textContent = tok.val;
+      el.appendChild(sup);
+    } else {
+      el.appendChild(document.createTextNode(tok.val));
+    }
+  });
+  // Place cursor
+  placeCursor();
+}
+
+function placeCursor() {
+  const el = document.getElementById('eq-input');
+  const sel = window.getSelection();
+  const range = document.createRange();
+  let nodeIdx = 0;
+  let charOffset = curPos;
+
+  for (let ti = 0; ti < curTok && ti < tokens.length; ti++) {
+    nodeIdx++;
+  }
+
+  const node = el.childNodes[nodeIdx];
+  if (!node) {
+    range.setStart(el, el.childNodes.length);
+  } else if (node.nodeType === Node.TEXT_NODE) {
+    const safeOffset = Math.min(charOffset, node.textContent.length);
+    range.setStart(node, safeOffset);
+  } else {
+    // sup node — place cursor inside its text node
+    const inner = node.firstChild || node;
+    const safeOffset = Math.min(charOffset, inner.textContent ? inner.textContent.length : 0);
+    if (inner.nodeType === Node.TEXT_NODE) {
+      range.setStart(inner, safeOffset);
+    } else {
+      range.setStart(node, 0);
+    }
+  }
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+function tokensToRaw() {
+  return tokens.map(t => t.type === 'sup' ? '^' + t.val : t.val).join('');
+}
+
+function currentToken() { return tokens[curTok]; }
+
+function ensureTokenAt(idx) {
+  // Make sure a text token exists at idx
+  while (tokens.length <= idx) tokens.push({ type: 'text', val: '' });
+}
+
+function handleEditorKeydown(e) {
+  if (e.key === 'Enter') { e.preventDefault(); return; }
+
+  // ── Arrow navigation ──────────────────────────────────────────
+  if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    if (inSuperscript) {
+      // Exit superscript → move to next text token
+      inSuperscript = false;
+      curTok++;
+      ensureTokenAt(curTok);
+      if (tokens[curTok].type !== 'text') tokens.splice(curTok, 0, { type: 'text', val: '' });
+      curPos = 0;
+    } else {
+      const tok = tokens[curTok];
+      if (tok && curPos < tok.val.length) {
+        curPos++;
+      } else if (curTok < tokens.length - 1) {
+        curTok++;
+        curPos = tokens[curTok].type === 'sup' ? 0 : 0;
+        inSuperscript = tokens[curTok].type === 'sup';
+      }
+    }
+    e.preventDefault();
+    renderEditor();
+    return;
+  }
+
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    if (curPos > 0) {
+      curPos--;
+    } else if (curTok > 0) {
+      curTok--;
+      curPos = tokens[curTok].val.length;
+      inSuperscript = tokens[curTok].type === 'sup';
+    }
+    renderEditor();
+    return;
+  }
+
+  // ── Backspace ─────────────────────────────────────────────────
+  if (e.key === 'Backspace') {
+    e.preventDefault();
+    if (curPos > 0) {
+      tokens[curTok].val = tokens[curTok].val.slice(0, curPos - 1) + tokens[curTok].val.slice(curPos);
+      curPos--;
+      // If sup token now empty and we backspaced it clean, collapse
+      if (tokens[curTok].type === 'sup' && tokens[curTok].val === '') {
+        tokens.splice(curTok, 1);
+        if (curTok > 0) { curTok--; curPos = tokens[curTok].val.length; }
+        else { curPos = 0; }
+        inSuperscript = tokens[curTok] ? tokens[curTok].type === 'sup' : false;
+      }
+    } else if (curTok > 0) {
+      curTok--;
+      const tok = tokens[curTok];
+      if (tok.val.length > 0) {
+        tok.val = tok.val.slice(0, -1);
+        curPos = tok.val.length;
+      } else {
+        tokens.splice(curTok, 1);
+        if (curTok > 0) { curTok--; curPos = tokens[curTok].val.length; }
+        else curPos = 0;
+      }
+      inSuperscript = tokens[curTok] ? tokens[curTok].type === 'sup' : false;
+    }
+    renderEditor();
+    parseEquation();
+    return;
+  }
+
+  // ── Caret → enter superscript ─────────────────────────────────
+  if (e.key === '^') {
+    e.preventDefault();
+    if (inSuperscript) return; // already in sup, ignore
+
+    // Flush current text token at cursor
+    const curText = tokens[curTok] ? tokens[curTok].val : '';
+    const before = curText.slice(0, curPos);
+    const after = curText.slice(curPos);
+    const newTokens = [];
+    if (before) newTokens.push({ type: 'text', val: before });
+    newTokens.push({ type: 'sup', val: '' });
+    if (after) newTokens.push({ type: 'text', val: after });
+    // Replace current token with the split
+    tokens.splice(curTok, 1, ...newTokens);
+    // Move cursor to inside the new sup token
+    curTok = tokens.indexOf(newTokens[newTokens.length - (after ? 2 : 1)]);
+    // Find the sup
+    for (let i = 0; i < tokens.length; i++) {
+      if (tokens[i] === newTokens[before ? 1 : 0]) { curTok = i; break; }
+    }
+    curPos = 0;
+    inSuperscript = true;
+    renderEditor();
+    return;
+  }
+
+  // ── Printable character ───────────────────────────────────────
+  if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+    e.preventDefault();
+
+    // If in superscript: allow digits, x, basic operators, parens, dot, minus
+    if (inSuperscript) {
+      // These chars exit superscript and land in the next text token instead
+      const exitSup = /[+*\/,]/.test(e.key) && e.key !== '-';
+      if (exitSup) {
+        inSuperscript = false;
+        curTok++;
+        ensureTokenAt(curTok);
+        if (tokens[curTok].type !== 'text') tokens.splice(curTok, 0, { type: 'text', val: '' });
+        curPos = 0;
+        tokens[curTok].val = tokens[curTok].val.slice(0, curPos) + e.key + tokens[curTok].val.slice(curPos);
+        curPos++;
+      } else {
+        // Allow: digits, x, -, ., (, )
+        tokens[curTok].val = tokens[curTok].val.slice(0, curPos) + e.key + tokens[curTok].val.slice(curPos);
+        curPos++;
+      }
+    } else {
+      ensureTokenAt(curTok);
+      if (tokens[curTok].type === 'sup') {
+        // Landed in a sup without meaning to — step out
+        curTok++;
+        ensureTokenAt(curTok);
+        if (tokens[curTok].type !== 'text') tokens.splice(curTok, 0, { type: 'text', val: '' });
+        curPos = 0;
+      }
+      tokens[curTok].val = tokens[curTok].val.slice(0, curPos) + e.key + tokens[curTok].val.slice(curPos);
+      curPos++;
+    }
+    renderEditor();
+    parseEquation();
+    return;
+  }
+}
+
+function getRawText() {
+  return tokensToRaw();
+}
+
+function clearEditor() {
+  compiledFn = null;
+  tokens = [{ type: 'text', val: '' }];
+  curTok = 0; curPos = 0; inSuperscript = false;
+  renderEditor();
+  const ps = document.getElementById('parse-status');
+  if (ps) { ps.textContent = 'Enter any function of x'; ps.className = 'parse-status neutral'; }
+  const fp = document.getElementById('fn-preview');
+  if (fp) fp.textContent = 'y = ?';
+  const input = document.getElementById('eq-input');
+  if (input) input.className = 'eq-input';
+  if (gameState === 'idle' || gameState === 'ready') drawScene();
+}
+
+// ── Expression normaliser & safe compiler ─────────────────────
+function normaliseExpr(raw) {
+  let s = raw
+    .replace(/\u2212/g, '-')
+    .replace(/\u00b2/g, '^2')
+    .replace(/\u00b3/g, '^3')
+    .toLowerCase()
+    .trim();
+
+  // Named constants first (before function substitution so 'e' isn't eaten)
+  s = s.replace(/\bpi\b/g, '(Math.PI)');
+  // 'e' as standalone constant — not followed by ^, x, or a letter
+  s = s.replace(/\be\b(?![a-zA-Z])/g, '(Math.E)');
+
+  // Math functions
+  const fns = ['asin','acos','atan2','atan','sinh','cosh','tanh',
+                'sin','cos','tan','sqrt','cbrt','abs','log2','log10',
+                'log','exp','ceil','floor','round','sign','hypot','pow'];
+  fns.forEach(fn => {
+    const re = new RegExp(`\\b${fn}\\b`, 'g');
+    s = s.replace(re, `Math.${fn}`);
+  });
+
+  // Implicit multiplication (must come AFTER function substitution)
+  s = s.replace(/(\d)(x\b)/g, '$1*$2');       // 2x → 2*x
+  s = s.replace(/(\d)(\()/g, '$1*$2');         // 3( → 3*(
+  s = s.replace(/(\))(x\b)/g, '$1*$2');        // )x → )*x
+  s = s.replace(/\)\s*\(/g, ')*(');            // )( → )*(
+  s = s.replace(/(x)\s*\(/g, 'x*(');           // x( → x*(
+  // number adjacent to Math. function: 2Math.sin → 2*Math.sin
+  s = s.replace(/(\d)(Math\.)/g, '$1*$2');
+
+  // ^ operator → Math.pow()
+  // Strategy: replace all a^b with Math.pow(a,b)
+  // 'a' may be: x, a number, or a closing paren group
+  // 'b' may be: x, a number with optional sign, or a parenthesised group
+  // We do repeated passes to handle chaining like x^2^3 (rare but safe)
+  for (let pass = 0; pass < 4; pass++) {
+    // base: x, digits, or )
+    // exponent: x, signed number, or parenthesised expr
+    s = s.replace(/(x|[\d.]+|\))\^(x|[+\-]?[\d.]+|\([^)]*\))/g, 'Math.pow($1,$2)');
+  }
+
+  return s;
+}
+
+function compileExpr(raw) {
+  if (!raw || raw.trim() === '') return null;
+  const expr = normaliseExpr(raw);
+  if (/[`${}[\]\\;:'"=!@#&|<>?]/.test(expr)) return null;
+  try {
+    const fn = new Function('x', `"use strict"; return (${expr});`);
+    const v0 = fn(1);   // smoke test at x=1
+    const v1 = fn(2);   // smoke test at x=2
+    if (typeof v0 !== 'number' || typeof v1 !== 'number') return null;
+    return fn;
+  } catch (e) {
+    return null;
+  }
+}
+
+// ── Preview renderer: converts raw text back to pretty HTML ───
+function buildPreviewHTML(raw) {
+  // Take the raw ^ notation and render <sup> visually
+  let s = raw
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // x^N or x^(expr) → x<sup>N</sup>
+  s = s.replace(/\^(-?[\d.]+|\([\d.+\-*/]+\))/g, (_, exp) =>
+    `<sup style="font-size:0.65em;vertical-align:super;line-height:0;color:#ffd080;font-weight:700">${exp}</sup>`
+  );
+  return 'y = ' + s;
+}
+
+// ── Main parse/validate on every keystroke ────────────────────
+function parseEquation() {
+  const raw = getRawText().trim();
+  const input = document.getElementById('eq-input');
+  const status = document.getElementById('parse-status');
+  const preview = document.getElementById('fn-preview');
+
+  if (raw === '') {
+    compiledFn = null;
+    input.className = 'eq-input';
+    status.textContent = 'Enter any function of x';
+    status.className = 'parse-status neutral';
+    preview.textContent = 'y = ?';
+    if (gameState === 'ready') drawScene();
+    return;
+  }
+
+  const fn = compileExpr(raw);
+
+  if (fn) {
+    compiledFn = fn;
+    input.className = 'eq-input valid';
+    // Show evaluated value at target x as a sanity check
+    let atTarget = '';
+    if (mission && mission.targetWX != null) {
+      try {
+        const v = fn(mission.targetWX);
+        if (isFinite(v)) atTarget = `  \u2192 y(${mission.targetWX}) = ${parseFloat(v.toFixed(3))}`;
+      } catch(e) {}
+    }
+    status.textContent = '\u2713 valid' + atTarget;
+    status.className = 'parse-status ok';
+    preview.innerHTML = buildPreviewHTML(raw);
+  } else {
+    compiledFn = null;
+    input.className = 'eq-input invalid';
+    status.textContent = '\u2717 can\u2019t parse \u2014 try: 2x+1  x^2-3  sin(x)*2';
+    status.className = 'parse-status err';
+    preview.textContent = 'y = ?';
+  }
+
+  if (gameState === 'idle' || gameState === 'ready') drawScene();
+}
+
+function evalFn(x) {
+  if (!compiledFn) return 0;
+  try {
+    const v = compiledFn(x);
+    return isFinite(v) ? v : 0;
+  } catch(e) { return 0; }
+}
+
+function updatePreview() { parseEquation(); }
+
+// stub so nothing breaks if called
+function setFnType(t) { clearEditor(); }
+
+function worldToCanvas(wx, wy) {
+  return {
+    cx: mission.originX + wx * mission.scale,
+    cy: mission.originY - wy * mission.scale
+  };
+}
+
+function canvasToWorld(cx, cy) {
+  return {
+    wx: (cx - mission.originX) / mission.scale,
+    wy: -(cy - mission.originY) / mission.scale
+  };
+}
+
+function planetCanvasPos(idx, angle) {
+  const p = SOLAR_PLANETS[idx];
+  return {
+    cx: SUN_CX + Math.cos(angle) * p.orbitR,
+    cy: SUN_CY + Math.sin(angle) * p.orbitR
+  };
+}
+
+function newMission() {
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  gameState = 'ready';
+  particles = [];
+  rocket = null;
+
+  resizeCanvas();
+
+  const margin = 55;
+  const scale = W / 18;
+  mission.scale = scale;
+
+  // Earth always bottom-left
+  const earthX = margin + 45;
+  const earthY = H - margin - 15;
+  mission.originX = earthX;
+  mission.originY = earthY;
+
+  // Sun anchored off upper-left corner — orbits sweep planets through play area
+  SUN_CX = earthX - 90;
+  SUN_CY = earthY + 90;
+
+  // Init planet angles once, preserve across missions so orbits are continuous
+  if (planetAngles.length === 0) {
+    planetAngles = SOLAR_PLANETS.map(p => p.phase);
+  }
+
+  // Pick target planet: any outer planet (idx 2+) positioned in the reachable zone
+  const candidates = [];
+  for (let i = 2; i < SOLAR_PLANETS.length; i++) {
+    const pos = planetCanvasPos(i, planetAngles[i]);
+    const wx = (pos.cx - earthX) / scale;
+    const wy = (earthY - pos.cy) / scale;
+    if (wx > 4 && wx < 13 && wy > 1.5 && wy < 7.5 &&
+        pos.cx > earthX + 80 && pos.cx < W - 50 &&
+        pos.cy > margin + 20 && pos.cy < H - margin - 50) {
+      candidates.push({ i, pos, wx, wy });
+    }
+  }
+
+  // Fast-forward orbits until a planet lands in range
+  if (candidates.length === 0) {
+    for (let step = 0; step < 1000 && candidates.length === 0; step++) {
+      for (let i = 0; i < SOLAR_PLANETS.length; i++) planetAngles[i] += SOLAR_PLANETS[i].speed * 60;
+      for (let i = 2; i < SOLAR_PLANETS.length; i++) {
+        const pos = planetCanvasPos(i, planetAngles[i]);
+        const wx = (pos.cx - earthX) / scale;
+        const wy = (earthY - pos.cy) / scale;
+        if (wx > 4 && wx < 13 && wy > 1.5 && wy < 7.5 &&
+            pos.cx > earthX + 80 && pos.cx < W - 50 &&
+            pos.cy > margin + 20 && pos.cy < H - margin - 50) {
+          candidates.push({ i, pos, wx, wy });
+          break;
+        }
+      }
+    }
+  }
+
+  const chosen = candidates[Math.floor(Math.random() * Math.min(candidates.length, 3))];
+  if (!chosen) { setTimeout(newMission, 100); return; }
+
+  targetPlanetIdx = chosen.i;
+  mission.planet = SOLAR_PLANETS[targetPlanetIdx];
+  mission.targetCX = chosen.pos.cx;
+  mission.targetCY = chosen.pos.cy;
+  mission.targetWX = parseFloat(chosen.wx.toFixed(1));
+  mission.targetWY = parseFloat(chosen.wy.toFixed(1));
+
+  debris = [];
+  satellites = [];
+  hazardPlanets = [];
+  orbitState = null;
+
+  // Hazard = all other planets, always orbiting
+  for (let i = 0; i < SOLAR_PLANETS.length; i++) {
+    if (i === targetPlanetIdx) continue;
+    const sp = SOLAR_PLANETS[i];
+    hazardPlanets.push({
+      cx: 0, cy: 0,
+      r: sp.radius + 5,
+      style: { color: sp.color, glow: sp.glow, name: sp.name, rings: sp.rings },
+      angle: planetAngles[i],
+      solarIdx: i,
+      visible: false,
+      inCollisionZone: false
+    });
+  }
+
+  // Moving debris
+  const numDebris = 2 + Math.floor(Math.random() * 3);
+  for (let i = 0, tries = 0; i < numDebris && tries < 200; tries++) {
+    const cx = earthX + 80 + Math.random() * (W - earthX - 160);
+    const cy = margin + Math.random() * (H - margin * 2 - 60);
+    if (Math.hypot(cx - mission.targetCX, cy - mission.targetCY) < 65) continue;
+    if (Math.hypot(cx - earthX, cy - earthY) < 70) continue;
+    debris.push({ cx, cy, r: 10 + Math.random() * 10,
+      vx: (Math.random() - 0.5) * 0.6, vy: (Math.random() - 0.5) * 0.35,
+      angle: Math.random() * Math.PI * 2, spin: (Math.random() - 0.5) * 0.02,
+      color: ['#aa4040','#904020','#803030','#c05030'][Math.floor(Math.random()*4)] });
+    i++;
+  }
+
+  // Satellites
+  const numSats = 1 + Math.floor(Math.random() * 3);
+  const satTypes = ['comm','solar','spy','weather'];
+  for (let i = 0, tries = 0; i < numSats && tries < 200; tries++) {
+    const sx = earthX + 100 + Math.random() * (W - earthX - 180);
+    const sy = margin + 30 + Math.random() * (H - margin * 2 - 80);
+    if (Math.hypot(sx - mission.targetCX, sy - mission.targetCY) < 75) continue;
+    if (Math.hypot(sx - earthX, sy - earthY) < 90) continue;
+    if (satellites.some(s => Math.hypot(sx - s.cx, sy - s.cy) < 80)) continue;
+    satellites.push({ cx: sx, cy: sy, type: satTypes[Math.floor(Math.random()*satTypes.length)],
+      angle: Math.random() * Math.PI * 2, panelAngle: Math.random() * Math.PI,
+      blink: Math.random() * Math.PI * 2, r: 14 });
+    i++;
+  }
+
+  document.getElementById('mission-info').innerHTML = `
+    Destination: <span class="val">${mission.planet.name}</span><br>
+    Target: <span class="val">(${mission.targetWX}, ${mission.targetWY})</span><br>
+    Hazard planets: <span class="val">${hazardPlanets.length}</span> &nbsp; Debris: <span class="val">${numDebris}</span><br>
+    Launch from: <span class="val">Earth (0, 0)</span>
+  `;
+
+  document.getElementById('hint-x').textContent = `x=${mission.targetWX}`;
+  document.getElementById('hint-y').textContent = `y=${mission.targetWY}`;
+  document.getElementById('launch-btn').disabled = false;
+  document.getElementById('overlay').classList.add('hidden');
+  clearEditor();
+  setStatus('READY — SET COURSE AND LAUNCH', '#7df4ff');
+  updatePreview();
+  startIdleAnimation();
+}
+
+function startIdleAnimation() {
+  if (animFrame) cancelAnimationFrame(animFrame);
+  function loop(t) {
+    if (gameState !== 'ready') return;
+    drawStarfield(t);
+    updateDebrisPositions();
+    drawScene();
+    animFrame = requestAnimationFrame(loop);
+  }
+  animFrame = requestAnimationFrame(loop);
+}
+
+function updateDebrisPositions() {
+  debris.forEach(d => {
+    d.cx += d.vx;
+    d.cy += d.vy;
+    d.angle += d.spin;
+    if (d.cx < 20) { d.cx = 20; d.vx *= -1; }
+    if (d.cx > W - 20) { d.cx = W - 20; d.vx *= -1; }
+    if (d.cy < 20) { d.cy = 20; d.vy *= -1; }
+    if (d.cy > H - 20) { d.cy = H - 20; d.vy *= -1; }
+  });
+  satellites.forEach(s => { s.angle += 0.003; });
+
+  // Advance all planet orbital angles continuously
+  for (let i = 0; i < SOLAR_PLANETS.length; i++) {
+    planetAngles[i] += SOLAR_PLANETS[i].speed * 3; // 3x for visible motion, slow enough to track
+  }
+
+  // Update hazard planet positions
+  const earthX = mission.originX, earthY = mission.originY;
+  const margin = 55;
+  hazardPlanets.forEach(h => {
+    if (h.solarIdx === undefined) return;
+    h.angle = planetAngles[h.solarIdx];
+    const pos = planetCanvasPos(h.solarIdx, h.angle);
+    h.cx = pos.cx;
+    h.cy = pos.cy;
+    // Always draw if within extended canvas bounds (no pop-in)
+    h.visible = pos.cx > -h.r - 60 && pos.cx < W + h.r + 60 &&
+                pos.cy > -h.r - 60 && pos.cy < H + h.r + 60;
+    // Only collide when properly inside play area
+    h.inCollisionZone = pos.cx > earthX + 30 && pos.cx < W - 10 &&
+                        pos.cy > margin - h.r && pos.cy < H - margin + h.r &&
+                        Math.hypot(pos.cx - earthX, pos.cy - earthY) > 70;
+  });
+  // Target is frozen at mission start — don't update its position
+}
+
+function drawScene() {
+  ctx.clearRect(0, 0, W, H);
+
+  drawGrid();
+  drawOrbits();
+  drawDottedPath();
+  drawHazardPlanets();
+  drawSatellites();
+  drawDebris();
+  drawEarth();
+  drawTarget();
+  drawSun();
+  if (rocket) drawRocket(rocket.cx, rocket.cy, rocket.angle);
+  drawParticles();
+}
+
+function drawOrbits() {
+  // Draw faint orbital ellipses for each planet
+  ctx.save();
+  SOLAR_PLANETS.forEach((p, i) => {
+    ctx.beginPath();
+    ctx.arc(SUN_CX, SUN_CY, p.orbitR, 0, Math.PI * 2);
+    const isTarget = (i === targetPlanetIdx);
+    ctx.strokeStyle = isTarget
+      ? 'rgba(255,208,80,0.12)'
+      : 'rgba(125,244,255,0.04)';
+    ctx.lineWidth = isTarget ? 1.5 : 0.8;
+    ctx.setLineDash(isTarget ? [4, 6] : [2, 8]);
+    ctx.stroke();
+  });
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawSun() {
+  // Sun glow, mostly off-canvas
+  const sx = SUN_CX, sy = SUN_CY;
+  ctx.save();
+  // Glow that bleeds into the canvas
+  const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, 160);
+  grad.addColorStop(0, 'rgba(255,220,80,0.35)');
+  grad.addColorStop(0.4, 'rgba(255,160,40,0.12)');
+  grad.addColorStop(1, 'rgba(255,100,20,0)');
+  ctx.beginPath();
+  ctx.arc(sx, sy, 160, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Sun body (might be partially visible)
+  if (sx > -50 && sy > -50) {
+    const bodyGrad = ctx.createRadialGradient(sx - 8, sy - 8, 4, sx, sy, 38);
+    bodyGrad.addColorStop(0, '#fff8c0');
+    bodyGrad.addColorStop(0.5, '#ffcc40');
+    bodyGrad.addColorStop(1, '#ff8010');
+    ctx.beginPath();
+    ctx.arc(sx, sy, 38, 0, Math.PI * 2);
+    ctx.fillStyle = bodyGrad;
+    ctx.shadowBlur = 30;
+    ctx.shadowColor = '#ffaa20';
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawGrid() {
+  ctx.strokeStyle = 'rgba(125,244,255,0.04)';
+  ctx.lineWidth = 1;
+  const step = mission.scale;
+  for (let x = mission.originX; x < W; x += step) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = mission.originY; y > 0; y -= step) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(125,244,255,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(mission.originX, 0); ctx.lineTo(mission.originX, H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, mission.originY); ctx.lineTo(W, mission.originY); ctx.stroke();
+
+  ctx.fillStyle = 'rgba(125,244,255,0.3)';
+  ctx.font = '9px Space Mono';
+  for (let i = 1; i * mission.scale < W - mission.originX; i++) {
+    ctx.fillText(i, mission.originX + i * mission.scale - 4, mission.originY + 12);
+  }
+  for (let i = 1; i * mission.scale < mission.originY; i++) {
+    ctx.fillText(i, mission.originX - 16, mission.originY - i * mission.scale + 4);
+  }
+}
+
+function drawDottedPath() {
+  if (!compiledFn) return;
+  const steps = 300;
+  const maxX = (W - mission.originX) / mission.scale;
+
+  // Pre-compute all points and classify each as safe / danger / hit
+  const pts = [];
+  for (let i = 0; i <= steps; i++) {
+    const wx = (i / steps) * maxX;
+    const wy = evalFn(wx);
+    const p = worldToCanvas(wx, wy);
+    const inBounds = p.cx >= 0 && p.cx <= W && p.cy >= -20 && p.cy <= H + 20;
+
+    let tag = 'safe';
+    if (inBounds) {
+      // Near target planet → green
+      const dPlanet = Math.hypot(p.cx - mission.targetCX, p.cy - mission.targetCY);
+      if (dPlanet < mission.planet.radius + 30) { tag = 'hit'; }
+      else {
+        // Near any obstacle → danger
+        for (const d of debris) {
+          if (Math.hypot(p.cx - d.cx, p.cy - d.cy) < d.r + 16) { tag = 'danger'; break; }
+        }
+        if (tag === 'safe') {
+          for (const s of satellites) {
+            if (Math.hypot(p.cx - s.cx, p.cy - s.cy) < s.r + 14) { tag = 'danger'; break; }
+          }
+        }
+        if (tag === 'safe') {
+          for (const hp of hazardPlanets) {
+            if (hp.inCollisionZone && Math.hypot(p.cx - hp.cx, p.cy - hp.cy) < hp.r + 12) { tag = 'danger'; break; }
+          }
+        }
+      }
+    }
+    pts.push({ ...p, inBounds, tag });
+  }
+
+  ctx.save();
+  ctx.lineWidth = 2;
+
+  // Draw in three passes so colors don't bleed — safe (red), danger (orange flash), hit (green)
+  const passes = [
+    { tag: 'safe',   color: 'rgba(255, 70, 70, 0.75)',  dash: [5, 7] },
+    { tag: 'danger', color: 'rgba(255,160, 30, 0.95)',  dash: [3, 4] },
+    { tag: 'hit',    color: 'rgba(100,255,120, 0.95)',  dash: [4, 4] },
+  ];
+
+  passes.forEach(({ tag, color, dash }) => {
+    ctx.setLineDash(dash);
+    ctx.strokeStyle = color;
+    ctx.shadowBlur = tag === 'safe' ? 0 : 8;
+    ctx.shadowColor = tag === 'danger' ? '#ff9020' : '#60ff80';
+    ctx.beginPath();
+    let drawing = false;
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      if (!p.inBounds || p.tag !== tag) { drawing = false; continue; }
+      if (!drawing) { ctx.moveTo(p.cx, p.cy); drawing = true; }
+      else ctx.lineTo(p.cx, p.cy);
+    }
+    ctx.stroke();
+  });
+
+  // Arrow head at end of path
+  const last = pts.filter(p => p.inBounds).slice(-1)[0];
+  const prev = pts.filter(p => p.inBounds).slice(-4)[0];
+  if (last && prev) {
+    const ang = Math.atan2(last.cy - prev.cy, last.cx - prev.cx);
+    ctx.shadowBlur = 0;
+    ctx.setLineDash([]);
+    ctx.fillStyle = last.tag === 'hit' ? 'rgba(100,255,120,0.85)' : last.tag === 'danger' ? 'rgba(255,160,30,0.85)' : 'rgba(255,70,70,0.75)';
+    ctx.beginPath();
+    ctx.moveTo(last.cx + Math.cos(ang) * 8, last.cy + Math.sin(ang) * 8);
+    ctx.lineTo(last.cx + Math.cos(ang + 2.5) * 6, last.cy + Math.sin(ang + 2.5) * 6);
+    ctx.lineTo(last.cx + Math.cos(ang - 2.5) * 6, last.cy + Math.sin(ang - 2.5) * 6);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.setLineDash([]);
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+function drawHazardPlanets() {
+  hazardPlanets.forEach(hp => {
+    // Always draw so planets don't pop into existence — skip only if truly far off canvas
+    if (hp.cx + hp.r < -100 || hp.cx - hp.r > W + 100 || hp.cy + hp.r < -100 || hp.cy - hp.r > H + 100) return;
+    const { cx, cy, r, style } = hp;
+    ctx.save();
+
+    // Glow
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = style.glow;
+
+    // Planet body
+    const grad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+    grad.addColorStop(0, lighten(style.color, 35));
+    grad.addColorStop(0.6, style.color);
+    grad.addColorStop(1, darken(style.color, 25));
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Subtle surface bands
+    ctx.save();
+    ctx.clip();
+    ctx.globalAlpha = 0.15;
+    ctx.strokeStyle = lighten(style.color, 50);
+    ctx.lineWidth = r * 0.25;
+    for (let band = -1; band <= 1; band++) {
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + band * r * 0.45, r * 0.9, r * 0.18, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Rings
+    if (style.rings) {
+      ctx.shadowBlur = 6;
+      ctx.shadowColor = style.glow;
+      ctx.strokeStyle = style.color + 'aa';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, r * 1.65, r * 0.3, -0.35, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    // Danger radius ring (dashed)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(200,100,255,0.25)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 5]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 12, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // Label
+    ctx.fillStyle = 'rgba(200,150,255,0.6)';
+    ctx.font = '8px Space Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText(style.name.toUpperCase(), cx, cy + r + 13);
+    ctx.textAlign = 'left';
+  });
+}
+
+function drawEarth() {
+  const x = mission.originX;
+  const y = mission.originY;
+  const r = 20;
+  const grad = ctx.createRadialGradient(x - 5, y - 5, 2, x, y, r);
+  grad.addColorStop(0, '#4fc3e8');
+  grad.addColorStop(0.5, '#2a7ab0');
+  grad.addColorStop(1, '#0a3060');
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(125,244,255,0.3)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(60,180,80,0.7)';
+  ctx.beginPath();
+  ctx.ellipse(x - 4, y - 3, 7, 5, -0.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(x + 5, y + 4, 5, 4, 0.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(125,244,255,0.5)';
+  ctx.font = '9px Space Mono';
+  ctx.fillText('EARTH (0,0)', x - 36, y + r + 14);
+}
+
+function drawTarget() {
+  const cx = mission.targetCX;
+  const cy = mission.targetCY;
+  const planet = mission.planet;
+  const r = planet.radius;
+
+  const pulseScale = 1 + 0.06 * Math.sin(Date.now() * 0.004);
+
+  ctx.save();
+  ctx.shadowBlur = 20;
+  ctx.shadowColor = planet.glow;
+
+  const grad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r * pulseScale);
+  grad.addColorStop(0, lighten(planet.color, 40));
+  grad.addColorStop(0.6, planet.color);
+  grad.addColorStop(1, darken(planet.color, 30));
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * pulseScale, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  if (planet.rings) {
+    ctx.strokeStyle = planet.glow + '80';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, r * 1.6, r * 0.35, -0.4, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  ctx.strokeStyle = 'rgba(255,208,80,0.5)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 4]);
+  ctx.beginPath();
+  ctx.arc(cx, cy, r + 14, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#ffd080';
+  ctx.font = '9px Space Mono';
+  ctx.fillText(`${planet.name.toUpperCase()} (${mission.targetWX},${mission.targetWY})`, cx - 40, cy + r + 18);
+
+  // Show orbit ring when rocket is in orbit phase
+  if (gameState === 'orbiting' || gameState === 'success') {
+    const orbitR = r + 22;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(160,240,128,0.3)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 5]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, orbitR, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+}
+
+function drawDebris() {
+  debris.forEach(d => {
+    ctx.save();
+    ctx.translate(d.cx, d.cy);
+    ctx.rotate(d.angle);
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#ff4040';
+    ctx.fillStyle = d.color;
+    ctx.beginPath();
+    const pts = 6;
+    for (let i = 0; i < pts; i++) {
+      const angle = (i / pts) * Math.PI * 2;
+      const jitter = 0.7 + 0.3 * Math.sin(i * 2.3);
+      const rx = d.r * jitter;
+      const x = Math.cos(angle) * rx;
+      const y = Math.sin(angle) * rx * 0.6;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#ff6050';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  });
+}
+
+function drawSatellites() {
+  const t = Date.now();
+  satellites.forEach(s => {
+    ctx.save();
+    ctx.translate(s.cx, s.cy);
+    ctx.rotate(s.angle);
+
+    // Danger glow ring
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = 'rgba(140,180,255,0.6)';
+
+    // Body
+    ctx.fillStyle = '#8ab0d8';
+    ctx.strokeStyle = '#a0c8ff';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.rect(-7, -5, 14, 10);
+    ctx.fill();
+    ctx.stroke();
+
+    // Solar panels
+    const panelW = 18, panelH = 5;
+    ctx.fillStyle = '#1a3a6a';
+    ctx.strokeStyle = '#4060a0';
+    ctx.lineWidth = 0.5;
+    // left panel
+    ctx.beginPath();
+    ctx.rect(-7 - panelW, -panelH/2, panelW, panelH);
+    ctx.fill(); ctx.stroke();
+    // panel cells
+    ctx.strokeStyle = '#2050a0';
+    for (let j = 1; j < 4; j++) {
+      ctx.beginPath();
+      ctx.moveTo(-7 - panelW + j * panelW/4, -panelH/2);
+      ctx.lineTo(-7 - panelW + j * panelW/4, panelH/2);
+      ctx.stroke();
+    }
+    // right panel
+    ctx.fillStyle = '#1a3a6a';
+    ctx.strokeStyle = '#4060a0';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.rect(7, -panelH/2, panelW, panelH);
+    ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#2050a0';
+    for (let j = 1; j < 4; j++) {
+      ctx.beginPath();
+      ctx.moveTo(7 + j * panelW/4, -panelH/2);
+      ctx.lineTo(7 + j * panelW/4, panelH/2);
+      ctx.stroke();
+    }
+
+    // Antenna
+    ctx.strokeStyle = '#c0d8ff';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, -5);
+    ctx.lineTo(0, -11);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, -11, 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#e0f0ff';
+    ctx.fill();
+
+    // Blinking status light
+    const blink = 0.5 + 0.5 * Math.sin(t * 0.004 + s.blink);
+    ctx.beginPath();
+    ctx.arc(4, 0, 2, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,80,80,${blink})`;
+    ctx.fill();
+
+    ctx.restore();
+
+    // Collision radius indicator (subtle)
+    ctx.beginPath();
+    ctx.arc(s.cx, s.cy, s.r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(140,180,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+}
+
+function drawRocket(cx, cy, angle) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(angle);
+
+  ctx.shadowBlur = 15;
+  ctx.shadowColor = '#7df4ff';
+
+  ctx.fillStyle = '#e0f0ff';
+  ctx.beginPath();
+  ctx.moveTo(14, 0);
+  ctx.lineTo(-10, -6);
+  ctx.lineTo(-10, 6);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#4fc3e8';
+  ctx.beginPath();
+  ctx.moveTo(14, 0);
+  ctx.lineTo(6, -3);
+  ctx.lineTo(6, 3);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#7df4ff';
+  ctx.beginPath();
+  ctx.arc(4, 0, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#ff9040';
+  ctx.beginPath();
+  ctx.moveTo(-10, -4);
+  ctx.lineTo(-18, 0);
+  ctx.lineTo(-10, 4);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawParticles() {
+  particles.forEach((p, i) => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = p.color.replace(')', `,${p.life})`).replace('rgb', 'rgba');
+    ctx.fill();
+  });
+}
+
+function lighten(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.min(255, (n >> 16) + amt);
+  const g = Math.min(255, ((n >> 8) & 0xff) + amt);
+  const b = Math.min(255, (n & 0xff) + amt);
+  return `rgb(${r},${g},${b})`;
+}
+function darken(hex, amt) { return lighten(hex, -amt); }
+
+function checkObstacleHit(cx, cy) {
+  for (const d of debris) {
+    if (Math.hypot(cx - d.cx, cy - d.cy) < d.r + 10) return { type: 'debris', obj: d };
+  }
+  for (const s of satellites) {
+    if (Math.hypot(cx - s.cx, cy - s.cy) < s.r + 8) return { type: 'satellite', obj: s };
+  }
+  for (const hp of hazardPlanets) {
+    if (hp.inCollisionZone && Math.hypot(cx - hp.cx, cy - hp.cy) < hp.r + 6) return { type: 'planet', obj: hp };
+  }
+  return null;
+}
+
+function buildReturnPath(fromCX, fromCY) {
+  // Curved arc from current pos back to Earth
+  const earthX = mission.originX, earthY = mission.originY;
+  const pts = [];
+  const steps = 120;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    // Bezier with a control point pulling up and left
+    const cpx = (fromCX + earthX) / 2 - 40;
+    const cpy = Math.min(fromCY, earthY) - 80;
+    const x = (1-t)*(1-t)*fromCX + 2*(1-t)*t*cpx + t*t*earthX;
+    const y = (1-t)*(1-t)*fromCY + 2*(1-t)*t*cpy + t*t*earthY;
+    pts.push({ cx: x, cy: y });
+  }
+  return pts;
+}
+
+function launch() {
+  if (gameState !== 'ready') return;
+  if (!compiledFn) {
+    setStatus('ENTER A VALID EQUATION FIRST', '#ff6060');
+    document.getElementById('eq-input').focus();
+    document.getElementById('eq-input').className = 'eq-input invalid';
+    return;
+  }
+  gameState = 'flying';
+  document.getElementById('launch-btn').disabled = true;
+  setStatus('ROCKET IN FLIGHT...', '#ffd080');
+
+  const steps = 300;
+  const maxX = (W - mission.originX) / mission.scale;
+  const pathPoints = [];
+  for (let i = 0; i <= steps; i++) {
+    const wx = (i / steps) * maxX;
+    const wy = evalFn(wx);
+    const p = worldToCanvas(wx, wy);
+    pathPoints.push({ cx: p.cx, cy: p.cy, wx, wy });
+  }
+
+  let step = 0;
+  const totalSteps = pathPoints.length;
+  particles = [];
+
+  function tickParticles() {
+    particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.r *= 0.97; p.life -= 0.035; });
+    particles = particles.filter(p => p.life > 0);
+  }
+
+  function startFail(hitType) {
+    gameState = 'failed';
+    const pt = rocket || { cx: 0, cy: 0 };
+    spawnExplosion(pt.cx, pt.cy);
+    rocket = null;
+    const msg = hitType === 'satellite' ? 'SATELLITE COLLISION!'
+                : hitType === 'planet'    ? 'PLANETARY IMPACT!'
+                :                          'DEBRIS COLLISION!';
+    const hint = hitType === 'satellite'
+      ? 'Your path hit a satellite. Arc around it with a parabola!'
+      : hitType === 'planet'
+      ? 'Your rocket crashed into a hazard planet. Try a parabolic curve to fly over or under it!'
+      : 'Your rocket hit space debris. Adjust your equation!';
+    function failLoop(t) {
+      drawStarfield(t); tickParticles(); updateDebrisPositions(); drawScene();
+      if (particles.length > 0) requestAnimationFrame(failLoop);
+      else showResult(false, false, msg, hint);
+    }
+    requestAnimationFrame(failLoop);
+  }
+
+  function startOrbit(arrivalCX, arrivalCY) {
+    // Rocket enters orbit around the planet
+    gameState = 'orbiting';
+    setStatus('ORBITAL INSERTION — CIRCLING PLANET...', '#a0f080');
+    const pcx = mission.targetCX, pcy = mission.targetCY;
+    const orbitR = mission.planet.radius + 22;
+    const startAngle = Math.atan2(arrivalCY - pcy, arrivalCX - pcx);
+    orbitState = { angle: startAngle, orbitR, pcx, pcy, laps: 0, totalLaps: 2.0 };
+
+    spawnSuccess(arrivalCX, arrivalCY);
+
+    function orbitLoop(t) {
+      drawStarfield(t); tickParticles(); updateDebrisPositions(); drawScene();
+
+      orbitState.angle += 0.025;
+      const rx = pcx + Math.cos(orbitState.angle) * orbitState.orbitR;
+      const ry = pcy + Math.sin(orbitState.angle) * orbitState.orbitR;
+      const nextA = orbitState.angle + 0.025;
+      rocket = {
+        cx: rx, cy: ry,
+        angle: Math.atan2(Math.sin(nextA) - Math.sin(orbitState.angle),
+                          Math.cos(nextA) - Math.cos(orbitState.angle)) + Math.PI / 2
+      };
+      // No exhaust during orbit — boosters off
+      orbitState.laps += 0.025 / (2 * Math.PI);
+
+      if (orbitState.laps < orbitState.totalLaps) {
+        requestAnimationFrame(orbitLoop);
+      } else {
+        // Begin return to Earth
+        setStatus('RETURN TRAJECTORY — HEADING HOME...', '#ffd080');
+        const returnPath = buildReturnPath(rocket.cx, rocket.cy);
+        let ri = 0;
+        function returnLoop(t) {
+          drawStarfield(t); tickParticles(); updateDebrisPositions(); drawScene();
+          spawnExhaust(returnPath[ri].cx, returnPath[ri].cy);
+          const next = returnPath[Math.min(ri + 1, returnPath.length - 1)];
+          rocket = {
+            cx: returnPath[ri].cx,
+            cy: returnPath[ri].cy,
+            angle: Math.atan2(next.cy - returnPath[ri].cy, next.cx - returnPath[ri].cx)
+          };
+          ri += 1;
+          if (ri < returnPath.length) {
+            requestAnimationFrame(returnLoop);
+          } else {
+            rocket = null;
+            gameState = 'success';
+            spawnSuccess(mission.originX, mission.originY);
+            function homeLoop(t) {
+              drawStarfield(t); tickParticles(); updateDebrisPositions(); drawScene();
+              if (particles.length > 0) requestAnimationFrame(homeLoop);
+              else showResult(true);
+            }
+            requestAnimationFrame(homeLoop);
+          }
+        }
+        requestAnimationFrame(returnLoop);
+      }
+    }
+    requestAnimationFrame(orbitLoop);
+  }
+
+  function fly(t) {
+    drawStarfield(t);
+    updateDebrisPositions();
+
+    for (let i = 0; i < 3; i++) {
+      if (step + i < totalSteps) spawnExhaust(pathPoints[step + i].cx, pathPoints[step + i].cy);
+    }
+    tickParticles();
+
+    if (step < totalSteps) {
+      const pt = pathPoints[step];
+      const nextPt = pathPoints[Math.min(step + 1, totalSteps - 1)];
+      const angle = Math.atan2(nextPt.cy - pt.cy, nextPt.cx - pt.cx);
+      rocket = { cx: pt.cx, cy: pt.cy, angle };
+
+      // Obstacle check
+      const hit = checkObstacleHit(pt.cx, pt.cy);
+      if (hit) { startFail(hit.type); return; }
+
+      // Planet proximity — enter orbit
+      const distToTarget = Math.hypot(pt.cx - mission.targetCX, pt.cy - mission.targetCY);
+      if (distToTarget < mission.planet.radius + 30) {
+        startOrbit(pt.cx, pt.cy);
+        return;
+      }
+
+      drawScene();
+      step += 1;
+      animFrame = requestAnimationFrame(fly);
+    } else {
+      rocket = null;
+      drawScene();
+      showResult(false, true);
+    }
+  }
+
+  animFrame = requestAnimationFrame(fly);
+}
+
+function spawnExhaust(x, y) {
+  for (let i = 0; i < 2; i++) {
+    particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 1.5 - 1,
+      vy: (Math.random() - 0.5) * 1.5,
+      r: 3 + Math.random() * 3,
+      life: 0.8 + Math.random() * 0.4,
+      color: ['rgb(255,160,60)','rgb(255,100,30)','rgb(255,220,80)'][Math.floor(Math.random()*3)]
+    });
+  }
+}
+
+function spawnExplosion(x, y) {
+  for (let i = 0; i < 60; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random() * 4;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      r: 3 + Math.random() * 5,
+      life: 1,
+      color: ['rgb(255,80,40)','rgb(255,160,20)','rgb(255,230,80)','rgb(200,200,200)'][Math.floor(Math.random()*4)]
+    });
+  }
+}
+
+function spawnSuccess(x, y) {
+  for (let i = 0; i < 80; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random() * 3;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      r: 2 + Math.random() * 4,
+      life: 1,
+      color: ['rgb(125,244,255)','rgb(80,220,120)','rgb(255,220,80)','rgb(180,120,255)'][Math.floor(Math.random()*4)]
+    });
+  }
+}
+
+function showResult(success, missed, failTitle, failHint) {
+  const ov = document.getElementById('overlay');
+  ov.innerHTML = '';
+  ov.classList.remove('hidden');
+
+  if (success) {
+    setStatus('MISSION COMPLETE!', '#4fc880');
+    ov.innerHTML = `
+      <div class="pill">MISSION COMPLETE</div>
+      <div class="overlay-title" style="color:#4fc880">MISSION SUCCESS!</div>
+      <div class="overlay-sub">
+        Orbited <strong style="color:#ffd080">${mission.planet.name}</strong> twice and returned safely to Earth!<br><br>
+        <em style="color:#7df4ff">Excellent navigation!</em>
+      </div>
+    `;
+  } else if (missed) {
+    setStatus('MISSION FAILED — MISSED TARGET', '#ff6060');
+    const lastY = evalFn(mission.targetWX).toFixed(2);
+    ov.innerHTML = `
+      <div class="pill">MISSION FAILED</div>
+      <div class="overlay-title" style="color:#ff6060">MISSED TARGET</div>
+      <div class="overlay-sub">
+        Your rocket missed ${mission.planet.name}.<br>
+        At x=${mission.targetWX}, your function gives y=${lastY}.<br>
+        The target is at y=${mission.targetWY}.<br><br>
+        <em style="color:#ffd080">Adjust your equation and try again!</em>
+      </div>
+    `;
+  } else {
+    setStatus('MISSION FAILED — COLLISION', '#ff6060');
+    ov.innerHTML = `
+      <div class="pill">MISSION FAILED</div>
+      <div class="overlay-title" style="color:#ff6060">${failTitle || 'COLLISION!'}</div>
+      <div class="overlay-sub">
+        ${failHint || 'Try a different function path to avoid obstacles.'}<br><br>
+        <em style="color:#ffd080">Hint: shift your curve up/down or try a different function type.</em>
+      </div>
+    `;
+  }
+
+  const btn = document.createElement('button');
+  btn.className = 'fn-btn active';
+  btn.style.cssText = 'padding:12px 24px;font-size:13px;letter-spacing:2px;margin-top:8px;width:auto;';
+  btn.textContent = '↺ TRY AGAIN';
+  btn.onclick = () => {
+    gameState = 'ready';
+    ov.classList.add('hidden');
+    document.getElementById('launch-btn').disabled = false;
+    clearEditor();
+    setStatus('READY — ENTER A NEW EQUATION', '#7df4ff');
+    startIdleAnimation();
+  };
+  ov.appendChild(btn);
+
+  document.getElementById('launch-btn').disabled = true;
+}
+
+let starAnim;
+function animateStars(t) {
+  drawStarfield(t);
+  starAnim = requestAnimationFrame(animateStars);
+}
+starAnim = requestAnimationFrame(animateStars);
+
+window.addEventListener('resize', () => {
+  starCanvas.width = window.innerWidth;
+  starCanvas.height = window.innerHeight;
+  initStarfield();
+  if (gameState === 'ready') {
+    resizeCanvas();
+    const ox = mission.originX;
+    const oy = mission.originY;
+    const tp = worldToCanvas(mission.targetWX, mission.targetWY);
+    mission.targetCX = tp.cx;
+    mission.targetCY = tp.cy;
+    drawScene();
+  }
+});
+
+initStarfield();
+newMission();
+
+// Wire up the rich editor — fully intercept all input
+const eqEditor = document.getElementById('eq-input');
+eqEditor.addEventListener('keydown', handleEditorKeydown);
+
+// Block all browser-native text editing
+eqEditor.addEventListener('input', e => { e.preventDefault(); renderEditor(); });
+eqEditor.addEventListener('paste', e => {
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text');
+  // Type each char through our handler
+  for (const ch of text) {
+    if (ch === '^') {
+      handleEditorKeydown({ key: '^', preventDefault: () => {}, ctrlKey: false, metaKey: false });
+    } else if (ch.length === 1) {
+      handleEditorKeydown({ key: ch, preventDefault: () => {}, ctrlKey: false, metaKey: false });
+    }
+  }
+});
+
+// Click to reposition cursor
+eqEditor.addEventListener('click', () => {
+  // Let browser set selection, then sync curTok/curPos from it
+  requestAnimationFrame(() => {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const anchor = sel.anchorNode;
+    const offset = sel.anchorOffset;
+    const el = document.getElementById('eq-input');
+    let tok = 0, pos = 0;
+    for (let ni = 0; ni < el.childNodes.length; ni++) {
+      const node = el.childNodes[ni];
+      const inner = node.nodeType === Node.TEXT_NODE ? node : (node.firstChild || node);
+      if (inner === anchor || node === anchor) { pos = offset; tok = ni; break; }
+    }
+    curTok = Math.min(tok, tokens.length - 1);
+    curPos = Math.min(pos, tokens[curTok] ? tokens[curTok].val.length : 0);
+    inSuperscript = tokens[curTok] ? tokens[curTok].type === 'sup' : false;
+  });
+});
+
+// Init token state
+tokens = [{ type: 'text', val: '' }];
+renderEditor();
+</script>
+</body>
+</html>
