@@ -522,8 +522,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── STATE ─────────────────────────────────────────────────────────────────
   let currentLayer = 1;
-  let currentRotation = 0; // 0 or 90 degrees
-  let dragging = null;
+  let currentRotation = 0;
+  let holding = null; // { def, rotated }
   let placements = {}; // itemId → {layer, x, y, rotated}
 
   // ── SETUP GRID ────────────────────────────────────────────────────────────
@@ -586,7 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
       chip.appendChild(swatch);
       chip.appendChild(name);
       chip.appendChild(dims);
-      chip.addEventListener('pointerdown', e => startDragFromCache(e, def));
+      chip.addEventListener('click', e => pickupFromCache(e, def));
       itemsCache.appendChild(chip);
     });
   }
@@ -618,23 +618,21 @@ document.addEventListener('DOMContentLoaded', () => {
     el.style.background = chipColor(def.cls);
     if (def.cls === 'propane') el.style.borderRadius = '50%';
     el.textContent = def.label;
-    el.addEventListener('pointerdown', e => startDragFromGrid(e, def, el));
+    el.addEventListener('click', e => pickupFromGrid(e, def, el));
     return el;
   }
 
-  // ── DRAG: FROM CACHE ──────────────────────────────────────────────────────
-  function startDragFromCache(e, def) {
+  // ── PICK UP: FROM CACHE ───────────────────────────────────────────────────
+  function pickupFromCache(e, def) {
     if (placements[def.id]) return;
     e.preventDefault();
-    const chipRect = e.currentTarget.getBoundingClientRect();
-    startDrag(e, def, null, e.clientX - chipRect.left, e.clientY - chipRect.top, currentRotation === 90);
+    pickup(def, currentRotation === 90);
   }
 
-  // ── DRAG: FROM GRID ────────────────────────────────────────────────────────
-  function startDragFromGrid(e, def, el) {
+  // ── PICK UP: FROM GRID ────────────────────────────────────────────────────
+  function pickupFromGrid(e, def, el) {
     e.preventDefault();
     e.stopPropagation();
-    const r = el.getBoundingClientRect();
     const p = placements[def.id];
     const wasRotated = p ? p.rotated : false;
     if (p) {
@@ -644,73 +642,93 @@ document.addEventListener('DOMContentLoaded', () => {
       delete placements[def.id];
     }
     currentRotation = wasRotated ? 90 : 0;
-    startDrag(e, def, el, e.clientX - r.left, e.clientY - r.top, wasRotated);
+    pickup(def, wasRotated);
   }
 
-  function startDrag(e, def, el, ox, oy, rotated) {
-    dragging = { def, el, offsetX: ox, offsetY: oy, rotated: !!rotated };
-    const { w, h } = effDims(def, rotated);
+  function pickup(def, rotated) {
+    // If something already held, cancel it back to cache
+    if (holding) cancelHeld();
 
+    holding = { def, rotated: !!rotated };
+    updateCacheChip(def.id, false, true); // dim it in cache
+
+    const { w, h } = effDims(def, rotated);
     ghost.style.display = 'flex';
     ghost.style.width   = (w * UNIT) + 'px';
     ghost.style.height  = (h * UNIT) + 'px';
     ghost.style.background = chipColor(def.cls);
     ghost.style.borderRadius = def.cls === 'propane' ? '50%' : '2px';
     ghost.textContent = def.label;
-    moveGhost(e.clientX, e.clientY);
-
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
-    updateCacheChip(def.id, true);
+    document.body.style.cursor = 'crosshair';
   }
 
-  function moveGhost(cx, cy) {
-    ghost.style.left = (cx - dragging.offsetX) + 'px';
-    ghost.style.top  = (cy - dragging.offsetY) + 'px';
-  }
-
-  function onMove(e) {
-    if (!dragging) return;
-    moveGhost(e.clientX, e.clientY);
-  }
-
-  function onUp(e) {
-    if (!dragging) return;
+  function cancelHeld() {
+    if (!holding) return;
+    updateCacheChip(holding.def.id, false, false);
+    holding = null;
     ghost.style.display = 'none';
-    document.removeEventListener('pointermove', onMove);
-    document.removeEventListener('pointerup', onUp);
+    document.body.style.cursor = '';
+  }
 
-    const { def, rotated } = dragging;
+  // Ghost follows mouse at all times
+  document.addEventListener('mousemove', e => {
+    if (!holding) return;
+    ghost.style.left = (e.clientX - parseInt(ghost.style.width) / 2) + 'px';
+    ghost.style.top  = (e.clientY - parseInt(ghost.style.height) / 2) + 'px';
+  });
+
+
+
+  // Click on grid to place
+  gridEl.addEventListener('click', e => {
+    if (!holding) return;
+    e.preventDefault();
+    const { def, rotated } = holding;
     const { w, h } = effDims(def, rotated);
     const gridRect = gridEl.getBoundingClientRect();
-    const rawX = e.clientX - dragging.offsetX - gridRect.left;
-    const rawY = e.clientY - dragging.offsetY - gridRect.top;
+    // Center the item on the cursor
+    const rawX = e.clientX - gridRect.left - (w * UNIT) / 2;
+    const rawY = e.clientY - gridRect.top  - (h * UNIT) / 2;
     const snapX = Math.round(rawX / UNIT);
     const snapY = Math.round(rawY / UNIT);
+    const clampX = Math.max(0, Math.min(snapX, COLS - w));
+    const clampY = Math.max(0, Math.min(snapY, ROWS - h));
 
-    if (snapX >= 0 && snapY >= 0 && snapX + w <= COLS && snapY + h <= ROWS) {
-      placements[def.id] = { layer: currentLayer, x: snapX, y: snapY, rotated };
-      const layerEl = currentLayer === 1 ? layer1 : layer2;
-      const el = createPlacedEl(def, snapX, snapY, rotated);
-      layerEl.appendChild(el);
-      updateCacheChip(def.id, false, true);
+    placements[def.id] = { layer: currentLayer, x: clampX, y: clampY, rotated };
+    const layerEl = currentLayer === 1 ? layer1 : layer2;
+    const el = createPlacedEl(def, clampX, clampY, rotated);
+    layerEl.appendChild(el);
+    updateCacheChip(def.id, false, true);
 
-      const violations = checkRules();
-      if (violations.length > 0) {
-        el.classList.add('violation');
-        setTimeout(() => el.classList.remove('violation'), 500);
-      }
-    } else {
-      delete placements[def.id];
-      updateCacheChip(def.id, false, false);
+    holding = null;
+    ghost.style.display = 'none';
+    document.body.style.cursor = '';
+
+    const violations = checkRules();
+    if (violations.length > 0) {
+      el.classList.add('violation');
+      setTimeout(() => el.classList.remove('violation'), 500);
     }
-
-    dragging = null;
     updateRulesUI();
     updateScore();
-  }
+  });
 
-  function updateCacheChip(id, dragging, placed) {
+  // Right-click or Escape to cancel
+  document.addEventListener('contextmenu', e => {
+    if (holding) { e.preventDefault(); cancelHeld(); }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') cancelHeld();
+    if ((e.key === 'r' || e.key === 'R') && holding) {
+      holding.rotated = !holding.rotated;
+      currentRotation = holding.rotated ? 90 : 0;
+      const { w, h } = effDims(holding.def, holding.rotated);
+      ghost.style.width  = (w * UNIT) + 'px';
+      ghost.style.height = (h * UNIT) + 'px';
+    }
+  });
+
+  function updateCacheChip(id, _unused, placed) {
     const chip = itemsCache.querySelector(`[data-id="${id}"]`);
     if (!chip) return;
     if (placed) chip.classList.add('placed');
@@ -908,10 +926,9 @@ document.addEventListener('DOMContentLoaded', () => {
     currentRotation = currentRotation === 0 ? 90 : 0;
     rotateBtn.style.color = currentRotation === 90 ? 'var(--accent)' : '';
     rotateBtn.style.borderColor = currentRotation === 90 ? 'var(--accent)' : '';
-    // If currently dragging, resize ghost
-    if (dragging) {
-      dragging.rotated = currentRotation === 90;
-      const { w, h } = effDims(dragging.def, dragging.rotated);
+    if (holding) {
+      holding.rotated = currentRotation === 90;
+      const { w, h } = effDims(holding.def, holding.rotated);
       ghost.style.width  = (w * UNIT) + 'px';
       ghost.style.height = (h * UNIT) + 'px';
     }
@@ -936,6 +953,9 @@ document.addEventListener('DOMContentLoaded', () => {
     placements = {};
     layer1.innerHTML = '';
     layer2.innerHTML = '';
+    holding = null;
+    ghost.style.display = 'none';
+    document.body.style.cursor = '';
     currentLayer = 1;
     currentRotation = 0;
     rotateBtn.style.color = '';
