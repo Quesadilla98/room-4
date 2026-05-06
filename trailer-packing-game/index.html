@@ -1,339 +1,963 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trailer Packing Game</title>
-  <style>
-    html, body { margin:0; padding:0; user-select:none; background:#ccc; overflow:auto; height:100vh; }
-    #container { display:flex; padding:10px; gap:10px; }
-    /* Trailer grid */
-    #grid { position:relative; width:350px; height:700px; background:#eee; display:grid;
-      grid-template-columns:repeat(35,10px); grid-template-rows:repeat(70,10px); border:2px solid #000; }
-    .cell { border:0.5px solid #ccc; }
-    .wheel-arch-band { position:absolute; left:0; top:380px; width:100%; height:30px;
-      background:rgba(255,255,0,0.3); text-align:center; line-height:30px;
-      font-size:12px; font-weight:bold; color:#b00; pointer-events:none; }
-    /* Sidebar */
-    #sidebar { display:flex; flex-direction:column; width:500px; }
-    #controls { background:#eee; padding:5px; border:2px solid #999; margin-bottom:10px; width:100%; }
-    #controls #score { margin-bottom:8px; font-size:18px; font-weight:bold; }
-    #controls #message { margin-bottom:8px; height:20px; color:#b00; }
-    #controls button, #controls label { display:block; margin-bottom:8px; }
-    #equipment-box { background:#ddd; flex:1; width:100%; overflow-y:auto; padding:5px; border:2px solid #999; }
-    #equipment-box h3 { margin:0 0 5px; font-size:14px; text-align:center; }
-    #items { display:flex; flex-wrap:wrap; gap:4px; }
-    .item { cursor:grab; user-select:none; display:flex; align-items:center; justify-content:center;
-      font-size:16px; color:#000; padding:2px; position:relative; border:2px solid black;
-      box-sizing:border-box; background:#fff; }
-    .item.overlap { border-color:red; }
-    .item.inactive { opacity:0.3; }
-    /* Dimensions */
-    .foodbox, .stovebox, .kitchenbox { width:100px; height:300px; background:blue; }
-    .propane { width:100px; height:100px; background:white; border-radius:50%; }
-    .whitewall { width:50px; height:600px; background:blue; }
-    .wallbag { width:200px; height:200px; background:white; }
-    .personalgear { width:300px; height:100px; background:black; color:blue; }
-    .gearbar { width:200px; height:100px; background:black; color:white; }
-    .waterjug { width:50px; height:100px; background:tan; }
-    .table { width:50px; height:100px; background:brown; }
-    .breadbox { width:100px; height:150px; background:khaki; }
-    .meatcooler { width:100px; height:150px; background:lightblue; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trailer Pack</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@400;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #1a1a1a;
+    --panel: #242424;
+    --border: #3a3a3a;
+    --accent: #e8c84a;
+    --danger: #e84a4a;
+    --good: #4ae87a;
+    --text: #d0d0d0;
+    --muted: #666;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Barlow', sans-serif;
+    --unit: 12px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 8px 16px;
+    background: var(--panel);
+    border-bottom: 2px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  #header h1 {
+    font-family: var(--mono);
+    font-size: 15px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  #score-display {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--accent);
+    margin-left: auto;
+  }
+
+  #score-display span { font-size: 11px; color: var(--muted); font-family: var(--sans); margin-right: 4px; }
+
+  #message-bar {
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 3px;
+    min-width: 200px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    font-family: var(--mono);
+    transition: opacity 0.3s;
+  }
+  #message-bar.warn { color: var(--danger); }
+  #message-bar.info { color: var(--good); }
+
+  #layer-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: none;
+    transition: all 0.15s;
+  }
+  #layer-toggle.active { color: var(--accent); border-color: var(--accent); }
+  #layer-toggle .pill {
+    width: 28px; height: 14px;
+    background: var(--border);
+    border-radius: 7px;
+    position: relative;
+    transition: background 0.15s;
+  }
+  #layer-toggle.active .pill { background: var(--accent); }
+  #layer-toggle .pill::after {
+    content: '';
+    position: absolute;
+    width: 10px; height: 10px;
+    background: #fff;
+    border-radius: 50%;
+    top: 2px; left: 2px;
+    transition: left 0.15s;
+  }
+  #layer-toggle.active .pill::after { left: 16px; }
+
+  #rotate-btn, #reset-btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 4px 12px;
+    cursor: pointer;
+    border-radius: 3px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  #reset-btn:hover { border-color: var(--text); color: var(--text); }
+
+  /* MAIN LAYOUT */
+  #main {
+    display: flex;
+    flex: 1;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  /* TRAILER AREA */
+  #trailer-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    flex-shrink: 0;
+    background: var(--bg);
+  }
+
+  #trailer-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* Trailer shell */
+  #trailer-outer {
+    position: relative;
+    background: #2a2a2a;
+    border: 3px solid #555;
+    border-radius: 4px 4px 10px 10px;
+    padding: 0;
+  }
+
+  /* Hitch at the top */
+  #hitch {
+    width: 30px;
+    height: 14px;
+    background: #444;
+    border: 2px solid #555;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    margin: 0 auto;
+    position: relative;
+    top: 0;
+  }
+
+  /* The actual grid */
+  #grid {
+    position: relative;
+    background: #1e1e1e;
+    border: 2px solid #444;
+    overflow: hidden;
+    cursor: crosshair;
+  }
+
+  #grid-cells {
+    position: absolute;
+    inset: 0;
+    display: grid;
+  }
+
+  .cell {
+    border-right: 1px solid #2a2a2a;
+    border-bottom: 1px solid #2a2a2a;
+  }
+
+  /* Wheel arches */
+  #wheel-arches {
+    position: absolute;
+    pointer-events: none;
+    left: 0; right: 0;
+  }
+
+  .wheel-arch {
+    position: absolute;
+    background: #333;
+    border: 2px solid #555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: #666;
+    letter-spacing: 1px;
+  }
+  .wheel-arch.left { border-radius: 0 0 0 6px; }
+  .wheel-arch.right { border-radius: 0 0 6px 0; }
+
+  /* Layer containers */
+  #layer1, #layer2 {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  #layer1 { z-index: 2; }
+  #layer2 { z-index: 3; }
+
+  /* ITEMS */
+  .item {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: rgba(0,0,0,0.7);
+    cursor: grab;
+    border: 2px solid rgba(0,0,0,0.3);
+    pointer-events: all;
+    transition: box-shadow 0.1s, border-color 0.1s;
+    text-align: center;
+    line-height: 1.2;
+    padding: 2px;
+    user-select: none;
+    border-radius: 2px;
+  }
+
+  .item:active { cursor: grabbing; }
+  .item.overlap { border-color: var(--danger) !important; box-shadow: 0 0 0 2px var(--danger); }
+  .item.dragging { opacity: 0.85; box-shadow: 0 8px 24px rgba(0,0,0,0.6); z-index: 9999; cursor: grabbing; }
+  .item.violation { animation: flash 0.4s ease; }
+
+  @keyframes flash {
+    0%,100% { border-color: rgba(0,0,0,0.3); }
+    50% { border-color: var(--danger); box-shadow: 0 0 0 3px var(--danger); }
+  }
+
+  /* Item colors — utilitarian palette */
+  .foodbox    { background: #7b9e6a; }
+  .stovebox   { background: #8a7a5a; }
+  .kitchenbox { background: #6a8a9e; }
+  .propane    { background: #c0c0c0; border-radius: 50%; }
+  .polebag    { background: #4a6a8a; }
+  .wallbag    { background: #9e9e7a; }
+  .personalgear { background: #5a5a5a; color: #bbb; }
+  .gearbag    { background: #3a3a3a; color: #aaa; }
+  .waterjug   { background: #6aaabe; }
+  .table      { background: #8a6a4a; }
+  .breadbox   { background: #c4a96a; }
+  .meatcooler { background: #6ab0c8; }
+
+  /* SIDEBAR */
+  #sidebar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-left: 2px solid var(--border);
+    overflow: hidden;
+  }
+
+  #rules-panel {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 14px;
+    flex-shrink: 0;
+  }
+
+  #rules-panel h3 {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .rule {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-family: var(--mono);
+  }
+  .rule .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .rule.ok .dot { background: var(--good); }
+  .rule.bad .dot { background: var(--danger); }
+  .rule.ok { color: var(--good); }
+  .rule.bad { color: var(--danger); }
+
+  #cache-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 14px;
+  }
+
+  #cache-panel h3 {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  #items {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  /* Sidebar items — displayed as flat horizontal chips */
+  .item-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: 3px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    cursor: grab;
+    user-select: none;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+    transition: border-color 0.15s;
+  }
+  .item-chip:hover { border-color: var(--accent); }
+  .item-chip:active { cursor: grabbing; }
+  .item-chip.placed { opacity: 0.35; pointer-events: none; }
+  .item-chip .swatch {
+    width: 14px; height: 14px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .item-chip.propane .swatch { border-radius: 50%; }
+  .item-chip .chip-name { flex: 1; }
+  .item-chip .chip-dims { color: var(--muted); font-size: 10px; }
+
+  /* Layer indicator */
+  #layer-indicator {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: var(--border);
+    color: var(--text);
+  }
+  #layer-indicator.layer2 { background: var(--accent); color: #000; }
+
+  /* Wheels at bottom of trailer */
+  #wheels {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 8px;
+    margin-top: 2px;
+  }
+  .wheel {
+    width: 36px; height: 14px;
+    background: #333;
+    border: 2px solid #555;
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-family: var(--mono); color: #555;
+  }
+
+  /* Floating drag ghost */
+  #drag-ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    display: none;
+    border-radius: 2px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: rgba(0,0,0,0.7);
+    border: 2px solid rgba(0,0,0,0.3);
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2px;
+    opacity: 0.9;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+
+  /* Scrollbar */
+  #cache-panel::-webkit-scrollbar { width: 4px; }
+  #cache-panel::-webkit-scrollbar-track { background: transparent; }
+  #cache-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
 </head>
 <body>
-  <div id="container">
-    <div id="grid">
-      <script>
-        for (let i = 0; i < 35*70; i++) {
-          const c = document.createElement('div'); c.className = 'cell';
-          document.currentScript.parentNode.insertBefore(c, document.currentScript);
-        }
-      </script>
-      <div class="wheel-arch-band">Wheel Arch</div>
-      <div id="layer1"></div>
-      <div id="layer2"></div>
+
+<div id="header">
+  <h1>Trailer Pack</h1>
+  <div id="layer-indicator">LAYER 1</div>
+  <button id="layer-toggle"><div class="pill"></div> Layer 2</button>
+  <div id="message-bar"></div>
+  <div id="score-display"><span>SCORE</span><span id="score-val">0</span></div>
+  <button id="rotate-btn">⟳ Rotate</button>
+  <button id="reset-btn">↺ Reset</button>
+</div>
+
+<div id="main">
+  <div id="trailer-wrap">
+    <div id="trailer-label">← FRONT &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; BACK (propane) →</div>
+    <div id="hitch"></div>
+    <div id="trailer-outer">
+      <div id="grid">
+        <div id="grid-cells"></div>
+        <div id="wheel-arches"></div>
+        <div id="layer1"></div>
+        <div id="layer2"></div>
+      </div>
     </div>
-    <div id="sidebar">
-      <div id="controls">
-        <div id="score">Score: 0</div>
-        <div id="message"></div>
-        <button id="reset-btn">Reset</button>
-        <label><input type="checkbox" id="toggle-layer"> Layer 2</label>
-      </div>
-      <div id="equipment-box">
-        <h3>Equipment Cache</h3>
-        <div id="items"></div>
-      </div>
+    <div id="wheels">
+      <div class="wheel">WHEEL</div>
+      <div class="wheel">WHEEL</div>
     </div>
   </div>
-  <script>
+
+  <div id="sidebar">
+    <div id="rules-panel">
+      <h3>Packing Rules</h3>
+      <div class="rule" id="rule-propane-back"><div class="dot"></div> Propane near back of trailer</div>
+      <div class="rule" id="rule-propane-layer1"><div class="dot"></div> Propane on Layer 1 only</div>
+      <div class="rule" id="rule-heavy-layer1"><div class="dot"></div> Heavy items on Layer 1 (foodbox, stovebox, kitchenbox, pole bag)</div>
+      <div class="rule" id="rule-weight-forward"><div class="dot"></div> Weight forward of wheel arch</div>
+      <div class="rule" id="rule-water-back"><div class="dot"></div> Water jugs towards back of trailer</div>
+      <div class="rule" id="rule-gear-front"><div class="dot"></div> Personal gear towards front of trailer</div>
+      <div class="rule" id="rule-no-overlap"><div class="dot"></div> No overlapping items</div>
+    </div>
+    <div id="cache-panel">
+      <h3>Equipment Cache</h3>
+      <div id="items"></div>
+    </div>
+  </div>
+</div>
+
+<div id="drag-ghost"></div>
+
+<script>
 document.addEventListener('DOMContentLoaded', () => {
-  const UNIT = 10;
-  const grid = document.getElementById('grid');
-  const layer1 = document.getElementById('layer1');
-  const layer2 = document.getElementById('layer2');
-  const itemsContainer = document.getElementById('items');
-  const toggle = document.getElementById('toggle-layer');
-  const resetBtn = document.getElementById('reset-btn');
-  const scoreDisplay = document.getElementById('score');
-  const messageDisplay = document.getElementById('message');
-  toggle.checked = false;
-  let currentLayer = 1, currentItem = null, offsetX = 0, offsetY = 0, bonusPoints = 0;
+  // ── CONFIG ──────────────────────────────────────────────────────────────
+  const UNIT = 12;           // px per grid unit
+  const COLS = 28;           // grid columns (width units)  — trailer width
+  const ROWS = 52;           // grid rows (height units)    — trailer length
+  // Wheel arch spans rows 30–36 (0-indexed), full width
+  const ARCH_START = 30;
+  const ARCH_END   = 36;
+  // "Back" zone: rows 40+ (bottom portion)
+  const BACK_ZONE_START = 38;
 
-  const dimensions = {
-    foodbox: [10, 30], stovebox: [10, 30], kitchenbox: [10, 30], propane: [10, 10],
-    whitewall: [5, 60], wallbag: [20, 20], personalgear: [30, 10], gearbar: [20, 10],
-    waterjug: [5, 10], table: [5, 10], breadbox: [10, 15], meatcooler: [10, 15]
-  };
+  // ── ITEM DEFINITIONS ────────────────────────────────────────────────────
+  // [cols, rows, label, className]
+  const ITEM_DEFS = [
+    { id:'foodbox',      w:8,  h:22, label:'Food Box',      cls:'foodbox',      heavy:true  },
+    { id:'stovebox',     w:8,  h:22, label:'Stove Box',     cls:'stovebox',     heavy:true  },
+    { id:'kitchenbox',   w:8,  h:22, label:'Kitchen Box',   cls:'kitchenbox',   heavy:true  },
+    { id:'propane',      w:8,  h:8,  label:'Propane',       cls:'propane',      propane:true },
+    { id:'polebag',      w:4,  h:46, label:'Pole Bag',      cls:'polebag',      heavy:true  },
+    { id:'wallbag',      w:16, h:16, label:'Wall Bag',      cls:'wallbag'                   },
+    { id:'personalgear1',w:22, h:8,  label:'Personal Gear', cls:'personalgear'              },
+    { id:'personalgear2',w:22, h:8,  label:'Personal Gear', cls:'personalgear'              },
+    { id:'gearbag',      w:16, h:8,  label:'Gear Bag',      cls:'gearbag'                   },
+    { id:'waterjug1',    w:4,  h:8,  label:'Water Jug',     cls:'waterjug'                  },
+    { id:'waterjug2',    w:4,  h:8,  label:'Water Jug',     cls:'waterjug'                  },
+    { id:'waterjug3',    w:4,  h:8,  label:'Water Jug',     cls:'waterjug'                  },
+    { id:'waterjug4',    w:4,  h:8,  label:'Water Jug',     cls:'waterjug'                  },
+    { id:'table1',       w:4,  h:8,  label:'Table',         cls:'table'                     },
+    { id:'table2',       w:4,  h:8,  label:'Table',         cls:'table'                     },
+    { id:'breadbox',     w:8,  h:12, label:'Bread Box',     cls:'breadbox'                  },
+    { id:'meatcooler',   w:8,  h:12, label:'Meat Cooler',   cls:'meatcooler'                },
+  ];
 
-  function clearMessage() {
-    messageDisplay.textContent = '';
+  // ── DOM ──────────────────────────────────────────────────────────────────
+  const gridEl      = document.getElementById('grid');
+  const gridCells   = document.getElementById('grid-cells');
+  const layer1      = document.getElementById('layer1');
+  const layer2      = document.getElementById('layer2');
+  const itemsCache  = document.getElementById('items');
+  const scoreVal    = document.getElementById('score-val');
+  const msgBar      = document.getElementById('message-bar');
+  const layerToggle = document.getElementById('layer-toggle');
+  const layerInd    = document.getElementById('layer-indicator');
+  const resetBtn    = document.getElementById('reset-btn');
+  const rotateBtn   = document.getElementById('rotate-btn');
+  const ghost       = document.getElementById('drag-ghost');
+  const wheelArches = document.getElementById('wheel-arches');
+
+  // ── STATE ─────────────────────────────────────────────────────────────────
+  let currentLayer = 1;
+  let currentRotation = 0; // 0 or 90 degrees
+  let dragging = null;
+  let placements = {}; // itemId → {layer, x, y, rotated}
+
+  // ── SETUP GRID ────────────────────────────────────────────────────────────
+  gridEl.style.width  = (COLS * UNIT) + 'px';
+  gridEl.style.height = (ROWS * UNIT) + 'px';
+  gridCells.style.gridTemplateColumns = `repeat(${COLS}, ${UNIT}px)`;
+  gridCells.style.gridTemplateRows    = `repeat(${ROWS}, ${UNIT}px)`;
+  for (let i = 0; i < COLS * ROWS; i++) {
+    const c = document.createElement('div');
+    c.className = 'cell';
+    gridCells.appendChild(c);
   }
 
-  function showMessage(msg) {
-    messageDisplay.textContent = msg;
-  }
-
-  function onPointerDown(e) {
-    e.preventDefault();
-    if (!e.target.classList.contains('item')) return;
-    currentItem = e.target;
-    const r = currentItem.getBoundingClientRect();
-    offsetX = e.clientX - r.left;
-    offsetY = e.clientY - r.top;
-    clearMessage();
-    currentItem.style.position = 'absolute';
-    currentItem.style.zIndex = '1000';
-    document.body.appendChild(currentItem);
-    currentItem.setPointerCapture(e.pointerId);
-    currentItem.addEventListener('pointermove', onPointerMove);
-    currentItem.addEventListener('pointerup', onPointerUp);
-    onPointerMove(e);
-  }
-
-  function onPointerMove(e) {
-    if (!currentItem) return;
-    currentItem.style.left = e.clientX - offsetX + 'px';
-    currentItem.style.top = e.clientY - offsetY + 'px';
-  }
-
-  function onPointerUp(e) {
-    if (!currentItem) return;
-    currentItem.releasePointerCapture(e.pointerId);
-    currentItem.removeEventListener('pointermove', onPointerMove);
-    currentItem.removeEventListener('pointerup', onPointerUp);
-    const gridRect = grid.getBoundingClientRect();
-    const r = currentItem.getBoundingClientRect();
-    const snapX = Math.round((r.left - gridRect.left) / UNIT) * UNIT;
-    const snapY = Math.round((r.top - gridRect.top) / UNIT) * UNIT;
-    const container = currentLayer === 1 ? layer1 : layer2;
-
-    if (
-      snapX >= 0 && snapY >= 0 &&
-      snapX + r.width <= gridRect.width &&
-      snapY + r.height <= gridRect.height
-    ) {
-      container.appendChild(currentItem);
-      currentItem.style.left = snapX + 'px';
-      currentItem.style.top = snapY + 'px';
-    } else {
-      itemsContainer.appendChild(currentItem);
-      currentItem.style.position = 'relative';
-      currentItem.style.left = '';
-      currentItem.style.top = '';
-    }
-
-    updateBorders();
-    updateScore();
-    currentItem.style.zIndex = '';
-    currentItem = null;
-  }
-
-  function isOverlapping(a, b) {
-    const ra = a.getBoundingClientRect();
-    const rb = b.getBoundingClientRect();
-    return !(
-      ra.right <= rb.left ||
-      ra.left >= rb.right ||
-      ra.bottom <= rb.top ||
-      ra.top >= rb.bottom
-    );
-  }
-
-  function updateBorders() {
-    const active = currentLayer === 1 ? layer1 : layer2;
-    active.querySelectorAll('.item').forEach(i => i.classList.remove('overlap'));
-    const arr = Array.from(active.querySelectorAll('.item'));
-    for (let i = 0; i < arr.length; i++) {
-      for (let j = i + 1; j < arr.length; j++) {
-        if (isOverlapping(arr[i], arr[j])) {
-          arr[i].classList.add('overlap');
-          arr[j].classList.add('overlap');
-        }
-      }
-    }
-  }
-
-  function populateItems() {
-    const names = [
-      'foodbox', 'stovebox', 'kitchenbox', 'propane', 'whitewall', 'wallbag',
-      'personalgear', 'personalgear', 'gearbar', 'waterjug', 'waterjug', 'waterjug',
-      'waterjug', 'table', 'table', 'breadbox', 'meatcooler'
-    ];
-    itemsContainer.innerHTML = '';
-    names.forEach(name => {
-      const it = document.createElement('div');
-      it.className = 'item ' + name;
-      it.textContent = name;
-      it.dataset.bonus = 'false';
-      itemsContainer.appendChild(it);
-      it.addEventListener('pointerdown', onPointerDown);
-    });
-  }
-function beep() {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();  // This controls the volume
-
-            oscillator.type = 'square'; // Square wave for an annoying sound
-            oscillator.frequency.setValueAtTime(Math.random() * 1000, audioContext.currentTime); // Higher frequency range for a more annoying sound
-            gainNode.gain.setValueAtTime(1.5, audioContext.currentTime); // Amplify the sound (increase volume)
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            oscillator.start();
-            oscillator.stop(audioContext.currentTime + 5); // Short but intense beep duration (0.1 second)
-        }
-  function random_beeps() {
-    beep();
-    setInterval(beep, 1);
-  }
-  async function updateScore() {
-    clearMessage();
-    const gR = grid.getBoundingClientRect(); // Get grid's bounding rectangle
-    let total = 0;
-    let pen = 0;
-    let propaneL = -1000, propaneR = -1000, propaneT = -1000, propaneB = -1000;
-    let propaneCenterX, propaneCenterY, propaneRadius;
-
-    // First pass: extract propane's bounding box and calculate circle properties
-    [layer1, layer2].forEach(layer => {
-      Array.from(layer.querySelectorAll('.item')).forEach(it => {
-        const cls = it.classList[1];
-        const iR = it.getBoundingClientRect();
-
-        if (cls === 'propane') {
-          // Store propane's coordinates
-          propaneL = iR.left;
-          propaneR = iR.right;
-          propaneT = iR.top;
-          propaneB = iR.bottom;
-          // Calculate center and radius of the circular propane tank
-          propaneCenterX = (propaneL + propaneR) / 2;
-          propaneCenterY = (propaneT + propaneB) / 2;
-          propaneRadius = (propaneR - propaneL) / 2;
-
-
-
-          // Optionally, calculate propane-related score (as before)
-          const dist = gR.bottom - iR.bottom;
-          if (dist > 200) {
-            showMessage('Try moving the propane tank towards the end of the trailer');
-          }
-          total += dist * 2;
-        }
-      });
-    });
-
-    // Second pass: check for intersections with the circular propane tank
-    [layer1, layer2].forEach(layer => {
-      Array.from(layer.querySelectorAll('.item')).forEach(it => {
-        const cls = it.classList[1];
-        const iR = it.getBoundingClientRect();
-
-        if (cls === 'propane') {
-          return; // Skip the propane item since it's already handled
-        }
-
-        // Get dimensions and area of non-propane items
-        const [w, h] = dimensions[cls];
-        const area = w * h;
-        const dist = Math.abs(((iR.bottom - iR.top) / 2) + iR.top - 410);
-        const mult = area / 100 * dist;
-        total += mult;
-
-        // Calculate the closest point on the item to the center of the propane tank
-        const closestX = Math.max(iR.left, Math.min(propaneCenterX, iR.right));
-        const closestY = Math.max(iR.top, Math.min(propaneCenterY, iR.bottom));
-
-        // Calculate the distance from the propane center to the closest point on the item
-        const dx = propaneCenterX - closestX;
-        const dy = propaneCenterY - closestY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        // If the distance is less than or equal to the radius, the item intersects the propane tank
-        const intersects = distance < propaneRadius;
-        if (intersects) {
-          showMessage(cls.charAt(0).toUpperCase() + cls.slice(1) + ' intersects the propane tank: +200 points');
-          total += 200*100;
-        }
-      });
-    });
-
-    
-    
-    const forbidden = ['foodbox', 'stovebox', 'kitchenbox', 'waterjug', 'whitewall', 'propane'];
-
-    for (const it of layer2.querySelectorAll('.item')) {
-      const cls = it.classList[1];
-      if (forbidden.includes(cls)) {
-        if (cls === 'propane') {
-          showMessage("Not okay.");
-          random_beeps();
-          await new Promise(r => setTimeout(r, 3000));
-          close();
-        } else {
-          pen += 100;
-          showMessage(cls.charAt(0).toUpperCase() + cls.slice(1) + ' must be on Layer 1: +100 points');
-          scoreDisplay.textContent = 'Score: ' + ((total / 100) + bonusPoints + pen).toFixed(2);
-        }
-        scoreDisplay.textContent = 'Score: ' + ((total / 100) + bonusPoints + pen).toFixed(2);
-        return;
-      }
-    }
-
-    scoreDisplay.textContent = 'Score: ' + ((total / 100) + bonusPoints + pen).toFixed(2);
-  }
-
-  // ✅ Event Listeners: must be outside of updateScore!
-  toggle.addEventListener('change', () => {
-    currentLayer = toggle.checked ? 2 : 1;
-    layer2.style.opacity = toggle.checked ? '1' : '0.3';
-    layer1.style.opacity = toggle.checked ? '0.3' : '1';
-    layer2.style.pointerEvents = toggle.checked ? 'auto' : 'none';
-    layer1.style.pointerEvents = toggle.checked ? 'none' : 'auto';
-    updateBorders();
-    updateScore();
-    clearMessage();
+  // Wheel arches
+  wheelArches.style.top    = (ARCH_START * UNIT) + 'px';
+  wheelArches.style.height = ((ARCH_END - ARCH_START) * UNIT) + 'px';
+  const archW = 4 * UNIT;
+  const archH = (ARCH_END - ARCH_START) * UNIT;
+  ['left','right'].forEach(side => {
+    const a = document.createElement('div');
+    a.className = 'wheel-arch ' + side;
+    a.style.width  = archW + 'px';
+    a.style.height = archH + 'px';
+    a.style.top = '0';
+    a.textContent = 'ARCH';
+    if (side === 'left')  { a.style.left  = '0'; }
+    else                  { a.style.right = '0'; }
+    wheelArches.appendChild(a);
   });
 
+  // Layer setup
+  layer1.style.position = layer2.style.position = 'absolute';
+  layer1.style.inset = layer2.style.inset = '0';
+  layer2.style.opacity = '0.3';
+  layer2.style.pointerEvents = 'none';
+
+  // ── BUILD CACHE ───────────────────────────────────────────────────────────
+  function buildCache() {
+    itemsCache.innerHTML = '';
+    ITEM_DEFS.forEach(def => {
+      const placed = placements[def.id];
+      const chip = document.createElement('div');
+      chip.className = 'item-chip ' + def.cls;
+      chip.dataset.id = def.id;
+      if (placed) chip.classList.add('placed');
+
+      const swatch = document.createElement('div');
+      swatch.className = 'swatch';
+      swatch.style.background = chipColor(def.cls);
+      if (def.cls === 'propane') swatch.style.borderRadius = '50%';
+
+      const name = document.createElement('span');
+      name.className = 'chip-name';
+      name.textContent = def.label + (def.heavy ? ' ★' : '') + (def.propane ? ' ⬟' : '');
+
+      const dims = document.createElement('span');
+      dims.className = 'chip-dims';
+      dims.textContent = def.w + '×' + def.h;
+
+      chip.appendChild(swatch);
+      chip.appendChild(name);
+      chip.appendChild(dims);
+      chip.addEventListener('pointerdown', e => startDragFromCache(e, def));
+      itemsCache.appendChild(chip);
+    });
+  }
+
+  function effDims(def, rotated) {
+    return rotated ? { w: def.h, h: def.w } : { w: def.w, h: def.h };
+  }
+
+  function chipColor(cls) {
+    const map = {
+      foodbox:'#7b9e6a', stovebox:'#8a7a5a', kitchenbox:'#6a8a9e',
+      propane:'#c0c0c0', polebag:'#4a6a8a', wallbag:'#9e9e7a',
+      personalgear:'#5a5a5a', gearbag:'#3a3a3a', waterjug:'#6aaabe',
+      table:'#8a6a4a', breadbox:'#c4a96a', meatcooler:'#6ab0c8'
+    };
+    return map[cls] || '#888';
+  }
+
+  // ── PLACED ITEM ELEMENT ────────────────────────────────────────────────────
+  function createPlacedEl(def, x, y, rotated) {
+    const { w, h } = effDims(def, rotated);
+    const el = document.createElement('div');
+    el.className = 'item ' + def.cls;
+    el.dataset.id = def.id;
+    el.style.width  = (w * UNIT) + 'px';
+    el.style.height = (h * UNIT) + 'px';
+    el.style.left   = (x * UNIT) + 'px';
+    el.style.top    = (y * UNIT) + 'px';
+    el.style.background = chipColor(def.cls);
+    if (def.cls === 'propane') el.style.borderRadius = '50%';
+    el.textContent = def.label;
+    el.addEventListener('pointerdown', e => startDragFromGrid(e, def, el));
+    return el;
+  }
+
+  // ── DRAG: FROM CACHE ──────────────────────────────────────────────────────
+  function startDragFromCache(e, def) {
+    if (placements[def.id]) return;
+    e.preventDefault();
+    const chipRect = e.currentTarget.getBoundingClientRect();
+    startDrag(e, def, null, e.clientX - chipRect.left, e.clientY - chipRect.top, currentRotation === 90);
+  }
+
+  // ── DRAG: FROM GRID ────────────────────────────────────────────────────────
+  function startDragFromGrid(e, def, el) {
+    e.preventDefault();
+    e.stopPropagation();
+    const r = el.getBoundingClientRect();
+    const p = placements[def.id];
+    const wasRotated = p ? p.rotated : false;
+    if (p) {
+      const layerEl = p.layer === 1 ? layer1 : layer2;
+      const existing = layerEl.querySelector(`[data-id="${def.id}"]`);
+      if (existing) existing.remove();
+      delete placements[def.id];
+    }
+    currentRotation = wasRotated ? 90 : 0;
+    startDrag(e, def, el, e.clientX - r.left, e.clientY - r.top, wasRotated);
+  }
+
+  function startDrag(e, def, el, ox, oy, rotated) {
+    dragging = { def, el, offsetX: ox, offsetY: oy, rotated: !!rotated };
+    const { w, h } = effDims(def, rotated);
+
+    ghost.style.display = 'flex';
+    ghost.style.width   = (w * UNIT) + 'px';
+    ghost.style.height  = (h * UNIT) + 'px';
+    ghost.style.background = chipColor(def.cls);
+    ghost.style.borderRadius = def.cls === 'propane' ? '50%' : '2px';
+    ghost.textContent = def.label;
+    moveGhost(e.clientX, e.clientY);
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    updateCacheChip(def.id, true);
+  }
+
+  function moveGhost(cx, cy) {
+    ghost.style.left = (cx - dragging.offsetX) + 'px';
+    ghost.style.top  = (cy - dragging.offsetY) + 'px';
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    moveGhost(e.clientX, e.clientY);
+  }
+
+  function onUp(e) {
+    if (!dragging) return;
+    ghost.style.display = 'none';
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+
+    const { def, rotated } = dragging;
+    const { w, h } = effDims(def, rotated);
+    const gridRect = gridEl.getBoundingClientRect();
+    const rawX = e.clientX - dragging.offsetX - gridRect.left;
+    const rawY = e.clientY - dragging.offsetY - gridRect.top;
+    const snapX = Math.round(rawX / UNIT);
+    const snapY = Math.round(rawY / UNIT);
+
+    if (snapX >= 0 && snapY >= 0 && snapX + w <= COLS && snapY + h <= ROWS) {
+      placements[def.id] = { layer: currentLayer, x: snapX, y: snapY, rotated };
+      const layerEl = currentLayer === 1 ? layer1 : layer2;
+      const el = createPlacedEl(def, snapX, snapY, rotated);
+      layerEl.appendChild(el);
+      updateCacheChip(def.id, false, true);
+
+      const violations = checkRules();
+      if (violations.length > 0) {
+        el.classList.add('violation');
+        setTimeout(() => el.classList.remove('violation'), 500);
+      }
+    } else {
+      delete placements[def.id];
+      updateCacheChip(def.id, false, false);
+    }
+
+    dragging = null;
+    updateRulesUI();
+    updateScore();
+  }
+
+  function updateCacheChip(id, dragging, placed) {
+    const chip = itemsCache.querySelector(`[data-id="${id}"]`);
+    if (!chip) return;
+    if (placed) chip.classList.add('placed');
+    else chip.classList.remove('placed');
+  }
+
+  // ── OVERLAP DETECTION ─────────────────────────────────────────────────────
+  function getRect(p, def) {
+    const { w, h } = effDims(def, p.rotated);
+    return { x: p.x, y: p.y, x2: p.x + w, y2: p.y + h };
+  }
+
+  function rectsOverlap(a, b) {
+    return !(a.x2 <= b.x || a.x >= b.x2 || a.y2 <= b.y || a.y >= b.y2);
+  }
+
+  function findOverlaps() {
+    const ids = Object.keys(placements);
+    const overlapping = new Set();
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i+1; j < ids.length; j++) {
+        const pa = placements[ids[i]];
+        const pb = placements[ids[j]];
+        if (pa.layer !== pb.layer) continue;
+        const da = ITEM_DEFS.find(d => d.id === ids[i]);
+        const db = ITEM_DEFS.find(d => d.id === ids[j]);
+        const ra = getRect(pa, da);
+        const rb = getRect(pb, db);
+        if (rectsOverlap(ra, rb)) {
+          overlapping.add(ids[i]);
+          overlapping.add(ids[j]);
+        }
+      }
+    }
+    return overlapping;
+  }
+
+  // ── RULES CHECK ────────────────────────────────────────────────────────────
+  function checkRules() {
+    const violations = [];
+    const overlaps = findOverlaps();
+
+    // Update overlap borders
+    [layer1, layer2].forEach(l => {
+      l.querySelectorAll('.item').forEach(el => {
+        if (overlaps.has(el.dataset.id)) el.classList.add('overlap');
+        else el.classList.remove('overlap');
+      });
+    });
+
+    // Rule: propane on layer 1
+    const propanePlacement = placements['propane'];
+    if (propanePlacement && propanePlacement.layer !== 1) {
+      violations.push('propane-layer1');
+    }
+
+    // Rule: propane near back (bottom = high y)
+    if (propanePlacement) {
+      const propaneDef = ITEM_DEFS.find(d => d.id === 'propane');
+      const propaneBottom = propanePlacement.y + propaneDef.h;
+      if (propaneBottom < BACK_ZONE_START) {
+        violations.push('propane-back');
+      }
+    }
+
+    // Rule: heavy items on layer 1
+    ITEM_DEFS.filter(d => d.heavy).forEach(def => {
+      const p = placements[def.id];
+      if (p && p.layer !== 1) violations.push('heavy-layer1');
+    });
+
+    // Rule: weight forward of wheel arch (most mass should be above ARCH_START)
+    const totalMass = Object.keys(placements).length;
+    if (totalMass > 0) {
+      const forwardMass = Object.keys(placements).filter(id => {
+        const p = placements[id];
+        const d = ITEM_DEFS.find(x => x.id === id);
+        const itemCenterY = p.y + d.h/2;
+        return itemCenterY < ARCH_START;
+      }).length;
+      if (forwardMass < totalMass * 0.5) {
+        violations.push('weight-forward');
+      }
+    }
+
+    // Rule: no overlaps
+    if (overlaps.size > 0) violations.push('no-overlap');
+
+    // Rule: water jugs towards back (center Y > ARCH_END)
+    const waterIds = ['waterjug1','waterjug2','waterjug3','waterjug4'];
+    waterIds.forEach(wid => {
+      const wp = placements[wid];
+      if (wp) {
+        const wd = ITEM_DEFS.find(d => d.id === wid);
+        const { h } = effDims(wd, wp.rotated);
+        const centerY = wp.y + h / 2;
+        if (centerY < ARCH_END) violations.push('water-back');
+      }
+    });
+
+    // Rule: personal gear towards front (center Y < ARCH_START)
+    const gearIds = ['personalgear1','personalgear2'];
+    gearIds.forEach(gid => {
+      const gp = placements[gid];
+      if (gp) {
+        const gd = ITEM_DEFS.find(d => d.id === gid);
+        const { h } = effDims(gd, gp.rotated);
+        const centerY = gp.y + h / 2;
+        if (centerY > ARCH_START) violations.push('gear-front');
+      }
+    });
+
+    return violations;
+  }
+
+  // ── RULES UI ──────────────────────────────────────────────────────────────
+  function updateRulesUI() {
+    const violations = checkRules();
+
+    function setRule(id, ruleKey) {
+      const el = document.getElementById(id);
+      const placed = Object.keys(placements).length > 0;
+      el.classList.remove('ok','bad');
+      if (!placed) return;
+      if (violations.includes(ruleKey)) el.classList.add('bad');
+      else el.classList.add('ok');
+    }
+
+    setRule('rule-propane-back',   'propane-back');
+    setRule('rule-propane-layer1', 'propane-layer1');
+    setRule('rule-heavy-layer1',   'heavy-layer1');
+    setRule('rule-weight-forward', 'weight-forward');
+    setRule('rule-water-back',     'water-back');
+    setRule('rule-gear-front',     'gear-front');
+    setRule('rule-no-overlap',     'no-overlap');
+
+    let msg = '';
+    let type = '';
+    if (violations.includes('propane-layer1')) {
+      msg = '⚠ Propane must be on Layer 1 (floor)!'; type = 'warn';
+    } else if (violations.includes('heavy-layer1')) {
+      msg = '⚠ Heavy items (★) must be on Layer 1!'; type = 'warn';
+    } else if (violations.includes('no-overlap')) {
+      msg = '⚠ Items are overlapping!'; type = 'warn';
+    } else if (violations.includes('propane-back')) {
+      msg = '↓ Move propane towards the back of the trailer'; type = 'warn';
+    } else if (violations.includes('water-back')) {
+      msg = '↓ Water jugs belong towards the back'; type = 'warn';
+    } else if (violations.includes('gear-front')) {
+      msg = '↑ Personal gear belongs towards the front'; type = 'warn';
+    } else if (violations.includes('weight-forward')) {
+      msg = '↑ Shift more weight forward of the wheel arch'; type = 'warn';
+    } else if (Object.keys(placements).length > 3) {
+      msg = '✓ Looking good!'; type = 'info';
+    }
+    msgBar.textContent = msg;
+    msgBar.className = 'message-bar ' + type;
+  }
+
+  // ── SCORE ─────────────────────────────────────────────────────────────────
+  function updateScore() {
+    const violations = checkRules();
+    let score = 0;
+
+    // Base: each item placed = 10pts
+    const placed = Object.keys(placements);
+    score += placed.length * 10;
+
+    // Bonus: all items placed
+    if (placed.length === ITEM_DEFS.length) score += 100;
+
+    // Bonus per rule passing (each = 50)
+    const allRules = ['propane-back','propane-layer1','heavy-layer1','weight-forward','no-overlap','water-back','gear-front'];
+    if (Object.keys(placements).length > 0) {
+      allRules.forEach(r => { if (!violations.includes(r)) score += 50; });
+    }
+
+    // Propane distance bonus (further back = more points, up to 80)
+    const propP = placements['propane'];
+    if (propP) {
+      const propDef = ITEM_DEFS.find(d => d.id === 'propane');
+      const propBottom = propP.y + propDef.h;
+      const backBonus = Math.max(0, Math.round((propBottom - BACK_ZONE_START) / (ROWS - BACK_ZONE_START) * 80));
+      score += backBonus;
+    }
+
+    // Penalty for overlaps
+    score -= findOverlaps().size * 20;
+
+    scoreVal.textContent = Math.max(0, score);
+  }
+
+  // ── ROTATE ────────────────────────────────────────────────────────────────
+  rotateBtn.addEventListener('click', () => {
+    currentRotation = currentRotation === 0 ? 90 : 0;
+    rotateBtn.style.color = currentRotation === 90 ? 'var(--accent)' : '';
+    rotateBtn.style.borderColor = currentRotation === 90 ? 'var(--accent)' : '';
+    // If currently dragging, resize ghost
+    if (dragging) {
+      dragging.rotated = currentRotation === 90;
+      const { w, h } = effDims(dragging.def, dragging.rotated);
+      ghost.style.width  = (w * UNIT) + 'px';
+      ghost.style.height = (h * UNIT) + 'px';
+    }
+  });
+
+  // ── LAYER TOGGLE ──────────────────────────────────────────────────────────
+  layerToggle.addEventListener('click', () => {
+    currentLayer = currentLayer === 1 ? 2 : 1;
+    const isTwo = currentLayer === 2;
+    layerToggle.classList.toggle('active', isTwo);
+    layerInd.textContent = isTwo ? 'LAYER 2' : 'LAYER 1';
+    layerInd.classList.toggle('layer2', isTwo);
+    layer2.style.opacity = isTwo ? '1' : '0.3';
+    layer1.style.opacity = isTwo ? '0.3' : '1';
+    layer2.style.pointerEvents = isTwo ? 'auto' : 'none';
+    layer1.style.pointerEvents = isTwo ? 'none' : 'auto';
+    updateRulesUI();
+  });
+
+  // ── RESET ─────────────────────────────────────────────────────────────────
   resetBtn.addEventListener('click', () => {
-    toggle.checked = false;
-    populateItems();
+    placements = {};
     layer1.innerHTML = '';
     layer2.innerHTML = '';
-    bonusPoints = 0;
+    currentLayer = 1;
+    currentRotation = 0;
+    rotateBtn.style.color = '';
+    rotateBtn.style.borderColor = '';
+    layerToggle.classList.remove('active');
+    layerInd.textContent = 'LAYER 1';
+    layerInd.classList.remove('layer2');
+    layer2.style.opacity = '0.3';
+    layer1.style.opacity = '1';
+    layer2.style.pointerEvents = 'none';
+    layer1.style.pointerEvents = 'auto';
+    msgBar.textContent = '';
+    msgBar.className = '';
+    buildCache();
+    updateRulesUI();
     updateScore();
-    clearMessage();
   });
 
-  // Initial population
-  populateItems();
+  // ── INIT ──────────────────────────────────────────────────────────────────
+  buildCache();
   updateScore();
 });
-
-  </script>
+</script>
 </body>
 </html>
