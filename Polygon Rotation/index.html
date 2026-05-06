@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polygon Rotation &amp; Symmetry Tool</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f1117;
+    color: #e0e0e0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header {
+    background: #1a1d28;
+    border-bottom: 1px solid #2a2d3a;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .control-group label {
+    font-size: 13px;
+    color: #9ca3af;
+    white-space: nowrap;
+  }
+  select, button {
+    background: #252836;
+    border: 1px solid #3a3d4a;
+    color: #e0e0e0;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  select:hover, button:hover {
+    border-color: #6366f1;
+    background: #2d3044;
+  }
+  button.active {
+    background: #4f46e5;
+    border-color: #6366f1;
+    color: #fff;
+  }
+  .toggle-btn {
+    min-width: 32px;
+    text-align: center;
+  }
+  .main-area {
+    flex: 1;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+  }
+  canvas {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+  }
+  canvas.dragging { cursor: grabbing; }
+  .info-panel {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(26, 29, 40, 0.92);
+    backdrop-filter: blur(12px);
+    border: 1px solid #2a2d3a;
+    border-radius: 10px;
+    padding: 16px;
+    min-width: 220px;
+    font-size: 13px;
+    pointer-events: none;
+  }
+  .info-panel h3 {
+    font-size: 14px;
+    margin-bottom: 10px;
+    color: #a5b4fc;
+    font-weight: 600;
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+  }
+  .info-row .label { color: #9ca3af; }
+  .info-row .value { color: #fff; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .snap-indicator {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(79, 70, 229, 0.9);
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .snap-indicator.visible { opacity: 1; }
+  .help-text {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    font-size: 12px;
+    color: #6b7280;
+    text-align: right;
+    line-height: 1.6;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Polygon Symmetry Rotator</h1>
+  <div class="controls">
+    <div class="control-group">
+      <label>Shape:</label>
+      <select id="shapeSelect">
+        <option value="3">Triangle</option>
+        <option value="4">Square</option>
+        <option value="5" selected>Pentagon</option>
+        <option value="6">Hexagon</option>
+        <option value="7">Heptagon</option>
+        <option value="8">Octagon</option>
+        <option value="10">Decagon</option>
+        <option value="12">Dodecagon</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Snap:</label>
+      <button id="snapToggle" class="toggle-btn active" title="Toggle snap to symmetry lines">ON</button>
+    </div>
+    <div class="control-group">
+      <label>Symmetry Lines:</label>
+      <button id="symToggle" class="toggle-btn active" title="Show/hide symmetry lines">ON</button>
+    </div>
+    <div class="control-group">
+      <label>Angles:</label>
+      <button id="angleToggle" class="toggle-btn active" title="Show/hide angle measures">ON</button>
+    </div>
+    <div class="control-group">
+      <button id="resetBtn" title="Reset rotation to 0°">Reset</button>
+    </div>
+  </div>
+</header>
+<div class="main-area">
+  <canvas id="canvas"></canvas>
+  <div class="info-panel" id="infoPanel">
+    <h3 id="shapeName">Pentagon</h3>
+    <div class="info-row"><span class="label">Sides</span><span class="value" id="infoSides">5</span></div>
+    <div class="info-row"><span class="label">Rotation</span><span class="value" id="infoRotation">0.0°</span></div>
+    <div class="info-row"><span class="label">Symmetry Lines</span><span class="value" id="infoSymLines">5</span></div>
+    <div class="info-row"><span class="label">Rotational Order</span><span class="value" id="infoRotOrder">5</span></div>
+    <div class="info-row"><span class="label">Min Rotation</span><span class="value" id="infoMinRot">72°</span></div>
+    <div class="info-row"><span class="label">Snapped</span><span class="value" id="infoSnapped">—</span></div>
+  </div>
+  <div class="snap-indicator" id="snapIndicator">Snapped to 72°</div>
+  <div class="help-text">
+    Drag polygon to rotate<br>
+    Scroll to resize &middot; Shape selector to change
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const shapeSelect = document.getElementById('shapeSelect');
+const snapToggle = document.getElementById('snapToggle');
+const symToggle = document.getElementById('symToggle');
+const angleToggle = document.getElementById('angleToggle');
+const resetBtn = document.getElementById('resetBtn');
+const snapIndicator = document.getElementById('snapIndicator');
+
+let dpr = window.devicePixelRatio || 1;
+let W, H, cx, cy;
+let sides = 5;
+let rotation = 0; // radians
+let polyRadius = 160;
+let dragging = false;
+let dragStartAngle = 0;
+let rotationAtDragStart = 0;
+let snapEnabled = true;
+let showSymLines = true;
+let showAngles = true;
+let isSnapped = false;
+let snappedAngleDeg = 0;
+let snapThreshold = 5; // degrees
+
+const SHAPE_NAMES = {3:'Triangle',4:'Square',5:'Pentagon',6:'Hexagon',7:'Heptagon',8:'Octagon',10:'Decagon',12:'Dodecagon'};
+
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  W = rect.width; H = rect.height;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cx = W / 2; cy = H / 2;
+  polyRadius = Math.min(W, H) * 0.25;
+  draw();
+}
+
+function getSymmetryAngles() {
+  // Lines of symmetry for regular polygon with n sides
+  const angles = [];
+  for (let i = 0; i < sides; i++) {
+    // For even-sided: vertex-to-vertex and midpoint-to-midpoint
+    // For odd-sided: vertex-to-midpoint of opposite side
+    angles.push((i * Math.PI) / sides);
+  }
+  return angles;
+}
+
+function getSnapAngles() {
+  // Snap to multiples of (360/n) degrees — the rotational symmetry angles
+  const snap = [];
+  const step = (2 * Math.PI) / sides;
+  for (let i = 0; i < sides; i++) {
+    snap.push(i * step);
+  }
+  // Also snap to symmetry line alignments (half-steps for even polygons)
+  if (sides % 2 === 0) {
+    const halfStep = Math.PI / sides;
+    for (let i = 0; i < sides; i++) {
+      const a = i * step + halfStep;
+      if (!snap.some(s => Math.abs(normalizeAngle(s - a)) < 0.001)) {
+        snap.push(a);
+      }
+    }
+  }
+  return snap;
+}
+
+function normalizeAngle(a) {
+  while (a > Math.PI) a -= 2 * Math.PI;
+  while (a < -Math.PI) a += 2 * Math.PI;
+  return a;
+}
+
+function normalizeDeg(d) {
+  d = d % 360;
+  if (d < 0) d += 360;
+  return d;
+}
+
+function toDeg(r) { return r * 180 / Math.PI; }
+function toRad(d) { return d * Math.PI / 180; }
+
+function trySnap(angle) {
+  if (!snapEnabled) { isSnapped = false; return angle; }
+  const snapAngles = getSnapAngles();
+  let best = angle, bestDist = Infinity;
+  for (const sa of snapAngles) {
+    const dist = Math.abs(toDeg(normalizeAngle(angle - sa)));
+    if (dist < bestDist) { bestDist = dist; best = sa; }
+  }
+  if (bestDist < snapThreshold) {
+    isSnapped = true;
+    snappedAngleDeg = normalizeDeg(toDeg(best));
+    return best;
+  }
+  isSnapped = false;
+  return angle;
+}
+
+function getVertices(r, rot) {
+  const verts = [];
+  for (let i = 0; i < sides; i++) {
+    const a = rot + (2 * Math.PI * i) / sides - Math.PI / 2;
+    verts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+  }
+  return verts;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid dots
+  ctx.fillStyle = '#1e2030';
+  const gridSize = 40;
+  for (let x = cx % gridSize; x < W; x += gridSize) {
+    for (let y = cy % gridSize; y < H; y += gridSize) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Center crosshair
+  ctx.strokeStyle = '#2a2d3a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx - 20, cy); ctx.lineTo(cx + 20, cy);
+  ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy + 20);
+  ctx.stroke();
+
+  // Symmetry lines
+  if (showSymLines) {
+    const symAngles = getSymmetryAngles();
+    const lineLen = polyRadius * 1.6;
+    for (let i = 0; i < symAngles.length; i++) {
+      const a = symAngles[i] + rotation - Math.PI / 2;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(99, 102, 241, 0.3)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(cx - lineLen * Math.cos(a), cy - lineLen * Math.sin(a));
+      ctx.lineTo(cx + lineLen * Math.cos(a), cy + lineLen * Math.sin(a));
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // Reference line (0° — always pointing up)
+  ctx.save();
+  ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx, cy - polyRadius * 1.4);
+  ctx.stroke();
+  ctx.restore();
+
+  // Reference label
+  ctx.fillStyle = 'rgba(239, 68, 68, 0.6)';
+  ctx.font = '11px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('0°', cx, cy - polyRadius * 1.4 - 8);
+
+  // Rotation arc
+  const rotDeg = normalizeDeg(toDeg(rotation));
+  if (Math.abs(rotDeg) > 0.5 && showAngles) {
+    const arcR = polyRadius * 0.35;
+    const startA = -Math.PI / 2;
+    const endA = -Math.PI / 2 + rotation;
+    ctx.save();
+    ctx.strokeStyle = isSnapped ? 'rgba(99, 102, 241, 0.8)' : 'rgba(251, 191, 36, 0.6)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    if (rotation >= 0) {
+      ctx.arc(cx, cy, arcR, startA, endA, false);
+    } else {
+      ctx.arc(cx, cy, arcR, startA, endA, true);
+    }
+    ctx.stroke();
+
+    // Arrow head
+    const arrowA = endA;
+    const arrowSize = 8;
+    const dir = rotation >= 0 ? 1 : -1;
+    const perpA = arrowA + dir * Math.PI / 2;
+    const ax = cx + arcR * Math.cos(arrowA);
+    const ay = cy + arcR * Math.sin(arrowA);
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax - arrowSize * Math.cos(perpA - 0.4), ay - arrowSize * Math.sin(perpA - 0.4));
+    ctx.lineTo(ax - arrowSize * Math.cos(perpA + 0.4), ay - arrowSize * Math.sin(perpA + 0.4));
+    ctx.closePath();
+    ctx.fill();
+
+    // Angle text
+    const midA = startA + rotation / 2;
+    const textR = arcR + 18;
+    const tx = cx + textR * Math.cos(midA);
+    const ty = cy + textR * Math.sin(midA);
+    ctx.fillStyle = isSnapped ? '#a5b4fc' : '#fbbf24';
+    ctx.font = 'bold 14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(rotDeg.toFixed(1) + '°', tx, ty);
+    ctx.restore();
+  }
+
+  // Polygon
+  const verts = getVertices(polyRadius, rotation);
+  // Fill
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, polyRadius);
+  grad.addColorStop(0, isSnapped ? 'rgba(99, 102, 241, 0.15)' : 'rgba(59, 130, 246, 0.1)');
+  grad.addColorStop(1, isSnapped ? 'rgba(99, 102, 241, 0.05)' : 'rgba(59, 130, 246, 0.02)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  verts.forEach((v, i) => i === 0 ? ctx.moveTo(v.x, v.y) : ctx.lineTo(v.x, v.y));
+  ctx.closePath();
+  ctx.fill();
+
+  // Stroke
+  ctx.strokeStyle = isSnapped ? '#818cf8' : '#60a5fa';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Vertices
+  verts.forEach((v, i) => {
+    ctx.beginPath();
+    ctx.arc(v.x, v.y, i === 0 ? 7 : 5, 0, Math.PI * 2);
+    ctx.fillStyle = i === 0 ? (isSnapped ? '#a5b4fc' : '#93c5fd') : (isSnapped ? '#6366f1' : '#3b82f6');
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+
+  // Vertex labels with interior angles
+  if (showAngles) {
+    const interiorAngle = ((sides - 2) * 180) / sides;
+    ctx.font = '12px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    verts.forEach((v, i) => {
+      const a = rotation + (2 * Math.PI * i) / sides - Math.PI / 2;
+      const lx = cx + (polyRadius + 28) * Math.cos(a);
+      const ly = cy + (polyRadius + 28) * Math.sin(a);
+      ctx.fillStyle = '#9ca3af';
+      ctx.fillText(interiorAngle.toFixed(1) + '°', lx, ly);
+    });
+  }
+
+  // Symmetry angle labels on lines
+  if (showSymLines && showAngles) {
+    const symAngles = getSymmetryAngles();
+    ctx.font = '11px system-ui';
+    const labelR = polyRadius * 1.5;
+    symAngles.forEach((sa, i) => {
+      const a = sa + rotation - Math.PI / 2;
+      const lx = cx + labelR * Math.cos(a);
+      const ly = cy + labelR * Math.sin(a);
+      const deg = normalizeDeg(toDeg(sa));
+      ctx.fillStyle = 'rgba(165, 180, 252, 0.6)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(deg.toFixed(0) + '°', lx, ly);
+    });
+  }
+
+  // Center dot
+  ctx.beginPath();
+  ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+  ctx.fillStyle = '#6366f1';
+  ctx.fill();
+
+  // Rotation indicator line from center to first vertex
+  ctx.save();
+  ctx.strokeStyle = isSnapped ? 'rgba(165, 180, 252, 0.5)' : 'rgba(147, 197, 253, 0.4)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(verts[0].x, verts[0].y);
+  ctx.stroke();
+  ctx.restore();
+
+  updateInfo();
+  updateSnapIndicator();
+}
+
+function updateInfo() {
+  const name = SHAPE_NAMES[sides] || sides + '-gon';
+  document.getElementById('shapeName').textContent = name;
+  document.getElementById('infoSides').textContent = sides;
+  document.getElementById('infoRotation').textContent = normalizeDeg(toDeg(rotation)).toFixed(1) + '°';
+  document.getElementById('infoSymLines').textContent = sides;
+  document.getElementById('infoRotOrder').textContent = sides;
+  document.getElementById('infoMinRot').textContent = (360 / sides).toFixed(1) + '°';
+  document.getElementById('infoSnapped').textContent = isSnapped ? snappedAngleDeg.toFixed(1) + '°' : '—';
+  document.getElementById('infoSnapped').style.color = isSnapped ? '#a5b4fc' : '#9ca3af';
+}
+
+function updateSnapIndicator() {
+  if (isSnapped && dragging) {
+    snapIndicator.textContent = 'Snapped to ' + snappedAngleDeg.toFixed(1) + '°';
+    snapIndicator.classList.add('visible');
+  } else {
+    snapIndicator.classList.remove('visible');
+  }
+}
+
+// Mouse interaction
+function getAngleFromCenter(x, y) {
+  return Math.atan2(y - cy, x - cx);
+}
+
+canvas.addEventListener('mousedown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const dist = Math.hypot(mx - cx, my - cy);
+  if (dist < polyRadius * 1.8) {
+    dragging = true;
+    dragStartAngle = getAngleFromCenter(mx, my);
+    rotationAtDragStart = rotation;
+    canvas.classList.add('dragging');
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (!dragging) return;
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const currentAngle = getAngleFromCenter(mx, my);
+  let delta = currentAngle - dragStartAngle;
+  rotation = trySnap(rotationAtDragStart + delta);
+  draw();
+});
+
+window.addEventListener('mouseup', () => {
+  dragging = false;
+  canvas.classList.remove('dragging');
+  draw();
+});
+
+// Touch support
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const mx = touch.clientX - rect.left;
+  const my = touch.clientY - rect.top;
+  const dist = Math.hypot(mx - cx, my - cy);
+  if (dist < polyRadius * 1.8) {
+    dragging = true;
+    dragStartAngle = getAngleFromCenter(mx, my);
+    rotationAtDragStart = rotation;
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  if (!dragging) return;
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const mx = touch.clientX - rect.left;
+  const my = touch.clientY - rect.top;
+  const currentAngle = getAngleFromCenter(mx, my);
+  let delta = currentAngle - dragStartAngle;
+  rotation = trySnap(rotationAtDragStart + delta);
+  draw();
+}, { passive: false });
+
+canvas.addEventListener('touchend', () => {
+  dragging = false;
+  draw();
+});
+
+// Scroll to resize
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? -10 : 10;
+  polyRadius = Math.max(60, Math.min(Math.min(W, H) * 0.42, polyRadius + delta));
+  draw();
+}, { passive: false });
+
+// Controls
+shapeSelect.addEventListener('change', () => {
+  sides = parseInt(shapeSelect.value);
+  rotation = 0;
+  isSnapped = false;
+  draw();
+});
+
+snapToggle.addEventListener('click', () => {
+  snapEnabled = !snapEnabled;
+  snapToggle.textContent = snapEnabled ? 'ON' : 'OFF';
+  snapToggle.classList.toggle('active', snapEnabled);
+  if (snapEnabled) rotation = trySnap(rotation);
+  draw();
+});
+
+symToggle.addEventListener('click', () => {
+  showSymLines = !showSymLines;
+  symToggle.textContent = showSymLines ? 'ON' : 'OFF';
+  symToggle.classList.toggle('active', showSymLines);
+  draw();
+});
+
+angleToggle.addEventListener('click', () => {
+  showAngles = !showAngles;
+  angleToggle.textContent = showAngles ? 'ON' : 'OFF';
+  angleToggle.classList.toggle('active', showAngles);
+  draw();
+});
+
+resetBtn.addEventListener('click', () => {
+  rotation = 0;
+  isSnapped = false;
+  draw();
+});
+
+// Keyboard
+window.addEventListener('keydown', (e) => {
+  const step = e.shiftKey ? toRad(1) : toRad(360 / sides);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+    rotation = trySnap(rotation - step);
+    draw();
+  } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+    rotation = trySnap(rotation + step);
+    draw();
+  } else if (e.key === 'r' || e.key === 'R') {
+    rotation = 0; isSnapped = false; draw();
+  }
+});
+
+window.addEventListener('resize', resize);
+resize();
+</script>
+</body>
+</html>
