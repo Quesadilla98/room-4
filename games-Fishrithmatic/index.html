@@ -309,7 +309,8 @@ function drawFish(e){
     for(let i=-1;i<=1;i++){ctx.beginPath();ctx.moveTo(x-facing*s*.5,y+i*s*.12);ctx.lineTo(x-facing*(s*.5+34),y+i*s*.12);ctx.stroke();}
     ctx.restore();
   }
-  ctx.translate(x,y);ctx.scale(facing,1);
+  const bodyShk=(gold&&e.hooked)?(e.shakeOff||0):0;
+  ctx.translate(x+bodyShk,y);ctx.scale(facing,1);
   const sh=t.sh;
   if(sh==='round'){
     ctx.fillStyle=t.col;ctx.beginPath();ctx.arc(0,0,s*.42,0,Math.PI*2);ctx.fill();
@@ -361,8 +362,9 @@ function drawFish(e){
   ctx.restore();
   // Rings and label only when THIS fish is hooked
   if(e.hooked&&hooked===e){
-    drawTimerRing(x,y,s,gold);
-    drawProblemLabel(x,y,s,gold,fast?'\u26A1 ':gold?'\u2B50 ':'');
+    const shk=gold?(e.shakeOff||0):0;
+    drawTimerRing(x+shk,y,s,gold);
+    drawProblemLabel(x+shk,y,s,gold,fast?'\u26A1 ':gold?'\u2B50 ':'');
   }
 }
 
@@ -502,8 +504,8 @@ function checkAns(){
     } else {
       showFb('\u2713 '+solves+'/'+needed+' \u2014 keep going!',true);
       curProb=mkProb(hooked.t.df);
-      if(hooked.name==='leviathan'){
-        // Shake the leviathan on each correct answer
+      if(hooked.name==='leviathan'||hooked.name==='golden'){
+        // Shake in place — don't reel closer
         hooked.shakeT=0.5;
       } else {
         const tip=rodTip();
@@ -612,19 +614,18 @@ function loop(ts){
   }
   if(cst==='hooked'&&hooked){
     const yoff=hooked.name==='chest'?Math.sin(hooked.gt*1.2)*4:0;
-    if(hooked.name==='leviathan'){
-      // Leviathan stays put while hooked, only shakes on correct answer
-      if(hooked.shakeT>0){hooked.shakeT-=dt;hooked.shakeOff=(Math.random()-.5)*22;}
+    if(hooked.name==='leviathan'||hooked.name==='golden'){
+      // Stays in water, shakes on correct answer
+      if(hooked.shakeT>0){hooked.shakeT-=dt;hooked.shakeOff=(Math.random()-.5)*(hooked.name==='leviathan'?22:12);}
       else hooked.shakeOff=0;
     } else {
       hooked.x+=Math.sin(ts*.015)*1.5;
     }
     bx=hooked.x;by=hooked.y+yoff+Math.sin(bobT)*4;
   }
-  if(cst==='reeling'&&hooked){
+  if(cst==='reeling'&&hooked&&hooked.name!=='leviathan'&&hooked.name!=='golden'){
     const tip=rodTip();
-    const speed=hooked.name==='leviathan'?.04:.12;
-    hooked.x+=(tip.x-hooked.x)*speed;hooked.y+=(tip.y-hooked.y)*speed;
+    hooked.x+=(tip.x-hooked.x)*.12;hooked.y+=(tip.y-hooked.y)*.12;
     bx=hooked.x;by=hooked.y;
   }
   drawParticles();
