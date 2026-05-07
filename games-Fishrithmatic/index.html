@@ -71,14 +71,14 @@ function mkProb(diff){
   } else if(diff===2){
     // medium: x or / with small numbers
     if(Math.random()<0.5){a=rand(2,6);b=rand(2,6);ans=a*b;q=a+' \u00D7 '+b;}
-    else{b=rand(2,6);ans=rand(2,6);a=ans*b;q=a+' \u00F7 '+b;}
+    else{b=rand(2,6);ans=rand(2,6);a=ans*b;q=a+' / '+b;}
   } else if(diff===3){
     // hard: x or / with bigger
     if(Math.random()<0.5){a=rand(4,12);b=rand(2,9);ans=a*b;q=a+' \u00D7 '+b;}
-    else{b=rand(2,9);ans=rand(2,12);a=ans*b;q=a+' \u00F7 '+b;}
+    else{b=rand(2,9);ans=rand(2,12);a=ans*b;q=a+' / '+b;}
   } else {
     // golden/chest/leviathan: always division or 6x6+ multiplication
-    if(Math.random()<0.55){b=rand(3,12);ans=rand(2,12);a=ans*b;q=a+' \u00F7 '+b;}
+    if(Math.random()<0.55){b=rand(3,12);ans=rand(2,12);a=ans*b;q=a+' / '+b;}
     else{a=rand(6,12);b=rand(6,12);ans=a*b;q=a+' \u00D7 '+b;}
   }
   return{q,ans};
@@ -253,11 +253,11 @@ function drawProblemLabel(x,y,s,gold,prefix){
   const r=s*.9+15;
   const label=(prefix||'')+(curProb.q)+' = ?';
   ctx.save();
-  ctx.font='bold '+(gold?Math.max(18,s*.3):Math.max(13,s*.28))+'px \'Fredoka One\',cursive';
+  ctx.font='bold '+(gold?Math.max(28,s*.38):Math.max(22,s*.36))+'px \'Fredoka One\',cursive';
   ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.shadowColor='rgba(0,0,0,.95)';ctx.shadowBlur=10;
+  ctx.shadowColor='rgba(0,0,0,1)';ctx.shadowBlur=14;
   ctx.fillStyle=gold?'#FFD700':'#fff';
-  ctx.fillText(label,x,y-r-18);
+  ctx.fillText(label,x,y-r-22);
   ctx.restore();
 }
 
@@ -361,7 +361,7 @@ function drawChest(e){
   ctx.fillStyle='#FFD700';ctx.fillRect(-s*.08,-s*.05,s*.16,s*.2);
   for(let i=0;i<5;i++){const a=e.gt+i*Math.PI*2/5,sr=s*.9+Math.sin(e.gt*2+i)*10;ctx.fillStyle='rgba(255,215,0,'+(0.45+.4*Math.sin(e.gt*3+i))+')';ctx.beginPath();ctx.arc(Math.cos(a)*sr,Math.sin(a)*sr,4,0,Math.PI*2);ctx.fill();}
   ctx.restore();
-  if(e.hooked&&hooked===e){drawTimerRing(x,y+bob,s,false);drawProblemLabel(x,y+bob,s,false,'\uD83D\uDCB0 ');}
+  if(e.hooked&&hooked===e){drawTimerRing(x,y+bob,s,false);drawProblemLabel(x,y+bob,s*1.4,false,'\uD83D\uDCB0 ');}
   if(!e.hooked){ctx.save();ctx.font='bold 18px \'Fredoka One\',cursive';ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowColor='rgba(0,0,0,.9)';ctx.shadowBlur=8;ctx.fillStyle='#FFD700';ctx.fillText('? pts',x,y+bob-s*.5-22);ctx.restore();}
 }
 
@@ -370,12 +370,13 @@ function drawLeviathan(e){
   const {x,y,alpha}=e;
   const S=Math.min(W*.55,H*.62);
   const facing=e.vx>=0?1:-1;
+  const shk=e.shakeOff||0;
   ctx.save();ctx.globalAlpha=alpha;
   // Dark aura
-  const gg=ctx.createRadialGradient(x,y,0,x,y,S*.95);
+  const gg=ctx.createRadialGradient(x+shk,y,0,x+shk,y,S*.95);
   gg.addColorStop(0,'rgba(80,0,120,.55)');gg.addColorStop(.5,'rgba(20,0,50,.3)');gg.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=gg;ctx.beginPath();ctx.arc(x,y,S*.95,0,Math.PI*2);ctx.fill();
-  ctx.translate(x,y);ctx.scale(facing,1);
+  ctx.translate(x+shk,y);ctx.scale(facing,1);
   // Body
   const bg2=ctx.createLinearGradient(-S*.6,-S*.25,S*.6,S*.25);
   bg2.addColorStop(0,'#1a0a2e');bg2.addColorStop(.5,'#2d0f4a');bg2.addColorStop(1,'#0d0019');
@@ -403,11 +404,11 @@ function drawLeviathan(e){
   ul.addColorStop(0,'rgba(100,0,150,0)');ul.addColorStop(1,'rgba(180,0,255,'+(0.15+.08*Math.sin(e.gt*2))+')');
   ctx.fillStyle=ul;ctx.beginPath();ctx.ellipse(0,0,S*.58,S*.27,0,0,Math.PI*2);ctx.fill();
   ctx.restore();
-  if(e.hooked&&hooked===e){drawTimerRing(x,y,S*.28,false);drawProblemLabel(x,y,S*.28,false,'\uD83D\uDC79 ');}
+  if(e.hooked&&hooked===e){drawTimerRing(x+shk,y,S*.28,false);drawProblemLabel(x+shk,y,S*.28,false,'\uD83D\uDC79 ');}
   if(!e.hooked){
-    ctx.save();ctx.font='bold 24px \'Fredoka One\',cursive';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.shadowColor='rgba(0,0,0,.95)';ctx.shadowBlur=14;ctx.fillStyle='#ff6bff';
-    ctx.fillText('\uD83D\uDC79 LEVIATHAN \u2014 10 problems! \uD83D\uDC79',x,y-S*.36);ctx.restore();
+    ctx.save();ctx.font='bold 32px \'Fredoka One\',cursive';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(0,0,0,1)';ctx.shadowBlur=18;ctx.fillStyle='#ff6bff';
+    ctx.fillText('\uD83D\uDC79 LEVIATHAN \u2014 10 problems! \uD83D\uDC79',x+shk,y-S*.36);ctx.restore();
   }
 }
 
@@ -462,23 +463,36 @@ function checkAns(){
       const lbl={golden:'\u2B50 LEGENDARY',leviathan:'\uD83D\uDC80 SLAIN',chest:'\uD83D\uDCB0 JACKPOT'}[hooked.name]||'Caught!';
       showFb(lbl+' +'+hooked.t.pts,true);
       boom(hooked.x,hooked.y,'#FFD700',45);
+      // All fish (including leviathan) reel up to boat when caught
+      if(hooked.name==='leviathan'){monActive=false;monTmr=rand(280,340);}
+      boom(hooked.x,hooked.y,'#ff6bff',45);
       cst='reeling';ansPanel.classList.remove('show');progressEl.classList.remove('show');timerOn=false;
-      if(hooked.name==='leviathan')monActive=false;
       const h2=hooked;
-      setTimeout(()=>{if(h2)h2.alive=false;hooked=null;cst='idle';solves=0;curProb=null;hintEl.style.display='';badgeEl.textContent='Click water to cast!';replenish();},950);
+      setTimeout(()=>{if(h2)h2.alive=false;hooked=null;cst='idle';solves=0;curProb=null;hintEl.style.display='';badgeEl.textContent='Click water to cast!';replenish();},1800);
     } else {
       showFb('\u2713 '+solves+'/'+needed+' \u2014 keep going!',true);
       curProb=mkProb(hooked.t.df);
-      // Reel closer
-      const tip=rodTip();
-      hooked.x+=(tip.x-hooked.x)*.2;hooked.y+=(tip.y-hooked.y)*.2;hooked.by=hooked.y;
+      if(hooked.name==='leviathan'){
+        // Shake the leviathan on each correct answer
+        hooked.shakeT=0.5;
+      } else {
+        const tip=rodTip();
+        hooked.x+=(tip.x-hooked.x)*.2;hooked.y+=(tip.y-hooked.y)*.2;hooked.by=hooked.y;
+      }
       timerV=timerM;updateProgress();
     }
   } else {
-    showFb('\u2717 It was '+curProb.ans,false);
     boom(hooked.x,hooked.y,'#ff5252',16);
-    // Release
-    hooked.hooked=false;hooked=null;cst='idle';solves=0;curProb=null;timerOn=false;
+    // If leviathan: make it flee fast off screen, long cooldown
+    if(hooked.name==='leviathan'){
+      showFb('\uD83D\uDC79 LEVIATHAN ESCAPED!',false);
+      hooked.flee=true;hooked.fvx=(hooked.x<W/2?-1:1)*14;
+      monActive=false;monTmr=rand(300,360);
+    } else {
+      showFb('\u2717 It was '+curProb.ans,false);
+      hooked.hooked=false;
+    }
+    hooked=null;cst='idle';solves=0;curProb=null;timerOn=false;
     ansPanel.classList.remove('show');progressEl.classList.remove('show');
     hintEl.style.display='';badgeEl.textContent='Click water to cast!';
   }
@@ -493,12 +507,22 @@ function loop(ts){
   if(goldenTmr<=0){spawnGolden();goldenTmr=rand(55,90);}
   if(chestTmr<=0){spawnChest();chestTmr=rand(40,75);}
   if(monTmr<=0&&!monActive){spawnMonster();monTmr=rand(280,340);}
-  if(timerOn&&hooked){timerV-=dt;if(timerV<=0){showFb('\u23F1 Too slow!',false);boom(hooked.x,hooked.y,'#ff5252',12);hooked.hooked=false;hooked=null;cst='idle';solves=0;curProb=null;timerOn=false;ansPanel.classList.remove('show');progressEl.classList.remove('show');hintEl.style.display='';badgeEl.textContent='Click water to cast!';}}
+  if(timerOn&&hooked){timerV-=dt;if(timerV<=0){
+    showFb('\u23F1 Too slow!',false);boom(hooked.x,hooked.y,'#ff5252',12);
+    if(hooked.name==='leviathan'){
+      hooked.flee=true;hooked.fvx=(hooked.x<W/2?-1:1)*14;
+      monActive=false;monTmr=rand(300,360);
+      showFb('\uD83D\uDC79 LEVIATHAN ESCAPED!',false);
+    } else {hooked.hooked=false;}
+    hooked=null;cst='idle';solves=0;curProb=null;timerOn=false;
+    ansPanel.classList.remove('show');progressEl.classList.remove('show');
+    hintEl.style.display='';badgeEl.textContent='Click water to cast!';
+  }}
   if(fbTmr>0){fbTmr--;if(fbTmr<=0)fbEl.style.opacity=0;}
   if(mwarnTmr>0)mwarnTmr-=dt;
 
   ctx.clearRect(0,0,W,H);
-  drawWater();drawBoat();drawAimLine();drawCastLine();
+  drawWater();
 
   // Update entities
   ents=ents.filter(e=>e.alive||e.alpha>0);
@@ -513,12 +537,18 @@ function loop(ts){
     if(e.x<-e.t.sz-90)e.x=W+e.t.sz+10;
   }
 
-  // Draw deepest first
-  const sorted=[...ents].sort((a,b)=>a.y-b.y);
+  // Draw leviathan BEFORE boat so boat stays on top
+  const lev=ents.find(e=>e.name==='leviathan'&&(e.alive||e.alpha>0));
+  if(lev)drawLeviathan(lev);
+
+  // Draw boat and lines on top of leviathan
+  drawBoat();drawAimLine();drawCastLine();
+
+  // Draw all non-leviathan entities (deepest first)
+  const sorted=[...ents].filter(e=>e.name!=='leviathan').sort((a,b)=>a.y-b.y);
   for(const e of sorted){
     if(!e.alive&&e.alpha<=0)continue;
     if(e.name==='chest')drawChest(e);
-    else if(e.name==='leviathan')drawLeviathan(e);
     else drawFish(e);
   }
 
@@ -546,12 +576,20 @@ function loop(ts){
   }
   if(cst==='hooked'&&hooked){
     const yoff=hooked.name==='chest'?Math.sin(hooked.gt*1.2)*4:0;
-    const wiggle=hooked.name==='leviathan'?4:1.5;
-    hooked.x+=Math.sin(ts*.015)*wiggle;
+    if(hooked.name==='leviathan'){
+      // Leviathan stays put while hooked, only shakes on correct answer
+      if(hooked.shakeT>0){hooked.shakeT-=dt;hooked.shakeOff=(Math.random()-.5)*22;}
+      else hooked.shakeOff=0;
+    } else {
+      hooked.x+=Math.sin(ts*.015)*1.5;
+    }
     bx=hooked.x;by=hooked.y+yoff+Math.sin(bobT)*4;
   }
   if(cst==='reeling'&&hooked){
-    const tip=rodTip();hooked.x+=(tip.x-hooked.x)*.12;hooked.y+=(tip.y-hooked.y)*.12;bx=hooked.x;by=hooked.y;
+    const tip=rodTip();
+    const speed=hooked.name==='leviathan'?.04:.12;
+    hooked.x+=(tip.x-hooked.x)*speed;hooked.y+=(tip.y-hooked.y)*speed;
+    bx=hooked.x;by=hooked.y;
   }
   drawParticles();
   requestAnimationFrame(loop);
