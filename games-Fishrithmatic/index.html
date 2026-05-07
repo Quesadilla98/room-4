@@ -143,6 +143,25 @@ function replenish(){
   }
 }
 
+function returnSchool(){
+  // After leviathan flees, swim a whole new school in from the sides
+  if(monActive)return;
+  ents=ents.filter(e=>e.alive||e.alpha>0);
+  const wy=WY();
+  const count=11+rand(3,5); // slightly more fish than usual for drama
+  for(let i=0;i<count;i++){
+    const n=POOL[rand(0,POOL.length-1)],t=T[n];
+    const df=t.d[0]+Math.random()*(t.d[1]-t.d[0]);
+    const y=wy+(H-wy)*df;
+    // All swim in from random sides with slight stagger
+    const side=Math.random()<.5?-t.sz-20:W+t.sz+20;
+    const vx=(side<0?1:-1)*t.spd;
+    const e=mkEnt(n,side,y,vx);
+    ents.push(e);
+  }
+  showFb('The fish return!',true);
+}
+
 function spawnGolden(){
   if(ents.some(e=>e.alive&&e.name==='golden'))return;
   const wy=WY(),t=T.golden,df=t.d[0]+Math.random()*(t.d[1]-t.d[0]);
@@ -220,11 +239,20 @@ function drawBoat(){
 }
 function drawAimLine(){
   if(cst!=='idle')return;
-  const tip=rodTip();
-  ctx.save();ctx.strokeStyle='rgba(255,55,55,.9)';ctx.lineWidth=2.1;
-  ctx.setLineDash([7,6]);ctx.lineDashOffset=-dashOff;
-  ctx.beginPath();ctx.moveTo(tip.x,tip.y);ctx.lineTo(mx,my);ctx.stroke();
+  const tip=rodTip(),wy=WY();
+  if(my<wy) return; // only draw when mouse is over water
+  ctx.save();
+  // Diagonal from rod tip to cast X at water surface
+  ctx.strokeStyle='rgba(255,55,55,.75)';ctx.lineWidth=1.5;
+  ctx.setLineDash([5,5]);ctx.lineDashOffset=-dashOff;
+  ctx.beginPath();ctx.moveTo(tip.x,tip.y);ctx.lineTo(mx,wy+4);ctx.stroke();
   ctx.setLineDash([]);
+  // Vertical drop line straight down
+  ctx.strokeStyle='rgba(255,55,55,.9)';ctx.lineWidth=2.1;
+  ctx.setLineDash([7,6]);ctx.lineDashOffset=-dashOff;
+  ctx.beginPath();ctx.moveTo(mx,wy+4);ctx.lineTo(mx,H);ctx.stroke();
+  ctx.setLineDash([]);
+  // Crosshair at mouse
   ctx.strokeStyle='rgba(255,80,80,.65)';ctx.lineWidth=1.5;
   ctx.beginPath();ctx.moveTo(mx-8,my);ctx.lineTo(mx+8,my);ctx.moveTo(mx,my-8);ctx.lineTo(mx,my+8);ctx.stroke();
   ctx.restore();
@@ -429,11 +457,13 @@ canvas.addEventListener('click',ev=>{
   if(cst!=='idle')return;
   const wy=WY();
   if(ev.clientY<wy-10)return;
-  castTo(ev.clientX,ev.clientY);
+  castTo(ev.clientX);
 });
-function castTo(tx,ty){
+function castTo(tx){
   const tip=rodTip();
-  cst='dropping';bx=tip.x;by=tip.y;btx=tx;bty=ty;
+  cst='dropping';bx=tip.x;by=tip.y;
+  // Line drops straight down from click X to bottom of screen
+  btx=tx;bty=H+20;
   hintEl.style.display='none';
 }
 
@@ -486,7 +516,7 @@ function checkAns(){
     // If leviathan: make it flee fast off screen, long cooldown
     if(hooked.name==='leviathan'){
       showFb('\uD83D\uDC79 LEVIATHAN ESCAPED!',false);
-      hooked.flee=true;hooked.fvx=(hooked.x<W/2?-1:1)*14;
+      hooked.hooked=false;hooked.flee=true;hooked.fvx=(hooked.x<W/2?-1:1)*18;
       monActive=false;monTmr=rand(300,360);
     } else {
       showFb('\u2717 It was '+curProb.ans,false);
@@ -510,7 +540,7 @@ function loop(ts){
   if(timerOn&&hooked){timerV-=dt;if(timerV<=0){
     showFb('\u23F1 Too slow!',false);boom(hooked.x,hooked.y,'#ff5252',12);
     if(hooked.name==='leviathan'){
-      hooked.flee=true;hooked.fvx=(hooked.x<W/2?-1:1)*14;
+      hooked.hooked=false;hooked.flee=true;hooked.fvx=(hooked.x<W/2?-1:1)*18;
       monActive=false;monTmr=rand(300,360);
       showFb('\uD83D\uDC79 LEVIATHAN ESCAPED!',false);
     } else {hooked.hooked=false;}
@@ -531,7 +561,7 @@ function loop(ts){
     if(e.hooked)continue;
     e.tick+=dt;
     if(e.name==='chest')continue;
-    if(e.flee){e.x+=e.fvx*dt*60;if(e.x<-400||e.x>W+400)e.alive=false;continue;}
+    if(e.flee){e.x+=e.fvx*dt*60;e.y+=e.t&&e.t.monster?dt*30:0;if(e.x<-600||e.x>W+600){e.alive=false;if(e.name==='leviathan')setTimeout(()=>returnSchool(),600);}continue;}
     e.x+=e.vx;e.y=e.by+Math.sin(e.tick*1.5)*8;
     if(e.x>W+e.t.sz+90)e.x=-e.t.sz-10;
     if(e.x<-e.t.sz-90)e.x=W+e.t.sz+10;
@@ -552,27 +582,33 @@ function loop(ts){
     else drawFish(e);
   }
 
-  // Bob movement
+  // Bob movement — line drops straight down from cast X, hits first fish in path
   if(cst==='dropping'){
-    const spd=520,dx=btx-bx,dy=bty-by,dist=Math.sqrt(dx*dx+dy*dy);
-    if(dist<12){
-      bx=btx;by=bty;
-      // Hit test
-      let hit=null;
-      for(const e of ents){
-        if(!e.alive||e.hooked)continue;
-        const S2=e.name==='leviathan'?Math.min(W*.55,H*.62)*.35:e.t.sz*.9+14;
-        const ey=e.name==='chest'?e.y+Math.sin(e.gt*1.2)*4:e.y;
-        if(Math.sqrt((bx-e.x)**2+(by-ey)**2)<S2){hit=e;break;}
-      }
-      if(hit){
-        hooked=hit;hit.hooked=true;cst='hooked';solves=0;
-        curProb=mkProb(hit.t.df);
-        timerV=timerM=getTimerMax(hit.name);timerOn=true;
-        ansPanel.classList.add('show');ansInput.focus();
-        badgeEl.innerHTML=hit.t.lb;updateProgress();
-      } else {cst='idle';hintEl.style.display='';}
-    } else {bx+=dx/dist*spd*dt;by+=dy/dist*spd*dt;}
+    const spd=600;
+    // Move straight down
+    by+=spd*dt;
+    bx=btx; // always stay at cast X
+    // Check for fish hit at current bob position
+    let hit=null;
+    for(const e of ents){
+      if(!e.alive||e.hooked)continue;
+      let hitW,hitH;
+      if(e.name==='leviathan'){const S=Math.min(W*.55,H*.62);hitW=S*.62;hitH=S*.32;}
+      else{hitW=e.t.sz*.9+14;hitH=hitW;}
+      const ey=e.name==='chest'?e.y+Math.sin(e.gt*1.2)*4:e.y;
+      if(Math.abs(bx-e.x)<hitW&&by>=ey-hitH&&by<=ey+hitH){hit=e;break;}
+    }
+    if(hit){
+      bx=hit.x;by=hit.name==='chest'?hit.y+Math.sin(hit.gt*1.2)*4:hit.y;
+      hooked=hit;hit.hooked=true;cst='hooked';solves=0;
+      curProb=mkProb(hit.t.df);
+      timerV=timerM=getTimerMax(hit.name);timerOn=true;
+      ansPanel.classList.add('show');ansInput.focus();
+      badgeEl.innerHTML=hit.t.lb;updateProgress();
+    } else if(by>=H+20){
+      // Reached bottom with no fish — retract
+      cst='idle';hintEl.style.display='';
+    }
   }
   if(cst==='hooked'&&hooked){
     const yoff=hooked.name==='chest'?Math.sin(hooked.gt*1.2)*4:0;
