@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chore Flow Chart Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --ink: #1a1a2e;
+    --paper: #faf8f2;
+    --accent: #c84b31;
+    --muted: #8b8070;
+    --rule: #d9d3c4;
+    --card: #ffffff;
+    --green: #2d6a4f;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  #editor {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 36px 28px 60px;
+  }
+
+  .editor-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .editor-header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.4rem;
+    color: var(--ink);
+  }
+
+  .editor-header p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-top: 5px;
+    font-weight: 300;
+  }
+
+  .section-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .title-section {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  .title-section input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.35rem;
+    color: var(--ink);
+    background: transparent;
+  }
+
+  .title-section input::placeholder { color: #ccc; }
+
+  .flow-config-note {
+    background: #f0f4ff;
+    border: 1px solid #c5d0ee;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 0.82rem;
+    color: #2a3a6a;
+    margin-bottom: 20px;
+    line-height: 1.7;
+  }
+
+  #chores-container {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    margin-bottom: 22px;
+  }
+
+  .chore-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 15px 18px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  .chore-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 11px;
+  }
+
+  .chore-number {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    color: white;
+    font-size: 0.78rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .role-badge {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .badge-amber { background: #fde8c8; color: #8a5a00; border: 1px solid #f5c87a; }
+  .badge-navy  { background: #c8ddf5; color: #1d3a6e; border: 1px solid #7aaaf5; }
+  .badge-slate { background: #e8eef8; color: #3a4a7a; border: 1px solid #b0bfe0; }
+  .badge-green { background: #c8edd8; color: #1a5c38; border: 1px solid #7acca0; }
+
+  .station-name {
+    font-weight: 700;
+    font-size: 0.97rem;
+    flex: 1;
+  }
+
+  .goes-to-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-style: italic;
+    white-space: nowrap;
+  }
+
+  .names-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+    width: 100%;
+  }
+
+  .name-input {
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 5px 9px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.8rem;
+    color: var(--ink);
+    background: #ffffff;
+    outline: none;
+    width: 100%;
+    min-width: 0;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .name-input:focus { border-color: var(--accent); background: #fff; }
+  .name-input::placeholder { color: #bbb; }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .btn {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.86rem;
+    font-weight: 600;
+    padding: 10px 22px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #a83a22; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(200,75,49,0.3); }
+
+  .btn-export { background: var(--green); color: white; margin-left: auto; }
+  .btn-export:hover { background: #1e4d38; transform: translateY(-1px); }
+
+  #preview-section {
+    margin-top: 32px;
+    border-top: 1px solid var(--rule);
+    padding-top: 26px;
+  }
+
+  .preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .preview-header h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+  }
+
+  #chart-wrapper {
+    display: flex;
+    justify-content: center;
+    overflow-x: auto;
+  }
+
+  /* ═══════════════════════════
+     PRINTABLE PAGE — 8.5 × 11
+     ═══════════════════════════ */
+  #printable-chart {
+    width: 816px;
+    height: 1056px;
+    background: #ffffff;
+    font-family: 'Outfit', sans-serif;
+    padding: 36px 44px 32px;
+    border: 1px solid #ddd;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .ch-title {
+    text-align: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.4rem;
+    color: #1a1a2e;
+    line-height: 1.1;
+  }
+
+  .ch-sub {
+    text-align: center;
+    font-size: 0.78rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #9a9080;
+    margin-top: 5px;
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+
+  .ch-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #c84b31 15%, #c84b31 85%, transparent);
+    margin-bottom: 14px;
+  }
+
+  .ch-legend {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    color: #7a7060;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+
+  .legend-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── Node boxes ── */
+  .cnode {
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid;
+  }
+
+  .cnode-amber { border-color: #b07800; }
+  .cnode-navy  { border-color: #1a4a8e; }
+  .cnode-slate { border-color: #3a4a8a; }
+  .cnode-green { border-color: #1d5c3a; }
+  .cnode-gold  { border-color: #b08000; }
+
+  .cnode-head { padding: 10px 16px; display: flex; align-items: baseline; gap: 11px; }
+
+  .cnode-amber .cnode-head { background: #7a4a00; }
+  .cnode-navy  .cnode-head { background: #1a2e6a; }
+  .cnode-slate .cnode-head { background: #252f6a; }
+  .cnode-green .cnode-head { background: #1a4a2e; }
+  .cnode-gold  .cnode-head { background: #7a5800; }
+
+  .cnode-step {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .cnode-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.2rem;
+    color: #ffffff;
+  }
+
+  .cnode-body { padding: 9px 14px; background: #fff; }
+
+  .name-chips { display: flex; flex-wrap: wrap; gap: 5px; min-height: 24px; }
+
+  .name-chip {
+    background: #f5f2eb;
+    border: 1px solid #ddd7c8;
+    border-radius: 4px;
+    padding: 2px 10px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #1a1a2e;
+    line-height: 1.65;
+  }
+
+  .chip-empty {
+    font-size: 0.78rem;
+    color: #bbb;
+    font-style: italic;
+    line-height: 2;
+  }
+
+  /* ── Layout columns ── */
+  .two-col {
+    display: flex;
+    gap: 18px;
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  .col { flex: 1; display: flex; flex-direction: column; align-items: center; }
+
+  .feeder-row { display: flex; gap: 12px; width: 100%; }
+  .feeder-row .cnode { flex: 1; }
+
+  /* Vertical arrow */
+  .v-arrow { display: flex; flex-direction: column; align-items: center; margin: 3px 0; }
+  .v-line  { width: 2px; background: #c84b31; }
+  .v-pill  {
+    font-size: 0.64rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+    color: #c84b31; background: #fff; border: 1px solid #c84b31;
+    border-radius: 20px; padding: 2px 10px; margin: 1px 0; white-space: nowrap;
+  }
+  .v-head { width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-top:9px solid #c84b31; }
+
+  .merge-svg-wrap { width: 100%; display: flex; justify-content: center; margin: 3px 0; }
+
+  /* Go home final box */
+  .go-home-box {
+    width: 100%;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #1a4a2e 0%, #2d6a4f 100%);
+    border: 2.5px solid #1a4a2e;
+    padding: 18px 20px;
+    text-align: center;
+  }
+
+  .go-home-box .go-emoji { font-size: 1.8rem; display: block; margin-bottom: 5px; }
+
+  .go-home-box .go-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.7rem;
+    color: #ffffff;
+    letter-spacing: 0.01em;
+  }
+
+  .go-home-box .go-sub {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.65);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .ch-footer {
+    position: absolute;
+    bottom: 18px;
+    left: 44px;
+    right: 44px;
+    text-align: center;
+    font-size: 0.68rem;
+    color: #b0a898;
+    letter-spacing: 0.06em;
+    border-top: 1px solid #ece7dc;
+    padding-top: 7px;
+  }
+</style>
+</head>
+<body>
+
+<div id="editor">
+  <div class="editor-header">
+    <h1>Chore Flow Chart Builder</h1>
+    <p>Enter crew names for each station — the chart shows exactly where everyone goes when they finish.</p>
+  </div>
+
+  <div class="title-section">
+    <div class="section-label">Chart Title</div>
+    <input type="text" id="chart-title-input" placeholder="e.g. Saturday Cleaning Crew — May 10" />
+  </div>
+
+  <div class="flow-config-note">
+    <strong>Flow map:</strong>
+    <strong style="color:#7a4a00">Tarps &amp; Tools</strong> → <strong style="color:#1a2e6a">White Walls</strong> &nbsp;|&nbsp;
+    <strong style="color:#7a4a00">Stoves</strong> → <strong style="color:#252f6a">Transit Cleaning</strong>
+    <br>
+    Then <strong style="color:#1a2e6a">White Walls</strong> + <strong style="color:#252f6a">Transit Cleaning</strong> both merge into → <strong style="color:#4a7a00">Food Boxes &amp; Coolers</strong>
+    <br>
+    Then everyone → <strong style="color:#1a4a2e">🏠 Go Home and Have a Great Weekend</strong>
+  </div>
+
+  <div class="section-label">Stations &amp; Assigned People</div>
+  <div id="chores-container"></div>
+
+  <div class="controls">
+    <button class="btn btn-primary" onclick="buildChart()">▶ Preview Chart</button>
+    <button class="btn btn-export" onclick="exportPDF()">⬇ Export PDF</button>
+  </div>
+
+  <div id="preview-section" style="display:none;">
+    <div class="preview-header">
+      <h2>Chart Preview</h2>
+      <span style="font-size:0.76rem;color:var(--muted);">8.5 × 11 inch · single page</span>
+    </div>
+    <div id="chart-wrapper">
+      <div id="printable-chart"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STATIONS = [
+    { key:'tarps',   label:'Tarps',               badge:'amber', badgeTxt:'→ White Walls',           goesTo:'White Walls',          numBg:'#7a4a00' },
+    { key:'tools',   label:'Tools',               badge:'amber', badgeTxt:'→ White Walls',           goesTo:'White Walls',          numBg:'#7a4a00' },
+    { key:'stoves',  label:'Stoves',              badge:'slate', badgeTxt:'→ Transit Cleaning',      goesTo:'Transit Cleaning',     numBg:'#252f6a' },
+    { key:'walls',   label:'White Walls',          badge:'navy',  badgeTxt:'→ Food Boxes & Coolers', goesTo:'Food Boxes & Coolers', numBg:'#1a2e6a' },
+    { key:'transit', label:'Transit Cleaning',     badge:'slate', badgeTxt:'→ Food Boxes & Coolers', goesTo:'Food Boxes & Coolers', numBg:'#252f6a' },
+    { key:'food',    label:'Food Boxes & Coolers', badge:'green', badgeTxt:'→ Go Home!',             goesTo:'Go Home!',             numBg:'#1a4a2e' },
+  ];
+
+  const names = {};
+  STATIONS.forEach(s => { names[s.key] = Array(10).fill(''); });
+
+  function esc(str) {
+    return (str||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderEditor() {
+    const container = document.getElementById('chores-container');
+    container.innerHTML = '';
+    const badgeCls = { amber:'badge-amber', navy:'badge-navy', slate:'badge-slate', green:'badge-green' };
+
+    STATIONS.forEach((s, idx) => {
+      const card = document.createElement('div');
+      card.className = 'chore-card';
+      card.innerHTML = `
+        <div class="chore-card-header">
+          <div class="chore-number" style="background:${s.numBg}">${idx+1}</div>
+          <span class="role-badge ${badgeCls[s.badge]}">${esc(s.badgeTxt)}</span>
+          <span class="station-name">${esc(s.label)}</span>
+        </div>
+        <div class="names-grid">
+          ${names[s.key].map((n, ni) => `
+            <input class="name-input" type="text" placeholder="Person ${ni+1}"
+                   value="${esc(n)}"
+                   oninput="names['${s.key}'][${ni}]=this.value" />
+          `).join('')}
+        </div>`;
+      container.appendChild(card);
+    });
+  }
+
+  function buildChart() {
+    const title = document.getElementById('chart-title-input').value.trim() || 'Cleaning Crew Work Order';
+    const chart = document.getElementById('printable-chart');
+
+    function chips(key) {
+      const f = names[key].filter(n => n.trim());
+      if (!f.length) return `<span class="chip-empty">No names assigned</span>`;
+      return f.map(n => `<span class="name-chip">${esc(n)}</span>`).join('');
+    }
+
+    function node(key, colorCls, step, titleTxt, style) {
+      return `<div class="cnode cnode-${colorCls}" style="${style||''}">
+        <div class="cnode-head">
+          <span class="cnode-step">${esc(step)}</span>
+          <span class="cnode-title">${esc(titleTxt)}</span>
+        </div>
+        <div class="cnode-body"><div class="name-chips">${chips(key)}</div></div>
+      </div>`;
+    }
+
+    function vArrow(label, lineH) {
+      lineH = lineH || 11;
+      return `<div class="v-arrow">
+        <div class="v-line" style="height:${lineH}px"></div>
+        <div class="v-pill">${esc(label)}</div>
+        <div class="v-line" style="height:${lineH}px"></div>
+        <div class="v-head"></div>
+      </div>`;
+    }
+
+    // Two-column merge
+    function twoColMerge(label) {
+      const W = 728, H = 68;
+      const lx = 178, rx = 550, midX = W / 2;
+      const pillW = 270, pillH = 20, pillY = H * 0.28;
+      return `<div class="merge-svg-wrap">
+        <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+          <path d="M${lx} 2 C${lx} ${H*0.65} ${midX} ${H*0.6} ${midX} ${H-12}" stroke="#c84b31" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M${rx} 2 C${rx} ${H*0.65} ${midX} ${H*0.6} ${midX} ${H-12}" stroke="#c84b31" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <polygon points="${midX-6},${H-12} ${midX+6},${H-12} ${midX},${H}" fill="#c84b31"/>
+          <rect x="${midX-pillW/2}" y="${pillY}" width="${pillW}" height="${pillH}" rx="10" fill="white" stroke="#c84b31" stroke-width="1.2"/>
+          <text x="${midX}" y="${pillY+13.5}" text-anchor="middle"
+            font-family="Outfit,sans-serif" font-size="9.5" font-weight="700"
+            fill="#c84b31" letter-spacing="0.4">${label.toUpperCase()}</text>
+        </svg>
+      </div>`;
+    }
+
+    // Small 2-feeder merge within left column (tarps+tools -> white walls)
+    function twoFeederMerge(label) {
+      const W = 356, H = 54;
+      const lx = 86, rx = 270, midX = W / 2;
+      const pillW = 190, pillH = 18, pillY = H * 0.26;
+      return `<div style="width:100%;display:flex;justify-content:center;margin:2px 0;">
+        <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+          <path d="M${lx} 2 C${lx} ${H*0.65} ${midX} ${H*0.6} ${midX} ${H-10}" stroke="#c84b31" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M${rx} 2 C${rx} ${H*0.65} ${midX} ${H*0.6} ${midX} ${H-10}" stroke="#c84b31" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <polygon points="${midX-6},${H-10} ${midX+6},${H-10} ${midX},${H}" fill="#c84b31"/>
+          <rect x="${midX-pillW/2}" y="${pillY}" width="${pillW}" height="${pillH}" rx="9" fill="white" stroke="#c84b31" stroke-width="1.2"/>
+          <text x="${midX}" y="${pillY+12.5}" text-anchor="middle"
+            font-family="Outfit,sans-serif" font-size="9" font-weight="700"
+            fill="#c84b31" letter-spacing="0.3">${label.toUpperCase()}</text>
+        </svg>
+      </div>`;
+    }
+
+    chart.innerHTML = `
+      <div class="ch-title">${esc(title)}</div>
+      <div class="ch-sub">Work Order Flow · Complete your station, then follow the arrows</div>
+      <div class="ch-divider"></div>
+
+      <div class="ch-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#7a4a00"></div>Finish early → White Walls</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#252f6a"></div>Stoves → Transit Cleaning</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1a2e6a;"></div>Both merge → Food Boxes</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1a4a2e"></div>Everyone → Go Home!</div>
+      </div>
+
+      <!-- TWO PARALLEL COLUMNS: Left = Tarps+Tools→White Walls | Right = Stoves→Transit -->
+      <div class="two-col">
+
+        <!-- LEFT COL -->
+        <div class="col">
+          <!-- Tarps & Tools side by side -->
+          <div class="feeder-row">
+            ${node('tarps', 'amber', 'Station 1', 'Tarps')}
+            ${node('tools', 'amber', 'Station 2', 'Tools')}
+          </div>
+          <!-- Mini merge funnel -->
+          ${twoFeederMerge('When done → White Walls')}
+          <!-- White Walls -->
+          ${node('walls', 'navy', 'Station 3 · Receives Tarps & Tools', 'White Walls', 'width:100%')}
+        </div>
+
+        <!-- RIGHT COL -->
+        <div class="col">
+          <!-- Stoves — vertically centered alongside the left col action -->
+          ${node('stoves', 'slate', 'Station 4', 'Stoves', 'width:100%')}
+          ${vArrow('When done → Transit Cleaning', 11)}
+          ${node('transit', 'slate', 'Station 5', 'Transit Cleaning', 'width:100%')}
+        </div>
+
+      </div>
+
+      <!-- MERGE: White Walls + Transit Cleaning → Food Boxes -->
+      ${twoColMerge('Both finish → Food Boxes & Coolers')}
+
+      <!-- FOOD BOXES -->
+      ${node('food', 'gold', 'Station 6 · All Crew Joins Here', 'Food Boxes & Coolers', 'width:100%')}
+
+      ${vArrow('Everyone is done → time to go!', 11)}
+
+      <!-- GO HOME -->
+      <div class="go-home-box">
+        <span class="go-emoji">🏠 🎉</span>
+        <div class="go-title">Go Home and Have a Great Weekend!</div>
+        <div class="go-sub">You did it — thank you for your hard work</div>
+      </div>
+
+      <div class="ch-footer">
+        Follow the arrows · Finish your station completely before moving on · See you next time!
+      </div>`;
+
+    document.getElementById('preview-section').style.display = 'block';
+    setTimeout(() => document.getElementById('preview-section').scrollIntoView({ behavior:'smooth' }), 120);
+  }
+
+  async function exportPDF() {
+    const chart = document.getElementById('printable-chart');
+    if (!chart.innerHTML.trim()) { alert('Click "Preview Chart" first.'); return; }
+
+    const btn = document.querySelector('.btn-export');
+    btn.textContent = '⏳ Generating…';
+    btn.disabled = true;
+
+    try {
+      const canvas = await html2canvas(chart, {
+        scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false,
+        width: 816, height: 1056
+      });
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation:'portrait', unit:'in', format:'letter' });
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.97), 'JPEG', 0, 0, 8.5, 11);
+      const t = document.getElementById('chart-title-input').value.trim() || 'chore-flow-chart';
+      pdf.save(`${t.replace(/[^a-z0-9]/gi,'-').toLowerCase()}.pdf`);
+    } catch(err) {
+      alert('PDF export failed.\n' + err.message);
+    }
+
+    btn.textContent = '⬇ Export PDF';
+    btn.disabled = false;
+  }
+
+  renderEditor();
+</script>
+</body>
+</html>
