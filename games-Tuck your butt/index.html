@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tuck Your Butt! 🦌</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cabin+Sketch:wght@400;700&family=Nunito:wght@400;700;800&display=swap');
+
+:root {
+  --pine:   #243d0e;
+  --forest: #345c14;
+  --moss:   #4f7e1e;
+  --bark:   #5c321a;
+  --earth:  #7a4e24;
+  --sand:   #c9a86c;
+  --cream:  #f4e8cb;
+  --dawn:   #e8be6a;
+  --amber:  #d4840a;
+  --danger: #c0392b;
+  --fawn:   #d4956a;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--pine);
+  color: var(--cream);
+  font-family: 'Nunito', sans-serif;
+  overflow: hidden;
+  user-select: none;
+  width: 100vw;
+  height: 100vh;
+}
+
+#gc {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── SKY ── */
+#sky {
+  position: absolute;
+  top:0; left:0; right:0;
+  height: 58%;
+  background: linear-gradient(180deg,#1a3a5c 0%,#2d6b8a 45%,#87ceeb 85%,#e8c07a 100%);
+}
+.star {
+  position: absolute;
+  background: #fff;
+  border-radius: 50%;
+  animation: twinkle 2s infinite alternate;
+}
+@keyframes twinkle {
+  from { opacity:.3; transform:scale(1); }
+  to   { opacity:1;  transform:scale(1.5); }
+}
+
+/* ── MOUNTAINS ── */
+#mtn { position:absolute; bottom:41%; left:0; right:0; height:130px; pointer-events:none; }
+
+/* ── GROUND ── */
+#ground {
+  position: absolute;
+  bottom:0; left:0; right:0;
+  height: 43%;
+  background: linear-gradient(180deg,#4a7a1e 0%,#3a6015 35%,#2d5010 100%);
+}
+
+/* ── TREES ── */
+.tree { position:absolute; bottom:42%; pointer-events:none; }
+.tree-trunk { width:9px; background:var(--bark); margin:0 auto; border-radius:2px; }
+.tree-canopy {
+  width:0; height:0;
+  border-left:solid transparent; border-right:solid transparent;
+  border-bottom:solid var(--forest); margin:0 auto;
+}
+.tree-canopy2 {
+  width:0; height:0;
+  border-left:solid transparent; border-right:solid transparent;
+  border-bottom:solid var(--pine); margin:0 auto; margin-top:-38%;
+}
+
+/* ── CAMPFIRE ── */
+#campfire {
+  position: absolute;
+  left:50%; bottom:43%;
+  transform: translateX(-50%);
+  font-size: 30px;
+  z-index: 5;
+  pointer-events: none;
+  animation: flicker .35s steps(2) infinite;
+}
+@keyframes flicker {
+  0%   { transform:translateX(-50%) scale(1) translateY(0); }
+  50%  { transform:translateX(-50%) scale(1.07) translateY(-2px); }
+  100% { transform:translateX(-50%) scale(.97) translateY(0); }
+}
+
+/* ── SLEEPING BAG SLOTS ── */
+.bag-slot {
+  position: absolute;
+  bottom: 5%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  z-index: 6;
+}
+
+.bag-body {
+  width: 52px;
+  cursor: default;
+  filter: drop-shadow(2px 4px 5px rgba(0,0,0,.45));
+}
+
+.bag-body.rolled {
+  height: 28px;
+  border-radius: 14px;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--bc,#4a90d9) 0px, var(--bc,#4a90d9) 5px,
+    rgba(255,255,255,.25) 5px, rgba(255,255,255,.25) 7px
+  );
+}
+
+.bag-body.unrolled {
+  height: 82px;
+  border-radius: 26px 26px 18px 18px;
+  background: linear-gradient(180deg,
+    var(--bc,#4a90d9) 0%,
+    color-mix(in srgb, var(--bc,#4a90d9) 62%, #000) 100%
+  );
+}
+
+.bag-body.targeted {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+  animation: targetGlow .5s infinite alternate;
+}
+@keyframes targetGlow {
+  from { filter:drop-shadow(0 0 5px #fff) drop-shadow(2px 4px 5px rgba(0,0,0,.45)); }
+  to   { filter:drop-shadow(0 0 18px #ffe066) drop-shadow(2px 4px 5px rgba(0,0,0,.45)); }
+}
+
+.bag-label {
+  font-family: 'Cabin Sketch', cursive;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--cream);
+  text-shadow: 1px 1px 2px rgba(0,0,0,.9);
+  text-align: center;
+  max-width: 68px;
+  pointer-events: none;
+}
+
+/* ── AVERY (PLAYER) ── */
+#avery {
+  position: absolute;
+  z-index: 20;
+  font-size: 34px;
+  pointer-events: none;
+  filter: drop-shadow(2px 3px 5px rgba(0,0,0,.55));
+}
+#avery-label {
+  position: absolute;
+  z-index: 21;
+  font-family: 'Cabin Sketch', cursive;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dawn);
+  text-shadow: 1px 1px 3px #000;
+  pointer-events: none;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,.45);
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+
+/* ── CAMPER NPCS ── */
+.camper-npc {
+  position: absolute;
+  font-size: 26px;
+  z-index: 8;
+  pointer-events: none;
+  filter: drop-shadow(1px 2px 3px rgba(0,0,0,.5));
+}
+
+/* ── DEER ── */
+.deer-el {
+  position: absolute;
+  font-size: 36px;
+  z-index: 12;
+  pointer-events: none;
+  filter: drop-shadow(2px 3px 5px rgba(0,0,0,.5));
+  animation: deerBob .55s steps(2) infinite;
+}
+@keyframes deerBob {
+  from { margin-top: 0; }
+  to   { margin-top: -6px; }
+}
+
+/* ── HUD ── */
+#hud {
+  position: absolute;
+  top:0; left:0; right:0;
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 50;
+  pointer-events: none;
+}
+.hpanel {
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 12px;
+  padding: 7px 15px;
+}
+.htitle {
+  font-family: 'Cabin Sketch', cursive;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--dawn);
+  line-height: 1;
+}
+.hsub {
+  font-size: 10px;
+  color: var(--sand);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: .85;
+}
+.hval {
+  font-family: 'Cabin Sketch', cursive;
+  font-size: 26px;
+  color: var(--dawn);
+  line-height: 1;
+}
+
+/* ── CONTROLS HINT ── */
+#controls-hint {
+  position: absolute;
+  bottom: 1%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: rgba(255,255,255,.45);
+  font-family: 'Cabin Sketch', cursive;
+  z-index: 50;
+  pointer-events: none;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+/* ── SPEECH BUBBLE ── */
+#speech {
+  position: absolute;
+  bottom: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--cream);
+  color: var(--bark);
+  border: 3px solid var(--bark);
+  border-radius: 14px;
+  padding: 10px 18px;
+  font-family: 'Cabin Sketch', cursive;
+  font-size: 15px;
+  font-weight: 700;
+  max-width: 340px;
+  text-align: center;
+  z-index: 60;
+  box-shadow: 4px 4px 0 var(--bark);
+  opacity: 0;
+  transition: opacity .25s;
+  pointer-events: none;
+}
+#speech::after {
+  content:'';
+  position:absolute;
+  bottom:-13px; left:50%;
+  transform:translateX(-50%);
+  border:6px solid transparent;
+  border-top-color:var(--bark);
+}
+#speech::before {
+  content:'';
+  position:absolute;
+  bottom:-9px; left:50%;
+  transform:translateX(-50%);
+  border:5px solid transparent;
+  border-top-color:var(--cream);
+  z-index:1;
+}
+#speech.vis { opacity:1; }
+
+/* ── WAVE BANNER ── */
+#wave-banner {
+  position: absolute;
+  top:50%; left:50%;
+  transform: translate(-50%,-50%);
+  font-family: 'Cabin Sketch', cursive;
+  font-size: clamp(28px,6vw,52px);
+  font-weight: 700;
+  color: var(--dawn);
+  text-shadow: 3px 3px 0 var(--bark), 5px 5px 14px rgba(0,0,0,.6);
+  z-index: 80;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+}
+@keyframes bannerPop {
+  0%   { opacity:0; transform:translate(-50%,-50%) scale(.5); }
+  20%  { opacity:1; transform:translate(-50%,-50%) scale(1.1); }
+  72%  { opacity:1; transform:translate(-50%,-50%) scale(1); }
+  100% { opacity:0; transform:translate(-50%,-50%) scale(.85); }
+}
+#wave-banner.pop { animation: bannerPop 2.6s forwards; }
+
+/* ── FLOAT NOTIF ── */
+.notif {
+  position: absolute;
+  font-family: 'Cabin Sketch', cursive;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--dawn);
+  text-shadow: 1px 1px 4px rgba(0,0,0,.8);
+  pointer-events: none;
+  z-index: 70;
+  animation: floatUp 1.4s forwards;
+}
+@keyframes floatUp {
+  0%   { opacity:1; transform:translateY(0) scale(1); }
+  50%  { opacity:1; transform:translateY(-28px) scale(1.15); }
+  100% { opacity:0; transform:translateY(-65px) scale(.8); }
+}
+
+/* ── FAWN POP ── */
+.fawn-pop {
+  position: absolute;
+  font-size: 48px;
+  pointer-events: none;
+  z-index: 25;
+  animation: fawnBurst 2s forwards;
+}
+@keyframes fawnBurst {
+  0%   { transform:scale(0) rotate(-20deg); opacity:0; }
+  25%  { transform:scale(1.6) rotate(10deg); opacity:1; }
+  60%  { transform:scale(1) rotate(0); opacity:1; }
+  100% { transform:scale(0) rotate(20deg); opacity:0; }
+}
+
+/* ── SCREENS ── */
+.screen {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  background: rgba(6,22,6,.92);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 28px;
+}
+.screen-emoji {
+  font-size: clamp(48px,9vw,80px);
+  animation: bounce 1s ease infinite alternate;
+}
+@keyframes bounce {
+  from { transform:translateY(0) rotate(-5deg); }
+  to   { transform:translateY(-14px) rotate(5deg); }
+}
+.screen-title {
+  font-family: 'Cabin Sketch', cursive;
+  font-size: clamp(32px,7vw,60px);
+  font-weight: 700;
+  color: var(--dawn);
+  text-shadow: 3px 3px 0 var(--bark), 5px 5px 12px rgba(0,0,0,.5);
+  text-align: center;
+  line-height: 1.1;
+}
+.screen-sub {
+  font-size: clamp(13px,2.4vw,17px);
+  color: var(--sand);
+  max-width: 480px;
+  text-align: center;
+  line-height: 1.65;
+}
+.instructions {
+  background: rgba(0,0,0,.3);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  padding: 14px 22px;
+  max-width: 500px;
+}
+.instructions p {
+  font-size: 13px;
+  color: var(--cream);
+  line-height: 1.6;
+  margin-bottom: 6px;
+}
+.instructions p:last-child { margin-bottom:0; }
+.instructions strong { color:var(--dawn); font-family:'Cabin Sketch',cursive; font-size:14px; }
+
+.btn {
+  font-family: 'Cabin Sketch', cursive;
+  font-size: 21px;
+  font-weight: 700;
+  background: var(--forest);
+  color: var(--cream);
+  border: 3px solid var(--sand);
+  border-radius: 12px;
+  padding: 12px 34px;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--bark);
+  letter-spacing: 1px;
+  transition: all .1s;
+}
+.btn:hover { background:var(--moss); transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--bark); }
+.btn:active { transform:translate(2px,2px); box-shadow:2px 2px 0 var(--bark); }
+
+.final-score {
+  font-family: 'Cabin Sketch', cursive;
+  font-size: 46px;
+  color: var(--dawn);
+  text-shadow: 2px 2px 0 var(--bark);
+}
+
+/* ── SCREEN SHAKE ── */
+@keyframes shake {
+  0%,100% { transform:none; }
+  15%  { transform:translate(-9px,0) rotate(-1.5deg); }
+  30%  { transform:translate(9px,0) rotate(1.5deg); }
+  45%  { transform:translate(-7px,0) rotate(-1deg); }
+  65%  { transform:translate(7px,0) rotate(1deg); }
+  82%  { transform:translate(-3px,0); }
+}
+.shaking { animation:shake .55s ease; }
+
+/* ── MOBILE DPAD ── */
+#dpad {
+  position: fixed;
+  bottom: 14px; right: 14px;
+  z-index: 90;
+  display: grid;
+  grid-template-columns: 48px 48px 48px;
+  grid-template-rows: 48px 48px 48px;
+  gap: 5px;
+  opacity: .8;
+}
+#dpad button {
+  background: rgba(0,0,0,.6);
+  color: #fff;
+  border: 2px solid rgba(255,255,255,.3);
+  border-radius: 10px;
+  font-size: 20px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+#dpad button:active { background:rgba(255,255,255,.2); }
+
+.hidden { display:none !important; }
+</style>
+</head>
+<body>
+<div id="gc">
+
+  <div id="sky"></div>
+
+  <!-- Mountain silhouette -->
+  <svg id="mtn" viewBox="0 0 900 130" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="0,130 90,35 180,78 290,5 380,68 470,2 580,62 670,28 760,72 860,18 900,40 900,130" fill="#182e08" opacity=".95"/>
+    <polygon points="0,130 60,55 145,88 225,28 315,78 405,22 500,68 590,32 680,70 775,38 860,78 900,52 900,130" fill="#243d10" opacity=".9"/>
+    <polygon points="464,2 477,20 489,11 502,20 514,2 500,-2 476,0" fill="rgba(255,255,255,.65)"/>
+    <polygon points="285,5 296,22 309,12 321,22 310,4" fill="rgba(255,255,255,.45)"/>
+  </svg>
+
+  <div id="ground"></div>
+  <div id="campfire">🔥</div>
+
+  <!-- Player -->
+  <div id="avery">🧍</div>
+  <div id="avery-label">Avery</div>
+
+  <!-- Layers -->
+  <div id="deer-layer"  style="position:absolute;inset:0;pointer-events:none;z-index:12;"></div>
+  <div id="notif-layer" style="position:absolute;inset:0;pointer-events:none;z-index:70;"></div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="hpanel">
+      <div class="htitle">🏕️ Tuck Your Butt!</div>
+      <div class="hsub">Crew Leader: Avery</div>
+    </div>
+    <div class="hpanel" style="text-align:center">
+      <div class="hsub">Morning</div>
+      <div class="hval" id="hud-wave">1</div>
+    </div>
+    <div class="hpanel" style="text-align:right">
+      <div class="hsub">Score</div>
+      <div class="hval" id="hud-score">0</div>
+    </div>
+  </div>
+
+  <div id="controls-hint">← → ↑ ↓ &nbsp;Move Avery &nbsp;|&nbsp; SPACE = Tuck the Butt!</div>
+  <div id="speech"></div>
+  <div id="wave-banner"></div>
+
+  <!-- START SCREEN -->
+  <div id="screen-start" class="screen">
+    <div class="screen-emoji">🎒</div>
+    <div class="screen-title">TUCK YOUR BUTT!</div>
+    <div class="screen-sub">
+      You're <strong style="color:var(--dawn)">Avery</strong>, crew leader on a PNW backpacking trip.<br>
+      Your campers wake up and wander off — <em>without rolling their sleeping bags!</em>
+    </div>
+    <div class="instructions">
+      <p>🧍 <strong>Arrow Keys</strong> — Move Avery around camp</p>
+      <p>🛏️ Walk over a glowing unrolled bag + press <strong>SPACE</strong> to tuck it!</p>
+      <p>🦌 When a deer <strong>starts walking toward a bag</strong>, that's your warning — hurry!</p>
+      <p>🐣 If the deer <strong>reaches the bag before you</strong>, a fawn is born → Game Over!</p>
+      <p>☀️ Each morning the deer move <strong>faster</strong>. Don't let any butt go untucked!</p>
+    </div>
+    <button class="btn" id="btn-start">⛺ Start the Trip!</button>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div id="screen-gameover" class="screen hidden">
+    <div class="screen-emoji">🦌</div>
+    <div class="screen-title">A FAWN WAS BORN ON<br>YOUR SLEEPING BAG!</div>
+    <div class="screen-sub" id="go-camper">Oh no...</div>
+    <div class="screen-sub" style="font-style:italic;color:var(--fawn)">"I should've tucked my butt..."</div>
+    <div>
+      <div class="hsub" style="text-align:center;margin-bottom:6px">Final Score</div>
+      <div class="final-score" id="go-score">0</div>
+    </div>
+    <button class="btn" id="btn-restart">🌲 Try Again</button>
+  </div>
+
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+//  CONFIG  (all timing in ms)
+// ════════════════════════════════════════════════════
+const CFG = {
+  averySpeed: 3.8,
+  bagW: 52,
+  hitRadius: 54,          // px — how close Avery must be to tuck
+  groundBottomPct: 0.055, // bags sit at this height from bottom
+  averyGroundPct: 0.09,   // Avery walks at this height from bottom
+  yMin: 0.28,             // Avery can't go above this (% from top)
+
+  camperNames: ['Alex','Jordan','Sam','Casey','Riley','Morgan','Taylor','Quinn','Drew','Kai'],
+  bagColors: ['#4a90d9','#e8764a','#5cbf8a','#d94a8a','#a07cd9','#d9c34a','#4acfcf','#cf7a4a','#88c057'],
+  maxBags: 6,
+
+  // How long deer takes to walk from forest edge to bag (ms)
+  deerWalkBase:  9200,
+  deerWalkMin:   2800,
+  deerWalkDecay: 650,   // faster each wave
+
+  // Delay between camper waking and deer appearing (ms)
+  deerDelayBase:  6800,
+  deerDelayMin:   2200,
+  deerDelayDecay: 480,
+
+  // Gap between each camper waking up (ms)
+  wakeStaggerBase:  2400,
+  wakeStaggerMin:   800,
+  wakeStaggerDecay: 200,
+
+  pointsTuck: 10,
+  pointsWave: 50,
+  waveTransitionMs: 2800,
+};
+
+// ════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════
+let G = {
+  score: 0, wave: 1, running: false, transitioning: false,
+  avX: 0, avY: 0, avFace: 1,
+  keys: {},
+  bags: [],
+  /* bag shape:
+     { id, name, color, el(bag-body), slotEl, cx(world x centre), cy(world y of ground),
+       untucked, tucked,
+       deerEl, deerStartX, deerTargetX, deerFromRight, deerWalkMs, deerStartTime,
+       wakeTO, deerSpawnTO }
+  */
+  raf: null,
+  speechTO: null,
+  stepFrame: 0,
+};
+
+// ════════════════════════════════════════════════════
+//  AUDIO — Web Audio API, zero files
+// ════════════════════════════════════════════════════
+let _ac = null;
+function getAC() {
+  if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+  return _ac;
+}
+function tone(freq, type, dur, vol=0.28, delay=0) {
+  try {
+    const c=getAC(), o=c.createOscillator(), g=c.createGain();
+    o.connect(g); g.connect(c.destination);
+    o.type=type; o.frequency.setValueAtTime(freq,c.currentTime+delay);
+    g.gain.setValueAtTime(vol,c.currentTime+delay);
+    g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+delay+dur);
+    o.start(c.currentTime+delay); o.stop(c.currentTime+delay+dur+.02);
+  } catch(e){}
+}
+const SFX = {
+  tuck()  { tone(440,'sine',.07,.3); tone(660,'sine',.1,.3,.08); tone(900,'sine',.15,.32,.17); },
+  wake()  { tone(330,'triangle',.1,.18); tone(410,'triangle',.12,.18,.11); },
+  deer()  { tone(130,'sawtooth',.22,.18); tone(108,'sawtooth',.28,.15,.25); },
+  warn()  { tone(220,'square',.08,.18); tone(195,'square',.08,.15,.15); },
+  over()  { [145,118,104,82].forEach((f,i)=>tone(f,'sawtooth',.45,.22,i*.3)); },
+  wave()  { [523,659,784,1047].forEach((f,i)=>tone(f,'sine',.22,.28,i*.1)); },
+  step()  { tone(78,'sine',.04,.06); },
+  space() { tone(310,'triangle',.07,.18); },
+  miss()  { tone(180,'square',.12,.15); },
+};
+
+// ════════════════════════════════════════════════════
+//  TTS
+// ════════════════════════════════════════════════════
+let _voices = [];
+function loadVoices() {
+  if (window.speechSynthesis) _voices = window.speechSynthesis.getVoices();
+}
+if (window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+  loadVoices();
+}
+function speak(txt, cb) {
+  if (!window.speechSynthesis) { if(cb) cb(); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(txt);
+  u.rate=0.88; u.pitch=1.08;
+  const v = _voices.find(v=>v.lang.startsWith('en') && !v.name.toLowerCase().includes('google'));
+  if(v) u.voice = v;
+  if(cb) u.onend = cb;
+  window.speechSynthesis.speak(u);
+}
+
+// ════════════════════════════════════════════════════
+//  SPEECH BUBBLE
+// ════════════════════════════════════════════════════
+function say(txt, dur=2800) {
+  const el = document.getElementById('speech');
+  el.textContent = txt;
+  el.classList.add('vis');
+  clearTimeout(G.speechTO);
+  G.speechTO = setTimeout(()=>el.classList.remove('vis'), dur);
+}
+
+// ════════════════════════════════════════════════════
+//  SCENE BUILD
+// ════════════════════════════════════════════════════
+function buildScene() {
+  const sky = document.getElementById('sky');
+  sky.innerHTML = '';
+  for (let i=0; i<28; i++) {
+    const s=document.createElement('div'); s.className='star';
+    const sz=Math.random()*2.5+1;
+    s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*85}%;left:${Math.random()*100}%;animation-delay:${Math.random()*2}s;animation-duration:${1.5+Math.random()}s`;
+    sky.appendChild(s);
+  }
+  document.querySelectorAll('.tree').forEach(t=>t.remove());
+  const gc=document.getElementById('gc');
+  [4,10,16,80,87,93,97].forEach(pos=>{
+    const sc=0.65+Math.random()*0.55, t=document.createElement('div');
+    t.className='tree'; t.style.left=pos+'%'; t.style.transform=`scale(${sc})`;
+    const tw=28+Math.random()*20, th=55+Math.random()*35, tr=18+Math.random()*14;
+    t.innerHTML=`
+      <div class="tree-canopy2" style="border-left-width:${tw*.55}px;border-right-width:${tw*.55}px;border-bottom-width:${th*.45}px;"></div>
+      <div class="tree-canopy"  style="border-left-width:${tw}px;border-right-width:${tw}px;border-bottom-width:${th}px;"></div>
+      <div class="tree-trunk"   style="height:${tr}px;"></div>`;
+    gc.appendChild(t);
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  WAVE PARAM HELPER
+// ════════════════════════════════════════════════════
+function wp(base, min, decay, wave) {
+  return Math.max(min, base - decay*(wave-1));
+}
+
+// ════════════════════════════════════════════════════
+//  START WAVE
+// ════════════════════════════════════════════════════
+function startWave(wave) {
+  // Clean up
+  document.querySelectorAll('.bag-slot,.camper-npc,.deer-el,.fawn-pop').forEach(e=>e.remove());
+  document.getElementById('deer-layer').innerHTML='';
+  G.bags=[]; G.transitioning=false;
+
+  const gc=document.getElementById('gc');
+  const W=gc.clientWidth, H=gc.clientHeight;
+
+  const numBags = Math.min(2 + Math.ceil(wave * 0.8), CFG.maxBags);
+  const names = [...CFG.camperNames].sort(()=>Math.random()-.5).slice(0,numBags);
+  const colors= [...CFG.bagColors].sort(()=>Math.random()-.5);
+
+  const spacing = Math.min(115, (W*0.82)/numBags);
+  const startX  = (W - spacing*(numBags-1))/2;
+  const bagBottom = H * CFG.groundBottomPct; // CSS bottom value for slot
+
+  names.forEach((name,i) => {
+    const cx = startX + i*spacing;
+
+    // DOM
+    const slot=document.createElement('div');
+    slot.className='bag-slot'; slot.id=`slot-${i}`;
+    slot.style.left=(cx - CFG.bagW/2)+'px';
+    slot.style.bottom=bagBottom+'px';
+    slot.style.width=CFG.bagW+'px';
+
+    const bagEl=document.createElement('div');
+    bagEl.className='bag-body rolled'; bagEl.id=`bag-${i}`;
+    bagEl.style.setProperty('--bc', colors[i%colors.length]);
+
+    const lbl=document.createElement('div');
+    lbl.className='bag-label'; lbl.textContent=name;
+
+    slot.appendChild(bagEl); slot.appendChild(lbl);
+    gc.appendChild(slot);
+
+    const bag = {
+      id:i, name, color:colors[i%colors.length],
+      el:bagEl, slotEl:slot,
+      cx,                          // world X centre
+      cy: H - bagBottom,          // world Y of bag bottom (from top)
+      untucked:false, tucked:false,
+      deerEl:null, deerStartX:0, deerTargetX:0,
+      deerFromRight:false, deerWalkMs:0, deerStartTime:0,
+      wakeTO:null, deerSpawnTO:null,
+    };
+    G.bags.push(bag);
+
+    // Schedule wake
+    const stagger = wp(CFG.wakeStaggerBase, CFG.wakeStaggerMin, CFG.wakeStaggerDecay, wave);
+    bag.wakeTO = setTimeout(()=>{ if(G.running) wakeCamper(i); },
+      1000 + i*stagger + Math.random()*600);
+  });
+
+  // Place Avery at camp centre
+  G.avX = W/2;
+  G.avY = H * (1 - CFG.averyGroundPct) - 20;
+  G.avFace = 1;
+  putAvery();
+}
+
+// ════════════════════════════════════════════════════
+//  WAKE CAMPER
+// ════════════════════════════════════════════════════
+function wakeCamper(id) {
+  const bag=G.bags[id];
+  if (!bag||!G.running) return;
+
+  SFX.wake();
+  say(`${bag.name}: "Morning! Time to hike!" 🥾`);
+
+  bag.el.classList.remove('rolled');
+  bag.el.classList.add('unrolled');
+  bag.untucked=true;
+
+  // Spawn NPC walking off
+  const gc=document.getElementById('gc');
+  const H=gc.clientHeight, W=gc.clientWidth;
+  const npc=document.createElement('div');
+  npc.className='camper-npc'; npc.textContent='🚶';
+  npc.style.bottom=(H*CFG.averyGroundPct+14)+'px';
+  npc.style.left=bag.cx+'px';
+  gc.appendChild(npc);
+  const walkTo=bag.cx<W/2 ? '-70px' : (W+70)+'px';
+  setTimeout(()=>{
+    npc.style.transition='left 3s ease-in, opacity .8s ease 2.4s';
+    npc.style.left=walkTo; npc.style.opacity='0';
+  },50);
+  setTimeout(()=>npc.remove(), 4500);
+
+  // Schedule deer
+  const delay=wp(CFG.deerDelayBase, CFG.deerDelayMin, CFG.deerDelayDecay, G.wave);
+  bag.deerSpawnTO=setTimeout(()=>{
+    if (bag.untucked&&!bag.tucked&&G.running) spawnDeer(id);
+  }, delay+Math.random()*700);
+}
+
+// ════════════════════════════════════════════════════
+//  SPAWN DEER  — deer IS the timer
+// ════════════════════════════════════════════════════
+function spawnDeer(id) {
+  const bag=G.bags[id];
+  if (!bag||bag.tucked||!G.running) return;
+
+  SFX.deer();
+  say(`🦌 Deer heading for ${bag.name}'s bag! MOVE IT, AVERY!`, 3500);
+
+  const gc=document.getElementById('gc');
+  const W=gc.clientWidth, H=gc.clientHeight;
+
+  const deer=document.createElement('div');
+  deer.className='deer-el'; deer.id=`deer-${id}`;
+  deer.textContent='🦌';
+
+  const fromRight=Math.random()>.5;
+  const startX=fromRight ? W+60 : -80;
+  const targetX=bag.cx - 18;
+  const groundBot=H*0.08;
+
+  deer.style.bottom=groundBot+'px';
+  deer.style.left=startX+'px';
+  if (fromRight) deer.style.transform='scaleX(-1)';
+
+  document.getElementById('deer-layer').appendChild(deer);
+
+  bag.deerEl=deer;
+  bag.deerStartX=startX;
+  bag.deerTargetX=targetX;
+  bag.deerFromRight=fromRight;
+  bag.deerWalkMs=wp(CFG.deerWalkBase, CFG.deerWalkMin, CFG.deerWalkDecay, G.wave);
+  bag.deerStartTime=performance.now();
+}
+
+// ════════════════════════════════════════════════════
+//  TUCK ACTION (SPACEBAR)
+// ════════════════════════════════════════════════════
+function tryTuck() {
+  if (!G.running) return;
+  SFX.space();
+
+  let didTuck=false;
+  G.bags.forEach(bag=>{
+    if (bag.tucked||!bag.untucked) return;
+    const dx=Math.abs(G.avX - bag.cx);
+    const dy=Math.abs(G.avY - bag.cy);
+    if (dx < CFG.hitRadius && dy < 90) {
+      tuckBag(bag.id);
+      didTuck=true;
+    }
+  });
+  if (!didTuck) {
+    SFX.miss();
+    say('Avery: "No bag here... 👀"',1200);
+  }
+}
+
+function tuckBag(id) {
+  const bag=G.bags[id];
+  if (!bag||bag.tucked||!bag.untucked) return;
+
+  clearTimeout(bag.deerSpawnTO);
+  bag.untucked=false; bag.tucked=true;
+  bag.el.classList.remove('unrolled','targeted');
+  bag.el.classList.add('rolled');
+
+  if (bag.deerEl) { bag.deerEl.remove(); bag.deerEl=null; }
+
+  SFX.tuck();
+  G.score+=CFG.pointsTuck;
+  document.getElementById('hud-score').textContent=G.score;
+  say(`✅ ${bag.name}'s butt is tucked! +${CFG.pointsTuck}`);
+  floatNotif(`+${CFG.pointsTuck} 🎒 Butt Tucked!`, bag.slotEl);
+  checkWaveComplete();
+}
+
+// ════════════════════════════════════════════════════
+//  HIGHLIGHT BAG UNDER AVERY
+// ════════════════════════════════════════════════════
+function refreshTargeting() {
+  G.bags.forEach(bag=>{
+    if (bag.tucked||!bag.untucked) { bag.el.classList.remove('targeted'); return; }
+    const dx=Math.abs(G.avX-bag.cx), dy=Math.abs(G.avY-bag.cy);
+    bag.el.classList.toggle('targeted', dx<CFG.hitRadius && dy<90);
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  WAVE COMPLETE
+// ════════════════════════════════════════════════════
+function checkWaveComplete() {
+  if (!G.running||G.transitioning) return;
+  const stillUntucked=G.bags.filter(b=>b.untucked&&!b.tucked);
+  const notWoken=G.bags.filter(b=>!b.untucked&&!b.tucked);
+  if (stillUntucked.length===0 && notWoken.length===0) {
+    G.transitioning=true;
+    setTimeout(()=>{ if(G.running) doWaveComplete(); },700);
+  }
+}
+
+function doWaveComplete() {
+  SFX.wave();
+  G.score+=CFG.pointsWave;
+  document.getElementById('hud-score').textContent=G.score;
+
+  const b=document.getElementById('wave-banner');
+  b.textContent=`🏔️ Morning ${G.wave} Clear! +${CFG.pointsWave}`;
+  b.className='pop';
+  speak(`Morning ${G.wave} cleared! All butts tucked! Great work crew!`);
+
+  setTimeout(()=>{
+    b.className='';
+    G.wave++;
+    document.getElementById('hud-wave').textContent=G.wave;
+    startWave(G.wave);
+    say(`☀️ Morning ${G.wave} — Deer are getting bolder!`);
+    speak(`Morning ${G.wave}. The deer are moving faster. Stay sharp, Avery!`);
+  }, CFG.waveTransitionMs);
+}
+
+// ════════════════════════════════════════════════════
+//  GAME OVER
+// ════════════════════════════════════════════════════
+function gameOver(bagName) {
+  if (!G.running) return;
+  G.running=false;
+  cancelAnimationFrame(G.raf);
+  G.bags.forEach(b=>{ clearTimeout(b.wakeTO); clearTimeout(b.deerSpawnTO); });
+
+  const gc=document.getElementById('gc');
+  gc.classList.add('shaking');
+  setTimeout(()=>gc.classList.remove('shaking'),600);
+
+  SFX.over();
+  say(`😱 Avery: "I should've tucked my butt!"`,10000);
+  speak(`${bagName} says: I should've tucked my butt!`);
+
+  document.getElementById('go-camper').textContent=`${bagName}'s sleeping bag became a fawn nursery... 🐣`;
+  document.getElementById('go-score').textContent=G.score;
+  setTimeout(()=>document.getElementById('screen-gameover').classList.remove('hidden'),2400);
+}
+
+// ════════════════════════════════════════════════════
+//  AVERY POSITION → DOM
+// ════════════════════════════════════════════════════
+function putAvery() {
+  const H=document.getElementById('gc').clientHeight;
+  const av=document.getElementById('avery');
+  const lb=document.getElementById('avery-label');
+  av.style.left=(G.avX-17)+'px';
+  av.style.bottom=(H-G.avY)+'px';
+  av.style.transform=G.avFace===-1?'scaleX(-1)':'scaleX(1)';
+  lb.style.left=G.avX+'px';
+  lb.style.bottom=(H-G.avY+40)+'px';
+}
+
+// ════════════════════════════════════════════════════
+//  FLOAT NOTIF
+// ════════════════════════════════════════════════════
+function floatNotif(txt, anchor) {
+  const gc=document.getElementById('gc'), gcR=gc.getBoundingClientRect();
+  const aR=anchor.getBoundingClientRect();
+  const n=document.createElement('div'); n.className='notif'; n.textContent=txt;
+  n.style.left=(aR.left-gcR.left+2)+'px';
+  n.style.top=(aR.top-gcR.top-8)+'px';
+  document.getElementById('notif-layer').appendChild(n);
+  setTimeout(()=>n.remove(),1500);
+}
+
+// ════════════════════════════════════════════════════
+//  MAIN LOOP
+// ════════════════════════════════════════════════════
+function loop(ts) {
+  if (!G.running) return;
+  G.raf=requestAnimationFrame(loop);
+
+  const gc=document.getElementById('gc');
+  const W=gc.clientWidth, H=gc.clientHeight;
+
+  // ── Move Avery ──
+  const spd=CFG.averySpeed;
+  let moved=false;
+  const yHi=H*CFG.yMin;
+  const yLo=H*(1-CFG.groundBottomPct)-8;
+
+  if (G.keys['ArrowLeft'] ||G.keys['a']||G.keys['A']) { G.avX-=spd; G.avFace=-1; moved=true; }
+  if (G.keys['ArrowRight']||G.keys['d']||G.keys['D']) { G.avX+=spd; G.avFace= 1; moved=true; }
+  if (G.keys['ArrowUp']   ||G.keys['w']||G.keys['W']) { G.avY-=spd; moved=true; }
+  if (G.keys['ArrowDown'] ||G.keys['s']||G.keys['S']) { G.avY+=spd; moved=true; }
+
+  G.avX=Math.max(20, Math.min(W-20, G.avX));
+  G.avY=Math.max(yHi, Math.min(yLo, G.avY));
+
+  if (moved) { G.stepFrame++; if(G.stepFrame%20===0) SFX.step(); }
+
+  putAvery();
+  refreshTargeting();
+
+  // ── Advance deer ──
+  G.bags.forEach(bag=>{
+    if (!bag.deerEl||bag.tucked||!G.running) return;
+    const elapsed=ts - bag.deerStartTime;
+    const t=Math.min(1, elapsed/bag.deerWalkMs);
+
+    // Linear interpolation
+    const curX=bag.deerStartX + (bag.deerTargetX-bag.deerStartX)*t;
+    bag.deerEl.style.left=curX+'px';
+
+    // Warning SFX at 65%
+    if (t>0.65 && t<0.68) SFX.warn();
+
+    // Arrived
+    if (t>=1 && bag.untucked && !bag.tucked && G.running) {
+      bag.untucked=false; // block double fire
+      bag.deerEl.textContent='🦌❤️';
+
+      // Spawn fawn
+      const gcR=gc.getBoundingClientRect(), sR=bag.slotEl.getBoundingClientRect();
+      const fawn=document.createElement('div'); fawn.className='fawn-pop'; fawn.textContent='🐣';
+      fawn.style.left=(sR.left-gcR.left+sR.width/2-24)+'px';
+      fawn.style.top=(sR.top-gcR.top-22)+'px';
+      gc.appendChild(fawn);
+
+      setTimeout(()=>gameOver(bag.name), 1000);
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  KEYBOARD
+// ════════════════════════════════════════════════════
+window.addEventListener('keydown', e=>{
+  G.keys[e.key]=true;
+  if (e.key===' ')                                              { e.preventDefault(); if(G.running) tryTuck(); }
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+});
+window.addEventListener('keyup', e=>{ G.keys[e.key]=false; });
+
+// ════════════════════════════════════════════════════
+//  MOBILE D-PAD
+// ════════════════════════════════════════════════════
+function buildDpad() {
+  const old=document.getElementById('dpad'); if(old) old.remove();
+  const d=document.createElement('div'); d.id='dpad';
+  const btns=[
+    {t:'▲',r:1,c:2,k:'ArrowUp'},
+    {t:'◀',r:2,c:1,k:'ArrowLeft'},
+    {t:'🛏',r:2,c:2,k:' '},
+    {t:'▶',r:2,c:3,k:'ArrowRight'},
+    {t:'▼',r:3,c:2,k:'ArrowDown'},
+  ];
+  btns.forEach(b=>{
+    const btn=document.createElement('button');
+    btn.textContent=b.t;
+    btn.style.gridRow=b.r; btn.style.gridColumn=b.c;
+    const press=()=>{ G.keys[b.k]=true; if(b.k===' '&&G.running) tryTuck(); };
+    const rel  =()=>{ G.keys[b.k]=false; };
+    btn.addEventListener('touchstart',e=>{e.preventDefault();press();},{passive:false});
+    btn.addEventListener('touchend',  e=>{e.preventDefault();rel();  },{passive:false});
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('mouseup',   rel);
+    d.appendChild(btn);
+  });
+  document.getElementById('gc').appendChild(d);
+}
+
+// ════════════════════════════════════════════════════
+//  INIT GAME
+// ════════════════════════════════════════════════════
+function initGame() {
+  getAC(); // unlock
+  cancelAnimationFrame(G.raf);
+  G.bags.forEach(b=>{ clearTimeout(b.wakeTO); clearTimeout(b.deerSpawnTO); });
+  G.score=0; G.wave=1; G.running=true; G.transitioning=false;
+  G.keys={}; G.stepFrame=0;
+
+  document.querySelectorAll('.bag-slot,.camper-npc,.deer-el,.fawn-pop').forEach(e=>e.remove());
+  document.getElementById('deer-layer').innerHTML='';
+  document.getElementById('notif-layer').innerHTML='';
+  document.getElementById('screen-gameover').classList.add('hidden');
+  document.getElementById('screen-start').classList.add('hidden');
+  document.getElementById('hud-score').textContent='0';
+  document.getElementById('hud-wave').textContent='1';
+  document.getElementById('speech').classList.remove('vis');
+
+  buildScene();
+  buildDpad();
+  startWave(1);
+  requestAnimationFrame(loop);
+
+  setTimeout(()=>{
+    say('☀️ Avery: "Rise and shine crew! Tuck those butts!"');
+    speak("Good morning crew! I'm Avery, your crew leader. Tuck those sleeping bags before the deer get here!");
+  }, 400);
+}
+
+// Buttons
+document.getElementById('btn-start'  ).addEventListener('click', initGame);
+document.getElementById('btn-restart').addEventListener('click', initGame);
+
+// Ambient sky cycle
+setInterval(()=>{
+  const sky=document.getElementById('sky'); if(!sky) return;
+  const t=(Date.now()%90000)/90000;
+  sky.style.background=`linear-gradient(180deg,
+    hsl(${210+t*14},60%,${10+t*26}%) 0%,
+    hsl(${205+t*14},52%,${17+t*28}%) 45%,
+    hsl(${196+t*10},58%,${37+t*20}%) 85%,
+    hsl(${37+t*8},72%,${47+t*13}%) 100%)`;
+}, 3500);
+
+// Preload voices
+loadVoices();
+</script>
+</body>
+</html>
