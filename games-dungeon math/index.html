@@ -1086,7 +1086,7 @@ function spawnBonusBoss(){
 function spawnBoss(){ spawnBossOfType('cyclops', true); } // legacy fallback
 
 function buildCombo(ans){
-  if(performance.now()<berserkerUntil)return[ATK1,ATK2,ATK3];
+  if(performance.now()<berserkerUntil)return[ATK3];  // BERSERKER: just the final swing — fastest
   const d=String(ans).length;if(d>=3)return[ATK1,ATK2,ATK3];if(d===2)return[ATK1,ATK2];return[ATK1];
 }
 function startAttack(combo){attackSeq=combo;attackSegIdx=0;attackFrmIdx=0;swingPlayed=[false,false,false];state='attack';lastAnim=performance.now();}
