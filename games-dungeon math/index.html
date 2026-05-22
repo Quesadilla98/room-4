@@ -363,9 +363,9 @@ function makeSectionPlatformsA(wx) {
   const steps = [300,240,190,250,310,360]; // y positions (lower = higher up)
   let platX = wx + 40;
   steps.forEach(py2=>{
-    const pw = 80 + Math.floor(Math.random()*40);
+    const pw = 90 + Math.floor(Math.random()*40);  // wider platforms = easier to land
     plats.push({x:platX, y:py2, w:pw});
-    platX += pw + 60 + Math.floor(Math.random()*30);
+    platX += pw + 40 + Math.floor(Math.random()*20); // gap 40-60px (safe for 110px height diff)
   });
   for(let sx=wx+10; sx<wx+SEC_W-10; sx+=26)
     spikes.push({x:sx, len:SPIKE_LEN, floor:true});
@@ -381,7 +381,7 @@ function makeSectionPlatformsB(wx) {
   while(platX < wx + SEC_W - 80) {
     const pw = 90 + Math.floor(Math.random()*50);
     plats.push({x:platX, y:platY, w:pw});
-    platX += pw + 70 + Math.floor(Math.random()*40); // wider gaps for challenge
+    platX += pw + 50 + Math.floor(Math.random()*30); // gap 50-80px (safe at same height)
   }
   for(let sx=wx+10; sx<wx+SEC_W-10; sx+=26)
     spikes.push({x:sx, len:SPIKE_LEN, floor:true});
@@ -398,7 +398,7 @@ function makeSectionPlatformsC(wx) {
     const pw = 70 + Math.floor(Math.random()*40);
     const platY = high ? 230 : 310; // alternate between two heights
     plats.push({x:platX, y:platY, w:pw});
-    platX += pw + 55 + Math.floor(Math.random()*30);
+    platX += pw + 45 + Math.floor(Math.random()*25); // gap 45-70px (safe for 80px height diff)
     high = !high;
   }
   for(let sx=wx+10; sx<wx+SEC_W-10; sx+=26)
@@ -809,6 +809,12 @@ let bossMaxHP = 3;  // problems to solve
 let bossCurrentHP = 3;
 let victoryShown = false;
 let victoryTimer = 0;
+
+// Run timer
+let runStartTime = 0;
+let bossStartTime = 0;
+let bossKillTime = null;
+let timerRunning = false;
 let exitDoorVisible = false;
 let exitDoorX = 0;
 let nearEntryDoor = false;
@@ -879,7 +885,7 @@ function spawnBoss(){
     flashTimer:0,animFrame:0,lastFrameTime:0,
     isBoss:true, bossHP:bossMaxHP
   });
-  // Speak taunt after a short delay so player sees the boss first
+  bossStartTime = performance.now();
   setTimeout(()=>bossTaunt('spawn'), 1500);
 }
 function buildCombo(ans){
@@ -1272,6 +1278,7 @@ function update(now,dt){
     window.addEventListener('keydown',gameKeyDown);
     window.addEventListener('keyup',gameKeyUp);
     homeActive=true;
+    timerRunning=false;
     if(typeof updateSeedUI!=='undefined')updateSeedUI();
     requestAnimationFrame(homeLoop);
     return;
@@ -1310,6 +1317,8 @@ function update(now,dt){
               showFeedback('CORRECT!','#44ff88');
               target.dead=true;target.deathTimer=0;target.engaged=false;
               answerActive=false;bossDefeated=true;victoryShown=true;victoryTimer=now;
+              timerRunning=false;
+              bossKillTime=now-runStartTime;
               exitDoorVisible=true;
               const bSec=sections.find(s=>s.type==='boss');
               exitDoorX=bSec?bSec.wx+SEC_W*0.75:px+300;
@@ -1479,8 +1488,23 @@ function render(t,now){
   drawKnightFrame(frame,sx,now);
   drawHP();
 
-  // ── POWERUP HUD ──
+  // ── RUN TIMER ──
   const now2=performance.now();
+  if(timerRunning||bossKillTime!==null){
+    const elapsed=bossKillTime!==null?bossKillTime:now2-runStartTime;
+    const mins=Math.floor(elapsed/60000);
+    const secs=Math.floor((elapsed%60000)/1000);
+    const ms=Math.floor((elapsed%1000)/10);
+    const timeStr=String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0')+'.'+String(ms).padStart(2,'0');
+    ctx.save();ctx.textAlign='center';ctx.font='bold 13px monospace';
+    const tcol=bossKillTime!==null?'#44ff88':'#ffdd44';
+    ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(W/2-60,8,120,22);
+    ctx.fillStyle=tcol;
+    ctx.fillText((bossKillTime!==null?'✓ ':'')+timeStr,W/2,25);
+    ctx.restore();
+  }
+
+  // ── POWERUP HUD ──
   let hudY=H-8;
   const activeIcons=[];
   if(activeShield)          activeIcons.push({label:'⛨ SHIELD',    color:'#44aaff'});
@@ -1529,10 +1553,18 @@ function render(t,now){
       ctx.globalAlpha=a;ctx.textAlign='center';
       ctx.font='bold 52px serif';ctx.fillStyle='#c8a850';
       ctx.shadowColor='rgba(200,160,40,0.9)';ctx.shadowBlur=30;
-      ctx.fillText('VICTORY ACHIEVED',W/2,H/2-16);
+      ctx.fillText('VICTORY ACHIEVED',W/2,H/2-30);
       ctx.shadowBlur=0;ctx.font='16px monospace';
       ctx.fillStyle='rgba(220,190,100,0.85)';
-      ctx.fillText('The dungeon trembles before you',W/2,H/2+22);
+      ctx.fillText('The dungeon trembles before you',W/2,H/2+6);
+      if(bossKillTime!==null){
+        const km=Math.floor(bossKillTime/60000);
+        const ks=Math.floor((bossKillTime%60000)/1000);
+        const kms=Math.floor((bossKillTime%1000)/10);
+        const ft=String(km).padStart(2,'0')+':'+String(ks).padStart(2,'0')+'.'+String(kms).padStart(2,'0');
+        ctx.font='bold 20px monospace';ctx.fillStyle='#44ff88';
+        ctx.fillText('Time: '+ft,W/2,H/2+34);
+      }
       ctx.restore();
     }
     if(elapsed>4000)victoryShown=false;
@@ -1695,6 +1727,10 @@ function updateHome(now,dt){
       camX=0;score=0;hp=maxHP;scoreEl.textContent='SCORE: 0';
       enemies=[];bossSpawned=false;bossDefeated=false;
       lastSectionIdx=-1;sectionEnemyTimer=0;
+      runStartTime = performance.now();
+      bossStartTime = 0;
+      bossKillTime = null;
+      timerRunning = true;
       spawnEnemy();
       lastTime = 0;
       requestAnimationFrame(loop);
