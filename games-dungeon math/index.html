@@ -353,18 +353,67 @@ function makeSectionPit(wx) {
   return { type:'pit', wx, pits, lamps, maxEnemies:1, spawnInterval:12000 };
 }
 
-function makeSectionPlatforms(wx) {
-  // Floating platforms — player must jump across
-  const plats = [];
-  let px2 = wx + 100;
-  while(px2 < wx + SEC_W - 100) {
-    const pw = 80 + Math.floor(Math.random()*60);
-    const ph = FLOOR_Y - 80 - Math.floor(Math.random()*120);
-    plats.push({ x: px2, y: ph, w: pw });
-    px2 += pw + 60 + Math.floor(Math.random()*60);
+// ── 3 PLATFORM SECTION VARIANTS ──
+
+// Variant A: Staircase — platforms ascend left-to-right then descend
+function makeSectionPlatformsA(wx) {
+  const plats=[], spikes=[];
+  const SPIKE_LEN=45;
+  // Ascending run then descending
+  const steps = [300,240,190,250,310,360]; // y positions (lower = higher up)
+  let platX = wx + 40;
+  steps.forEach(py2=>{
+    const pw = 80 + Math.floor(Math.random()*40);
+    plats.push({x:platX, y:py2, w:pw});
+    platX += pw + 60 + Math.floor(Math.random()*30);
+  });
+  for(let sx=wx+10; sx<wx+SEC_W-10; sx+=26)
+    spikes.push({x:sx, len:SPIKE_LEN, floor:true});
+  return {type:'platforms', wx, plats, spikes, lamps:[{x:wx+80,flicker:0.5},{x:wx+800,flicker:1.5}], maxEnemies:0, spawnInterval:99999};
+}
+
+// Variant B: Islands — wide gaps between wide platforms, all at one height
+function makeSectionPlatformsB(wx) {
+  const plats=[], spikes=[];
+  const SPIKE_LEN=45;
+  const platY = 270; // fixed comfortable height
+  let platX = wx + 30;
+  while(platX < wx + SEC_W - 80) {
+    const pw = 90 + Math.floor(Math.random()*50);
+    plats.push({x:platX, y:platY, w:pw});
+    platX += pw + 70 + Math.floor(Math.random()*40); // wider gaps for challenge
   }
-  const lamps = [{ x: wx+80, flicker:0.5 }, { x: wx+800, flicker:1.5 }];
-  return { type:'platforms', wx, plats, lamps, maxEnemies:1, spawnInterval:14000 };
+  for(let sx=wx+10; sx<wx+SEC_W-10; sx+=26)
+    spikes.push({x:sx, len:SPIKE_LEN, floor:true});
+  return {type:'platforms', wx, plats, spikes, lamps:[{x:wx+200,flicker:1},{x:wx+650,flicker:0}], maxEnemies:0, spawnInterval:99999};
+}
+
+// Variant C: Zigzag — alternating high and low platforms
+function makeSectionPlatformsC(wx) {
+  const plats=[], spikes=[];
+  const SPIKE_LEN=45;
+  let platX = wx + 40;
+  let high = true;
+  while(platX < wx + SEC_W - 60) {
+    const pw = 70 + Math.floor(Math.random()*40);
+    const platY = high ? 230 : 310; // alternate between two heights
+    plats.push({x:platX, y:platY, w:pw});
+    platX += pw + 55 + Math.floor(Math.random()*30);
+    high = !high;
+  }
+  for(let sx=wx+10; sx<wx+SEC_W-10; sx+=26)
+    spikes.push({x:sx, len:SPIKE_LEN, floor:true});
+  return {type:'platforms', wx, plats, spikes, lamps:[{x:wx+80,flicker:0.5},{x:wx+500,flicker:1.2},{x:wx+800,flicker:0.3}], maxEnemies:0, spawnInterval:99999};
+}
+
+// Dispatcher — cycles through variants so no two platform sections in a row are the same
+let _lastPlatVariant = -1;
+function makeSectionPlatforms(wx) {
+  const variants = [makeSectionPlatformsA, makeSectionPlatformsB, makeSectionPlatformsC];
+  let idx;
+  do { idx = Math.floor(Math.random()*variants.length); } while(idx === _lastPlatVariant);
+  _lastPlatVariant = idx;
+  return variants[idx](wx);
 }
 
 function makeSectionSpikeCeiling(wx) {
@@ -512,11 +561,17 @@ function groundYAt(worldX) {
 }
 
 function playerGroundY() {
+  // Player body half-width for platform overlap check
+  const PHW = 20;
   for(const s of sections) {
     if(s.type==='platforms' && s.plats) {
       for(const p of s.plats) {
-        if(px >= p.x && px <= p.x + p.w) {
-          if(pvy >= 0 && py - pvy <= p.y + 8) return p.y;
+        // Horizontal overlap: player body overlaps platform
+        if(px + PHW > p.x && px - PHW < p.x + p.w) {
+          // Vertical: player feet are at or just past platform top, falling or stationary
+          if(pvy >= 0 && py <= p.y + Math.max(12, Math.abs(pvy) + 4)) {
+            return p.y;
+          }
         }
       }
     }
