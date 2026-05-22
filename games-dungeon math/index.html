@@ -30,6 +30,13 @@ canvas {
 #health-label { color:#c8a850; font-size:11px; }
 #feedback { position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); font-size:24px; font-weight:bold; letter-spacing:3px; opacity:0; transition:opacity 0.2s; pointer-events:none; text-shadow:0 2px 8px #000; }
 #feedback.show { opacity:1; }
+#seed-ui { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:5px; z-index:100; }
+#seed-wrap { display:flex; align-items:center; gap:8px; }
+#seed-label { color:rgba(180,140,60,0.8); font-size:11px; letter-spacing:1px; }
+#seed-input { background:rgba(0,0,0,0.85); border:1px solid rgba(180,140,60,0.6); border-radius:3px; color:#f0d080; font-size:14px; letter-spacing:4px; padding:4px 10px; width:130px; text-align:center; outline:none; font-family:monospace; }
+#seed-input:focus { border-color:#c8a850; box-shadow:0 0 6px rgba(200,168,80,0.3); }
+#seed-hint { color:rgba(140,100,40,0.5); font-size:9px; letter-spacing:1px; }
+#seed-legend { color:rgba(140,100,40,0.55); font-size:9px; letter-spacing:0.3px; text-align:center; line-height:1.7; }
 </style>
 </head>
 <body>
@@ -45,6 +52,14 @@ canvas {
   <div id="hint">TYPE ANSWER + ENTER</div>
 </div>
 <div id="feedback"></div>
+</div>
+<div id="seed-ui">
+  <div id="seed-legend">0=Hall · 1=Pit · 2=Platforms · 3=Spikes · 4=Dark · 5=Rush · 6=Crates · 7=Narrow · 8=Treasure · 9=Rand</div>
+  <div id="seed-wrap">
+    <span id="seed-label">SEED:</span>
+    <input id="seed-input" type="text" maxlength="8" placeholder="________" spellcheck="false" autocomplete="off"/>
+  </div>
+  <div id="seed-hint">8 digits for custom run</div>
 </div>
 <script>
 const RUN_FRAMES = [
@@ -189,6 +204,17 @@ function playSwing(seg){try{const ac=getAudio(),osc=ac.createOscillator(),g=ac.c
 function playHit(){try{const ac=getAudio(),buf=ac.createBuffer(1,ac.sampleRate*0.15,ac.sampleRate),d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/(ac.sampleRate*0.05));const src=ac.createBufferSource(),g=ac.createGain();g.gain.setValueAtTime(0.3,ac.currentTime);src.buffer=buf;src.connect(g);g.connect(ac.destination);src.start();}catch(e){}}
 function playCorrect(){try{const ac=getAudio();[523,659,784].forEach((f,i)=>{const osc=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+i*0.08;osc.frequency.value=f;osc.type='square';g.gain.setValueAtTime(0.12,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.12);osc.connect(g);g.connect(ac.destination);osc.start(t);osc.stop(t+0.15);});}catch(e){}}
 function playWrong(){try{const ac=getAudio(),osc=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;osc.frequency.setValueAtTime(180,t);osc.frequency.exponentialRampToValueAtTime(80,t+0.25);osc.type='sawtooth';g.gain.setValueAtTime(0.2,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.28);osc.connect(g);g.connect(ac.destination);osc.start(t);osc.stop(t+0.3);}catch(e){}}
+function playPowerup(){
+  try{
+    const ac=getAudio();
+    [440,550,660,880].forEach((f,i)=>{
+      const osc=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+i*0.06;
+      osc.frequency.value=f;osc.type='square';
+      g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.1);
+      osc.connect(g);g.connect(ac.destination);osc.start(t);osc.stop(t+0.12);
+    });
+  }catch(e){}
+}
 function playBonfire(){try{const ac=getAudio(),osc=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;osc.frequency.setValueAtTime(220,t);osc.frequency.linearRampToValueAtTime(440,t+0.3);osc.type='sine';g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.15,t+0.05);g.gain.exponentialRampToValueAtTime(0.001,t+0.5);osc.connect(g);g.connect(ac.destination);osc.start(t);osc.stop(t+0.55);}catch(e){}}
 
 // Player
@@ -201,6 +227,35 @@ const HURT_DURATION=300,HURT_COOLDOWN=800;
 const GRAVITY=0.55,JUMP_VY=-13,SPEED=4;
 let camX=0,score=0,hp=5,maxHP=5;
 let checkpointX=200;
+
+// ── POWERUPS ──
+let activeShield=false;
+let freezeUntil=0;
+let doubleScoreUntil=0;
+let berserkerUntil=0;
+let hintUntil=0;
+let powerupMessage='';
+let powerupMsgTimer=0;
+
+const POWERUP_DROP_CHANCE=0.5;
+const POWERUPS=[
+  {id:'shield',   label:'⛨  SHIELD',  color:'#44aaff'},
+  {id:'freeze',   label:'❄  FREEZE',  color:'#88ddff'},
+  {id:'double',   label:'★  DOUBLE',  color:'#ffdd00'},
+  {id:'hint',     label:'?  HINT',    color:'#aaffaa'},
+  {id:'berserker',label:'⚡ BERSERK', color:'#ff6600'},
+  {id:'heal',     label:'♥  HEAL',    color:'#ff4466'},
+];
+function getRandomPowerup(){return POWERUPS[Math.floor(Math.random()*POWERUPS.length)];}
+function applyPowerup(p,now){
+  powerupMessage=p.label; powerupMsgTimer=now; playPowerup();
+  if(p.id==='shield')   activeShield=true;
+  if(p.id==='freeze')   freezeUntil=now+8000;
+  if(p.id==='double')   doubleScoreUntil=now+15000;
+  if(p.id==='hint')     hintUntil=now+3000;
+  if(p.id==='berserker')berserkerUntil=now+12000;
+  if(p.id==='heal')     {hp=Math.min(maxHP,hp+1);drawHP();}
+}
 let swingPlayed=[false,false,false];
 
 // Input
@@ -284,14 +339,15 @@ function makeSectionHallway(wx) {
 }
 
 function makeSectionPit(wx) {
-  // One or two pits — gaps in the floor. Fall = 2 damage, respawn at section start.
+  // Max jumpable gap at SPEED=4, JUMP_VY=-13, GRAVITY=0.55 is ~189px
+  // Cap at 110px so it's always clearable with a running jump
   const pits = [];
   const numPits = 1 + Math.floor(Math.random()*2);
-  let pitX = wx + 160;
+  let pitX = wx + 200;  // start further in so player sees pit coming
   for(let i = 0; i < numPits; i++) {
-    const w = 100 + Math.floor(Math.random()*80);
+    const w = 60 + Math.floor(Math.random()*50);  // 60-110px — always jumpable
     pits.push({ x: pitX, w });
-    pitX += w + 120 + Math.floor(Math.random()*80);
+    pitX += w + 180 + Math.floor(Math.random()*80);  // wider landing gap between pits
   }
   const lamps = [{ x: wx+120, flicker:0 }, { x: wx+700, flicker:1 }];
   return { type:'pit', wx, pits, lamps, maxEnemies:1, spawnInterval:12000 };
@@ -362,55 +418,56 @@ const SECTION_POOL = [
   makeSectionCrateMaze, makeSectionNarrow, makeSectionTreasure
 ];
 
+// Section type lookup by digit
+const SECTION_BY_DIGIT = [
+  makeSectionHallway,     // 0
+  makeSectionPit,         // 1
+  makeSectionPlatforms,   // 2
+  makeSectionSpikeCeiling,// 3
+  makeSectionDarkRoom,    // 4
+  makeSectionEnemyRush,   // 5
+  makeSectionCrateMaze,   // 6
+  makeSectionNarrow,      // 7
+  makeSectionTreasure,    // 8
+  null,                   // 9 = random
+];
+
+const SECTION_LABELS = ['Hallway','Pit','Platforms','Spike Ceiling','Dark Room',
+                        'Enemy Rush','Crate Maze','Narrow','Treasure','Random'];
+
+let currentSeed = '';  // empty = random run
+
+function getSectionMaker(digit){
+  if(digit===9||!SECTION_BY_DIGIT[digit]) {
+    const pool=[makeSectionPit,makeSectionPlatforms,makeSectionSpikeCeiling,
+                makeSectionDarkRoom,makeSectionEnemyRush,makeSectionCrateMaze,makeSectionNarrow];
+    return pool[Math.floor(Math.random()*pool.length)];
+  }
+  return SECTION_BY_DIGIT[digit];
+}
+
 function generateWorld() {
   sections = [];
 
-  // Always 10 playable sections + boss = 11 total
-  // Section types we actually use:
-  //   hallway     = normal corridor
-  //   pit         = holes in floor (return to checkpoint on fall)
-  //   spike_ceil  = spikes on ceiling
-  //   crate_maze  = crates to jump over
-  //   dark        = dark room
-  //   rush        = enemy rush
-  //   treasure    = bonus room
-  //   boss        = boss fight
+  // Layout: 11 sections (0-10) + boss (11)
+  // Fixed: 0=hallway, 5=hallway checkpoint, 10=boss
+  // Variable: 1,2,3,4 (first half) + 6,7,8,9 (second half) = 8 slots
+  // Seed: 8 digits filling those 8 slots
 
-  // Build a pool of the 3 "feature" types, shuffle them
-  const featurePool = [
-    makeSectionPit,
-    makeSectionSpikeCeiling,
-    makeSectionCrateMaze,
-    makeSectionPit,         // include duplicates so they appear more
-    makeSectionSpikeCeiling,
-    makeSectionCrateMaze,
-    makeSectionDarkRoom,
-    makeSectionEnemyRush,
-    makeSectionTreasure,
-  ];
-  // Shuffle
-  for(let i=featurePool.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [featurePool[i],featurePool[j]]=[featurePool[j],featurePool[i]];
+  let digits = [];
+  if(currentSeed.length === 8){
+    digits = currentSeed.split('').map(Number);
+  } else {
+    // Random — bias toward interesting sections
+    const pool = [1,1,2,2,3,3,4,5,5,6,6,7,8];
+    for(let i=0;i<8;i++) digits.push(pool[Math.floor(Math.random()*pool.length)]);
   }
 
-  sections.push(makeSectionHallway(0));           // 0: start (safe)
-  sections.push(makeSectionHallway(1*SEC_W));      // 1: also hallway (ease in)
-
-  // Sections 2-4: first batch of features
-  for(let i=0;i<3;i++) sections.push(featurePool[i]((2+i)*SEC_W));
-
-  sections.push(makeSectionHallway(5*SEC_W));      // 5: midpoint checkpoint hallway
-
-  // Sections 6-9: second batch (harder — rush/spike/pit weighted)
-  const hardFeatures = [makeSectionEnemyRush, makeSectionSpikeCeiling, makeSectionPit, makeSectionDarkRoom,
-                        makeSectionEnemyRush, makeSectionSpikeCeiling, makeSectionCrateMaze, makeSectionPit];
-  for(let i=0;i<4;i++){
-    const j=(i+Math.floor(Math.random()*4))%hardFeatures.length;
-    sections.push(hardFeatures[j]((6+i)*SEC_W));
-  }
-
-  sections.push(makeSectionBoss(10*SEC_W));        // 10: boss
+  sections.push(makeSectionHallway(0));                    // 0: start
+  for(let i=0;i<4;i++) sections.push(getSectionMaker(digits[i])((i+1)*SEC_W));  // 1-4
+  sections.push(makeSectionHallway(5*SEC_W));              // 5: checkpoint
+  for(let i=0;i<4;i++) sections.push(getSectionMaker(digits[i+4])((i+6)*SEC_W)); // 6-9
+  sections.push(makeSectionBoss(10*SEC_W));                // 10: boss
 
   WORLD_W_DYN = 11*SEC_W + 400;
 }
@@ -455,16 +512,17 @@ function groundYAt(worldX) {
 }
 
 function playerGroundY() {
-  // Check platforms first
   for(const s of sections) {
     if(s.type==='platforms' && s.plats) {
       for(const p of s.plats) {
         if(px >= p.x && px <= p.x + p.w) {
-          if(pvy >= 0 && py - pvy <= p.y + 4) return p.y;
+          if(pvy >= 0 && py - pvy <= p.y + 8) return p.y;
         }
       }
     }
   }
+  const sec = currentSection();
+  if(sec && sec.type==='platforms') return FLOOR_Y + 200;
   return groundYAt(px);
 }
 
@@ -701,12 +759,63 @@ let exitDoorX = 0;
 let nearEntryDoor = false;
 let nearVictoryDoor = false;
 
+const BOSS_TAUNTS = {
+  spawn: [
+    "This will be your end... Mathius, first of his name.",
+    "You dare enter my chamber, little knight?",
+    "I have consumed a thousand heroes. You are next.",
+    "Your sword means nothing here. Only numbers decide your fate.",
+  ],
+  hit: [
+    "A lucky guess. It won't happen again.",
+    "Impossible! No one has harmed me in centuries!",
+    "You got lucky. Try the next one.",
+    "Grr... that actually hurt.",
+  ],
+  lowHP: [
+    "No... this cannot be! I am ETERNAL!",
+    "How does a knight know such mathematics?!",
+    "My power... fading...",
+  ],
+  death: [
+    "Impossible... defeated... by arithmetic...",
+    "I shall return, Mathius... in another dungeon...",
+    "The numbers... they betray me...",
+  ],
+};
+
+function bossTaunt(category){
+  if(!window.speechSynthesis) return;
+  const lines = BOSS_TAUNTS[category];
+  const text = lines[Math.floor(Math.random()*lines.length)];
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.pitch = 0.3;
+  utt.rate  = 0.8;
+  utt.volume = 1;
+  const voices = window.speechSynthesis.getVoices();
+  const deep = voices.find(v=>
+    v.name.toLowerCase().includes('daniel') ||
+    v.name.toLowerCase().includes('alex') ||
+    v.name.toLowerCase().includes('male') ||
+    v.name.toLowerCase().includes('google uk english male')
+  );
+  if(deep) utt.voice = deep;
+  window.speechSynthesis.speak(utt);
+}
+
+const BOSS_HP_BY_MODE = {
+  basic_add:4, addition:5, basic_mult:5,
+  multiplication:6, mathematician:7, euler:10
+};
+
 function spawnBoss(){
   const bossSection=sections.find(s=>s.type==='boss');
   const bossX=bossSection?bossSection.wx+SEC_W*0.6:px+300;
-  const {problem,answer}=makeProblem();
+  bossMaxHP = BOSS_HP_BY_MODE[gameMode] || 5;
   bossCurrentHP = bossMaxHP;
   victoryShown = false;
+  const {problem,answer}=makeProblem();
   enemies.push({
     worldX:bossX,
     problem,answer,
@@ -715,8 +824,13 @@ function spawnBoss(){
     flashTimer:0,animFrame:0,lastFrameTime:0,
     isBoss:true, bossHP:bossMaxHP
   });
+  // Speak taunt after a short delay so player sees the boss first
+  setTimeout(()=>bossTaunt('spawn'), 1500);
 }
-function buildCombo(ans){const d=String(ans).length;if(d>=3)return[ATK1,ATK2,ATK3];if(d===2)return[ATK1,ATK2];return[ATK1];}
+function buildCombo(ans){
+  if(performance.now()<berserkerUntil)return[ATK1,ATK2,ATK3];
+  const d=String(ans).length;if(d>=3)return[ATK1,ATK2,ATK3];if(d===2)return[ATK1,ATK2];return[ATK1];
+}
 function startAttack(combo){attackSeq=combo;attackSegIdx=0;attackFrmIdx=0;swingPlayed=[false,false,false];state='attack';lastAnim=performance.now();}
 
 // Lanterns
@@ -760,59 +874,58 @@ function drawWalls(){
   for(let r=0;r<5;r++) drawBrickRow(CEIL_Y-(r+1)*40,40,60,r);
   ctx.fillStyle='rgb(42,30,20)'; ctx.fillRect(0,CEIL_Y,W,6);
 
-  // Floor — scan every pixel column, check ALL visible sections for pits
+  // Floor — scan every pixel column, skip pits AND platform sections
   const BRICK_W = 60, BRICK_H = 40;
 
-  // Collect all pit ranges visible on screen (in world coords)
-  const pitRanges = [];
+  // Collect all ranges where the floor should NOT be drawn
+  const noFloorRanges = [];
+
+  // Pit holes
   visibleSections().forEach(s => {
-    if(s.type==='pit' && s.pits){
-      s.pits.forEach(p => pitRanges.push({x: p.x, x2: p.x + p.w}));
-    }
+    if(s.type==='pit' && s.pits)
+      s.pits.forEach(p => noFloorRanges.push({x: p.x, x2: p.x + p.w}));
+    // Platform sections: entire section has no floor (spikes replace it)
+    if(s.type==='platforms')
+      noFloorRanges.push({x: s.wx, x2: s.wx + SEC_W});
   });
 
-  function inPit(worldX){
-    return pitRanges.some(p => worldX >= p.x && worldX <= p.x2);
+  function inNoFloor(worldX){
+    return noFloorRanges.some(r => worldX >= r.x && worldX <= r.x2);
   }
 
-  // Draw floor brick rows — skip columns that are in a pit
+  // Draw floor brick rows — skip no-floor zones
   for(let r=0;r<5;r++){
     const sy = FLOOR_Y + r*BRICK_H;
-    // Scan in brick-width increments
     for(let bx = Math.floor(camX/BRICK_W)*BRICK_W; bx < camX+W+BRICK_W; bx+=BRICK_W){
       const screenX = bx - camX;
       if(screenX > W+BRICK_W || screenX < -BRICK_W) continue;
-      // Check if the CENTER of this brick column is in a pit
-      if(!inPit(bx + BRICK_W/2)){
+      if(!inNoFloor(bx + BRICK_W/2)){
         drawBrick(screenX, sy, BRICK_W-1, BRICK_H-1);
       }
     }
   }
 
-  // Floor edge line — draw segments, skip over pits
+  // Floor edge line — skip no-floor zones
   ctx.fillStyle='rgb(42,30,20)';
-  if(pitRanges.length === 0){
+  if(noFloorRanges.length === 0){
     ctx.fillRect(0, FLOOR_Y-4, W, 6);
   } else {
-    // Draw floor edge in segments around pits
     let scanX = camX;
     const endX = camX + W;
     while(scanX < endX){
-      if(inPit(scanX)){
-        // Skip through pit
-        const pit = pitRanges.find(p => scanX >= p.x && scanX <= p.x2);
-        if(pit){ scanX = pit.x2 + 1; continue; }
+      if(inNoFloor(scanX)){
+        const zone = noFloorRanges.find(r => scanX >= r.x && scanX <= r.x2);
+        if(zone){ scanX = zone.x2 + 1; continue; }
       }
-      // Find next pit start or end of screen
-      const nextPit = pitRanges.find(p => p.x > scanX && p.x < endX);
-      const segEnd = nextPit ? nextPit.x : endX;
+      const nextZone = noFloorRanges.find(r => r.x > scanX && r.x < endX);
+      const segEnd = nextZone ? nextZone.x : endX;
       ctx.fillRect(scanX-camX, FLOOR_Y-4, segEnd-scanX, 6);
-      scanX = nextPit ? nextPit.x2+1 : endX;
+      scanX = nextZone ? nextZone.x2+1 : endX;
     }
   }
 
-  // Draw void darkness inside pits
-  pitRanges.forEach(p => {
+  // Draw void darkness inside no-floor zones (pits + platform sections)
+  noFloorRanges.forEach(p => {
     const pitSX = p.x - camX;
     const pitW = p.x2 - p.x;
     if(pitSX > W || pitSX+pitW < 0) return;
@@ -1104,6 +1217,7 @@ function update(now,dt){
     window.addEventListener('keydown',gameKeyDown);
     window.addEventListener('keyup',gameKeyUp);
     homeActive=true;
+    if(typeof updateSeedUI!=='undefined')updateSeedUI();
     requestAnimationFrame(homeLoop);
     return;
   }
@@ -1130,7 +1244,8 @@ function update(now,dt){
         const roundedAns=Math.round(target.answer*100)/100;
         if(roundedVal===roundedAns){
           playCorrect();
-          score+=target.answer;scoreEl.textContent='SCORE: '+score;
+          const scoreGain=Math.round(target.answer*(performance.now()<doubleScoreUntil?2:1));
+          score+=scoreGain;scoreEl.textContent='SCORE: '+score;
           // Face the enemy at the moment of attack
           facingRight = target.worldX > px;
           startAttack(buildCombo(target.answer));
@@ -1141,16 +1256,19 @@ function update(now,dt){
               target.dead=true;target.deathTimer=0;target.engaged=false;
               answerActive=false;bossDefeated=true;victoryShown=true;victoryTimer=now;
               exitDoorVisible=true;
-              // Door appears at the end of the boss section world x
               const bSec=sections.find(s=>s.type==='boss');
               exitDoorX=bSec?bSec.wx+SEC_W*0.75:px+300;
+              bossTaunt('death');
             }else{
               const next=makeProblem();target.problem=next.problem;target.answer=next.answer;
-              showFeedback(`BOSS HP: ${target.bossHP}/${bossMaxHP}`,'#ff8844');
+              if(target.bossHP===1) bossTaunt('lowHP');
+              else bossTaunt('hit');
+              showFeedback('BOSS HP: '+target.bossHP+'/'+bossMaxHP,'#ff8844');
             }
           }else{
             showFeedback('CORRECT!','#44ff88');
             target.dead=true;target.deathTimer=0;target.engaged=false;answerActive=false;
+            if(Math.random()<POWERUP_DROP_CHANCE) applyPowerup(getRandomPowerup(),now);
           }
         }else{
           showFeedback('WRONG! -1 HP','#ff4444');
@@ -1169,8 +1287,14 @@ function update(now,dt){
     problemLabel.textContent=engaged.problem+' = ?';
     problemLabel.classList.add('active');
     answerBox.classList.add('active');
-    answerBox.textContent=typedAnswer||'_';
-    if(!moving)facingRight=engaged.worldX>px;
+    if(performance.now()<hintUntil && engaged){
+      answerBox.textContent=String(engaged.answer);
+      answerBox.style.color='#aaffaa';
+    } else {
+      answerBox.textContent=typedAnswer||'_';
+      answerBox.style.color='#f0d080';
+    }
+    facingRight=engaged.worldX>px;  // always face active enemy
   }else{
     answerActive=false;
     problemLabel.classList.remove('active');
@@ -1235,13 +1359,15 @@ function update(now,dt){
     if(e.dead){e.deathTimer+=dt;return;}
     if(e.flashTimer>0)e.flashTimer-=dt;
     if(now-e.lastFrameTime>150){e.animFrame=(e.animFrame+1)%getEnemyImgs(e).imgs.length;e.lastFrameTime=now;}
-    if(!crateBlocksEnemy(e))e.worldX+=e.speed*dt*0.06;
+    const bossRage=e.isBoss?1+(1-e.bossHP/bossMaxHP)*1.8:1;
+    if(!crateBlocksEnemy(e)&&!(performance.now()<freezeUntil))e.worldX+=e.speed*bossRage*dt*0.06;
     const dist=Math.abs(e.worldX-px);
     if(dist<ENGAGE_DIST&&!e.engaged){e.engaged=true;typedAnswer='';}
     if(e.engaged)anyEngaged=true;
     if(dist<REACH_DIST&&!e.reachedPlayer){
       e.reachedPlayer=true;e.dead=true;e.deathTimer=0;
       showFeedback('HIT! -2 HP','#ff2222');takeDamage(2);
+      if(e.isBoss) setTimeout(()=>bossTaunt('spawn'),300);
     }
   });
   if(!anyEngaged)answerActive=false;
@@ -1297,6 +1423,44 @@ function render(t,now){
   else frame=blockF[blockIdx];
   drawKnightFrame(frame,sx,now);
   drawHP();
+
+  // ── POWERUP HUD ──
+  const now2=performance.now();
+  let hudY=H-8;
+  const activeIcons=[];
+  if(activeShield)          activeIcons.push({label:'⛨ SHIELD',    color:'#44aaff'});
+  if(now2<freezeUntil)      activeIcons.push({label:`❄ ${Math.ceil((freezeUntil-now2)/1000)}s`,  color:'#88ddff'});
+  if(now2<doubleScoreUntil) activeIcons.push({label:`★ ${Math.ceil((doubleScoreUntil-now2)/1000)}s`,color:'#ffdd00'});
+  if(now2<hintUntil)        activeIcons.push({label:'? HINT',      color:'#aaffaa'});
+  if(now2<berserkerUntil)   activeIcons.push({label:`⚡ ${Math.ceil((berserkerUntil-now2)/1000)}s`,color:'#ff6600'});
+  if(activeIcons.length>0){
+    ctx.save();
+    let ix=8;
+    activeIcons.forEach(ic=>{
+      ctx.font='bold 11px monospace';
+      const tw=ctx.measureText(ic.label).width+10;
+      ctx.fillStyle='rgba(0,0,0,0.7)';ctx.beginPath();ctx.roundRect(ix,H-22,tw,16,3);ctx.fill();
+      ctx.strokeStyle=ic.color;ctx.lineWidth=1;ctx.stroke();
+      ctx.fillStyle=ic.color;ctx.fillText(ic.label,ix+5,H-10);
+      ix+=tw+6;
+    });
+    ctx.restore();
+  }
+
+  // Floating pickup text
+  if(powerupMsgTimer>0){
+    const age=now2-powerupMsgTimer;
+    if(age<1200){
+      const alpha=Math.max(0,1-age/1200);
+      const rise=age*0.04;
+      ctx.save();ctx.globalAlpha=alpha;ctx.textAlign='center';
+      ctx.font='bold 20px monospace';
+      const pu=POWERUPS.find(p=>p.label===powerupMessage)||{color:'#ffffff'};
+      ctx.fillStyle=pu.color;ctx.shadowColor=pu.color;ctx.shadowBlur=12;
+      ctx.fillText(powerupMessage,W/2,H/2-80-rise);
+      ctx.restore();
+    } else { powerupMsgTimer=0; }
+  }
 
   // Victory overlay
   if(victoryShown){
@@ -1460,6 +1624,7 @@ function updateHome(now,dt){
   if(enteringDoor){
     if(now-enterDoorTimer>600){
       gameMode=enterDoorMode;homeActive=false;
+      if(typeof updateSeedUI!=='undefined')updateSeedUI();
       // Re-add game listeners fresh (they may have been removed on prev exit)
       window.removeEventListener('keydown',gameKeyDown);
       window.removeEventListener('keyup',gameKeyUp);
@@ -1619,5 +1784,22 @@ function homeLoop(t){
 }
 
 window.addEventListener('keydown',e=>{if(!homeActive)return;hKeys[e.code]=true;e.preventDefault();});
+
+const seedInput=document.getElementById('seed-input');
+const seedUI=document.getElementById('seed-ui');
+function updateSeedUI(){if(seedUI)seedUI.style.display=homeActive?'flex':'none';}
+if(seedInput){
+  seedInput.addEventListener('input',()=>{
+    seedInput.value=seedInput.value.replace(/[^0-9]/g,'').slice(0,8);
+    currentSeed=seedInput.value;
+  });
+  seedInput.addEventListener('keydown',e=>{e.stopPropagation();});
+  seedInput.addEventListener('focus',()=>{for(const k in hKeys)delete hKeys[k];});
+}
+
+if(window.speechSynthesis){
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();
+}
 requestAnimationFrame(homeLoop);
 </script></body></html>
