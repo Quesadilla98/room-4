@@ -338,6 +338,9 @@ const DEATH_FRAME_MS=100;  // ms per death frame
 const HURT_DURATION=300,HURT_COOLDOWN=800;
 const GRAVITY=0.55,JUMP_VY=-13;
 let SPEED=4.5; // mutable — Speed Demon buff increases this
+// Base speed in canvas pixels — will be divided by display scale at runtime
+const BASE_SPEED=4.5;
+const BASE_SPEED_BOOST=5.0;
 let camX=0,score=0,hp=5,maxHP=5;
 
 // ── PERSISTENT BUFFS (last whole run) ──
@@ -422,7 +425,7 @@ function pickUpgrades(){
 
 function applyUpgrade(u){
   playerBuffs[u.id] = true;
-  if(u.id==='speedBoost')   SPEED = 5.0;
+  if(u.id==='speedBoost')   SPEED = BASE_SPEED_BOOST;
   if(u.id==='healthRegen')  regenTimer = 0;
   if(u.id==='maxHealthUp')  { maxHP++; hp=Math.min(hp+1,maxHP); drawHP(); }
   if(u.id==='thickBlood')   {} // applied via HURT_COOLDOWN check
@@ -452,7 +455,7 @@ function applyPowerup(p,now){
   if(p.id==='freeze')   freezeUntil=now+8000;
   if(p.id==='double')   doubleScoreUntil=now+15000;
   if(p.id==='hint')     hintUntil=now+3000;
-  if(p.id==='berserker')berserkerUntil=now+12000;
+  if(p.id==='berserker')berserkerUntil=now+6000; berserkerKills=0;
   if(p.id==='heal')     {hp=Math.min(maxHP,hp+1);drawHP();}
 }
 let swingPlayed=[false,false,false];
@@ -485,12 +488,17 @@ function takeDamage(amt){
   const effectiveHurtCD=playerBuffs.thickBlood?HURT_COOLDOWN*0.5:HURT_COOLDOWN;
   if(now-hurtCooldown<effectiveHurtCD)return;
   if(hp-amt<=0&&playerBuffs.ironWill&&!playerBuffs.ironWillUsed){playerBuffs.ironWillUsed=true;hp=1;showFeedback('IRON WILL!','#ffaa44');hurtCooldown=now;hurtTimer=now;return;}
-  hp=Math.max(0,hp-amt);hurtCooldown=now;hurtTimer=now;
+  const dmgAmt=playerBuffs.ironSkin?Math.max(1,amt-1):amt;
+  hp=Math.max(0,hp-dmgAmt);hurtCooldown=now;hurtTimer=now;
   whiteFlashStart=now;
   state='hurt';pvy=-6;px+=facingRight?-25:25;onGround=false;
   playHit();
   if(hp<=0){
     showFeedback('YOU DIED','#ff2222');
+    if(playerBuffs.undyingRage){
+      const _nearest=enemies.filter(e=>!e.dead&&!e.isBoss).sort((a,b)=>Math.abs(a.worldX-px)-Math.abs(b.worldX-px))[0];
+      if(_nearest){_nearest.dead=true;_nearest.deathTimer=0;showFeedback('UNDYING RAGE!','#ff4400');}
+    }
     isDying=true;
     deathAnimStart=performance.now();
     setTimeout(()=>{
@@ -1117,9 +1125,12 @@ function makeProblem(){
 }
 
 function enemyHPForStage(){
-  // Stage 1=1HP, Stage 2=1-2HP, Stage 3=2HP, Stage 4=2-3HP, Stage 5=3HP
-  const base = Math.ceil(currentStage / 2);
-  return Math.random() < 0.5 ? base : Math.max(1, base - 1);
+  // Stage 1: 1-2HP | Stage 2-3: 2-3HP | Stage 4-5: 3-4HP
+  let lo, hi;
+  if(currentStage <= 1)     { lo=1; hi=2; }
+  else if(currentStage <= 3){ lo=2; hi=3; }
+  else                       { lo=3; hi=4; }
+  return Math.random() < 0.5 ? lo : hi;
 }
 
 function bossHPForStage(baseHP){
@@ -1139,13 +1150,14 @@ function spawnEnemy(){
     else if(sec.type==='dark'||sec.type==='narrow'||sec.type==='pit') etype='tree';
     else etype=['ghost','crab','tree','boar'][Math.floor(Math.random()*4)];
   }
+  const _eph=enemyHPForStage();
   enemies.push({
     worldX:Math.max(100,Math.min((WORLD_W_DYN||WORLD_W)-100,wx)),
     problem,answer,
     speed:ENEMY_SPEED*(facingRight?-1:1),
     dead:false,deathTimer:0,engaged:false,reachedPlayer:false,
     flashTimer:0,animFrame:0,lastFrameTime:0,
-    enemyHP:enemyHPForStage(),
+    enemyHP:_eph, maxEnemyHP:_eph,
     etype  // 'ghost','crab','tree'
   });
 }
@@ -1936,7 +1948,20 @@ function drawEnemy(e,now){
   ctx.restore();
 
   if(!e.dead){
-    if(!e.isBoss&&(e.maxEnemyHP||1)>1){const bw=50,bh=5,bx2=sx-bw/2,by2=drawY-38;ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(bx2,by2,bw,bh);const hpPct=Math.max(0,(e.enemyHP||1)/(e.maxEnemyHP||1));ctx.fillStyle=hpPct>0.5?'#44ff44':'#ff4444';ctx.fillRect(bx2,by2,Math.round(bw*hpPct),bh);}
+    if(!e.isBoss){
+      const maxHp=e.maxEnemyHP||1,curHp=e.enemyHP||1;
+      const bw=Math.max(36,rw*0.65),bh=6,bx2=sx-bw/2,by2=drawY-44;  // above math label
+      ctx.fillStyle='rgba(0,0,0,0.8)';ctx.fillRect(bx2,by2,bw,bh);
+      const segW=bw/maxHp;
+      for(let s=0;s<maxHp;s++){
+        const filled=s<curHp;
+        ctx.fillStyle=filled?(curHp/maxHp>0.5?'#cc2222':'#ff5500'):'rgba(60,0,0,0.4)';
+        ctx.fillRect(bx2+s*segW+1,by2+1,segW-2,bh-2);
+      }
+      ctx.fillStyle='rgba(0,0,0,0.9)';
+      for(let s=1;s<maxHp;s++) ctx.fillRect(bx2+s*segW-1,by2,2,bh);
+      ctx.strokeStyle='rgba(0,0,0,0.7)';ctx.lineWidth=1;ctx.strokeRect(bx2,by2,bw,bh);
+    }
     const labelY=drawY-(e.isBoss?22:14);
     ctx.save();
     ctx.font=e.isBoss?'bold 15px monospace':'bold 12px monospace';ctx.textAlign='center';
@@ -2031,7 +2056,7 @@ function update(now,dt){
           lastSectionIdx=-1;sectionEnemyTimer=0;
           showingUpgrade=false;upgradeChoices=[];
           // Reset speed to base (speed buff re-applies via playerBuffs check below)
-          SPEED = playerBuffs.speedBoost ? 5.0 : 4.5;
+          SPEED = playerBuffs.speedBoost ? BASE_SPEED_BOOST : BASE_SPEED;
           // Restart game loop
           window.removeEventListener('keydown',gameKeyDown);
           window.removeEventListener('keyup',gameKeyUp);
@@ -2106,7 +2131,8 @@ function update(now,dt){
           startAttack(buildCombo(target.answer));
           if(target.isBoss){
             if(playerBuffs.killNextBoss&&target.isBoss){playerBuffs.killNextBoss=false;target.bossHP=1;}
-            const bossDmg=String(Math.abs(Math.round(target.answer))).replace('.','').length||1;
+            const bossDmgBase=String(Math.abs(Math.round(target.answer))).replace('.','').length||1;
+            const bossDmg=performance.now()<berserkerUntil?Math.max(2,bossDmgBase):bossDmgBase;
             target.bossHP-=bossDmg;target.flashTimer=400;
             if(target.bossHP<=0){
               showFeedback('CORRECT!','#44ff88');
@@ -2139,14 +2165,15 @@ function update(now,dt){
               showFeedback('BOSS HP: '+target.bossHP+'/'+(target.bossMaxHP||bossMaxHP),'#ff8844');
             }
           }else{
-            const dmgDealt=String(Math.abs(Math.round(target.answer))).replace('.','').length||1;
+            const baseDmg=String(Math.abs(Math.round(target.answer))).replace('.','').length||1;
+            const dmgDealt=performance.now()<berserkerUntil?Math.max(2,baseDmg):baseDmg;
             target.enemyHP=(target.enemyHP||1)-dmgDealt;
             if(target.enemyHP<=0){
               showFeedback('CORRECT!','#44ff88');
               target.dead=true;target.deathTimer=0;target.engaged=false;answerActive=false;
               if(playerBuffs.bloodPrice){hp=Math.min(maxHP,hp+1);drawHP();}
               if(performance.now()<berserkerUntil){
-                berserkerKills++;berserkerUntil=performance.now()+5000;
+                berserkerKills++;berserkerUntil=performance.now()+6000;
                 playBerserkerKill(berserkerKills);
               }
               if(Math.random()<(playerBuffs.scholarsMind?POWERUP_DROP_CHANCE*2:POWERUP_DROP_CHANCE)) applyPowerup(getRandomPowerup(),now);
@@ -2154,6 +2181,17 @@ function update(now,dt){
               const next=makeProblem();target.problem=next.problem;target.answer=next.answer;
               target.flashTimer=300;
               showFeedback('HIT! '+target.enemyHP+' HP left','#ffaa44');
+            }
+            // Chain Lightning fires on every correct answer
+            if(playerBuffs.chainLightning){
+              const _others=enemies.filter(e2=>!e2.dead&&e2!==target);
+              if(_others.length){
+                _others.sort((a,b)=>Math.abs(a.worldX-px)-Math.abs(b.worldX-px));
+                const _bolt=_others[0];
+                _bolt.enemyHP=(_bolt.enemyHP||1)-1;_bolt.flashTimer=400;
+                if(_bolt.enemyHP<=0&&!_bolt.isBoss){_bolt.dead=true;_bolt.deathTimer=0;}
+                showFeedback('⚡ CHAIN!','#88ffff');
+              }
             }
           }
         }else{
@@ -2191,14 +2229,15 @@ function update(now,dt){
   }
 
   if(!isDying&&state!=='hurt'&&state!=='attack'){
-    if(right){px+=SPEED;facingRight=true;}
-    if(left){px-=SPEED;facingRight=false;}
+    const spd=SPEED*dt*0.06;  // normalize to 60fps
+    if(right){px+=spd;facingRight=true;}
+    if(left){px-=spd;facingRight=false;}
   }
   px=Math.max(60,Math.min((WORLD_W_DYN||WORLD_W)-60,px));
 
   const groundY=playerGroundY();
   if(jump&&onGround&&state!=='attack'&&state!=='hurt'){pvy=JUMP_VY;onGround=false;}
-  if(!onGround){pvy+=GRAVITY;py+=pvy;if(py>=groundY){py=groundY;pvy=0;onGround=true;}}
+  if(!onGround){pvy+=GRAVITY*dt*0.06;py+=pvy*dt*0.06;if(py>=groundY){py=groundY;pvy=0;onGround=true;}}
   else{if(py<groundY)onGround=false;else py=groundY;}
 
   // Door check moved to top of justPressed loop
@@ -2264,7 +2303,7 @@ function update(now,dt){
     // Move active falling drip
     s.drips.forEach(drip=>{
       if(drip.active){
-        drip.y += drip.speed;
+        drip.y += drip.speed*dt*0.06;
         if(!playerBuffs.lavaWard&&Math.abs(drip.x-px)<20&&Math.abs(drip.y-py)<30){
           takeDamage(1); drip.active=false; drip.y=CEIL_Y+14;
           s.lavaPhase='cooldown'; s.lavaTimer=2000;
@@ -2290,11 +2329,13 @@ function update(now,dt){
         const offsets=[-200,0,200];
         offsets.forEach(offset=>{
           const {problem,answer}=makeProblem();
+          const eph2=enemyHPForStage();
           enemies.push({
             worldX:altarX+offset,problem,answer,
             speed:ENEMY_SPEED*0.6*(offset<0?1:-1),
             dead:false,deathTimer:0,engaged:false,reachedPlayer:false,
             flashTimer:0,animFrame:0,lastFrameTime:0,etype:'ghost',
+            enemyHP:eph2,maxEnemyHP:eph2,
             spawnFlash:performance.now()
           });
         });
@@ -2317,6 +2358,12 @@ function update(now,dt){
     if(e.dead){e.deathTimer+=dt;return;}
     if(e.flashTimer>0)e.flashTimer-=dt;
     if(now-e.lastFrameTime>150){e.animFrame=(e.animFrame+1)%getEnemyImgs(e).imgs.length;e.lastFrameTime=now;}
+    // Executioner: non-boss enemies at 1 HP auto-die without needing an answer
+    if(!e.dead && !e.isBoss && playerBuffs.executioner && (e.enemyHP||1)<=1){
+      e.dead=true; e.deathTimer=0; e.engaged=false;
+      const _execGain=Math.round((e.answer||1)*(playerBuffs.midasTouch?1.5:1));
+      score+=_execGain; scoreEl.textContent='SCORE: '+score;
+    }
     const bossRage=e.isBoss?1+(1-e.bossHP/bossMaxHP)*1.8:1;
     if(!crateBlocksEnemy(e)&&!(performance.now()<freezeUntil))e.worldX+=e.speed*bossRage*dt*0.06;
     const dist=Math.abs(e.worldX-px);
@@ -2341,7 +2388,8 @@ function update(now,dt){
   if(state==='hurt'){
     if(now-hurtTimer>=HURT_DURATION){state=moving?'run':'block_raise';if(state==='block_raise'){blockRaiseStart=now;blockIdx=0;}}
   }else if(state==='attack'){
-    if(now-lastAnim>ATK_MS){
+    const _atkMs=playerBuffs.swiftblade?Math.round(ATK_MS*0.75):ATK_MS;
+    if(now-lastAnim>_atkMs){
       attackFrmIdx++;lastAnim=now;
       const seg=attackSeq[attackSegIdx];
       if(attackFrmIdx===1&&attackSegIdx<3&&!swingPlayed[attackSegIdx]){playSwing(attackSegIdx);swingPlayed[attackSegIdx]=true;}
@@ -2361,7 +2409,7 @@ function update(now,dt){
   }
   if(state==='jump')jumpIdx=0;else if(state==='fall')jumpIdx=jumpF.length-1;
 
-  camX+=(px-W/2-camX)*0.18;  // tighter follow — feels consistent across stage sizes
+  camX+=(px-W/2-camX)*(1-Math.pow(0.82,dt*0.06));  // frame-rate independent lerp
   camX=Math.max(0,Math.min((WORLD_W_DYN||WORLD_W)-W,camX));
   for(const k in justPressed)delete justPressed[k];
 }
@@ -2432,11 +2480,6 @@ function render(t,now){
     drawKnightFrame(frame,sx,now);
   }
   drawHP();
-
-  // ── DEBUG SPEED OVERLAY ──
-  ctx.save();ctx.textAlign='left';ctx.font='10px monospace';ctx.fillStyle='#ff0';
-  ctx.fillText(`SPEED=${SPEED} stage=${currentStage} px=${Math.round(px)}`,4,H-4);
-  ctx.restore();
 
   // ── STAGE INDICATOR (top center, below timer) ──
   {
@@ -2692,12 +2735,28 @@ function render(t,now){
 
 let lastTime=0;
 let gameLoopRunning = false;
+let displayScale = 1.0;
+
+function updateDisplayScale(){
+  const canvas = document.getElementById('c');
+  if(canvas){
+    // How much larger is the canvas displayed vs its native pixel size
+    const rect = canvas.getBoundingClientRect();
+    displayScale = rect.width / 900;  // native canvas width = 900
+  }
+}
+
 function startGameLoop(){
   if(gameLoopRunning) return;
   gameLoopRunning = true;
+  updateDisplayScale();
   lastTime = performance.now();
   requestAnimationFrame(loop);
 }
+
+window.addEventListener('resize', ()=>{
+  updateDisplayScale();
+});
 function loop(t){
   if(homeActive){ gameLoopRunning=false; return; }
   const dt=Math.min(t-lastTime,50);lastTime=t;
@@ -2798,11 +2857,12 @@ function updateHome(now,dt){
   const right=hKeys['ArrowRight']||hKeys['KeyD'];
   const jump=hKeys['Space']||hKeys['ArrowUp']||hKeys['KeyW'];
   const moving=left||right;
-  if(right){hpx+=HP_SPEED;hpFacingRight=true;}
-  if(left){hpx-=HP_SPEED;hpFacingRight=false;}
+  const hspd=HP_SPEED/displayScale;  // normalize to display size
+  if(right){hpx+=hspd;hpFacingRight=true;}
+  if(left){hpx-=hspd;hpFacingRight=false;}
   hpx=Math.max(20,Math.min(HOME_W-20,hpx));
   if(jump&&hpOnGround){hpvy=HP_JUMP;hpOnGround=false;}
-  hpvy+=HP_GRAVITY;hpy+=hpvy;
+  hpvy+=HP_GRAVITY;hpy+=hpvy;  // home uses fixed dt=16 so no normalization needed
   const landed=getPlatformUnder(hpx,hpy,hpvy);
   if(landed!==null&&hpvy>=0){hpy=landed;hpvy=0;hpOnGround=true;}
   else{
@@ -2969,5 +3029,6 @@ if(window.speechSynthesis){
   window.speechSynthesis.getVoices();
   window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();
 }
+updateDisplayScale();
 homeLoopId = requestAnimationFrame(homeLoop);
 </script></body></html>
