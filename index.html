@@ -107,6 +107,18 @@ header {
 .card:hover .card-arrow { opacity:1; transform:translate(0,0); }
 .card > * { position:relative; z-index:1; }
 
+/* CARD PREVIEW IMAGE — blurred background */
+.card-preview {
+  position: absolute; inset: 0; z-index: 0;
+  background-size: cover; background-position: center;
+  filter: blur(6px) brightness(0.22) saturate(0.6);
+  transform: scale(1.08);
+  transition: filter .4s cubic-bezier(.23,1,.32,1), opacity .4s;
+  opacity: 0;
+}
+.card-preview.loaded { opacity: 1; }
+.card:hover .card-preview { filter: blur(4px) brightness(0.12) saturate(0.4); }
+
 .card-top   { display:flex; justify-content:space-between; align-items:flex-start; }
 .card-num   { font-family:'Bebas Neue',sans-serif; font-size:3.2rem; line-height:1; color:transparent; -webkit-text-stroke:1px #2a2a2a; transition:-webkit-text-stroke-color .3s; }
 .card-arrow { font-size:1.1rem; opacity:0; transform:translate(-6px,6px); transition:all .3s cubic-bezier(.23,1,.32,1); }
@@ -328,6 +340,18 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
       card.className = 'card';
       card.href = `${folder.name}/`;
       card.style.animationDelay = `${i * 0.07}s`;
+
+      // Try to load a preview image from the folder
+      const previewUrl = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/master/${folder.name}/preview.png`;
+      const previewDiv = document.createElement('div');
+      previewDiv.className = 'card-preview';
+      const img = new Image();
+      img.onload = () => {
+        previewDiv.style.backgroundImage = `url('${previewUrl}')`;
+        previewDiv.classList.add('loaded');
+      };
+      img.src = previewUrl;
+
       card.innerHTML = `
         <div class="card-top">
           <span class="card-num">${num}</span>
@@ -338,6 +362,7 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
           <p class="card-desc">Open this section to explore its content.</p>
         </div>
         <span class="card-meta">${folder.name}/index.html</span>`;
+      card.prepend(previewDiv);
       gridEl.appendChild(card);
     });
   }
