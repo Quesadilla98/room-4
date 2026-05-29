@@ -3,7 +3,9 @@
 # Lines starting with # are ignored as comments.
 # One link per line.
 
-Next Gen Personal Finance | https://www.ngpf.org/math/financial-algebra/ | Financial Math (Yellow Crew)
+Next Gen Personal Finance | https://www.ngpf.org/math/financial-algebra/ | Financial Math 
+Open up Resources | https://access.openupresources.org/curricula/our-hs-math | Math Materials and Make up work
 Desmos | https://www.desmos.com/calculator | Graphing calculator
 GeoGebra | https://www.geogebra.org | Interactive math tools
 Wolfram Alpha | https://www.wolframalpha.com | Computational math engine
+
