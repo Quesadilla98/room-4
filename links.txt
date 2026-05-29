@@ -1,0 +1,10 @@
+# Room 4 — Links
+# Format: Label | URL | Description (description is optional)
+# Lines starting with # are ignored as comments.
+# One link per line.
+
+Khan Academy | https://www.khanacademy.org | Free practice problems and videos
+Desmos | https://www.desmos.com/calculator | Graphing calculator
+GeoGebra | https://www.geogebra.org | Interactive math tools
+Photomath | https://www.photomath.com | Step-by-step math solver
+Wolfram Alpha | https://www.wolframalpha.com | Computational math engine
