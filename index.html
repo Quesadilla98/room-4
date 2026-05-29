@@ -114,6 +114,23 @@ header {
 .card-desc  { font-size:.75rem; color:var(--muted); line-height:1.65; transition:color .3s; }
 .card-meta  { font-family:'DM Mono',monospace; font-size:.57rem; letter-spacing:.14em; text-transform:uppercase; color:#333; transition:color .3s; }
 
+/* LINK CARD FAVICON */
+.card-favicon-row { display:flex; align-items:center; gap:.65rem; }
+.card-favicon {
+  width:20px; height:20px; border-radius:4px;
+  flex-shrink:0; object-fit:contain;
+  background:#1a1a1a; display:block;
+  transition:filter .3s;
+}
+.card:hover .card-favicon { filter:brightness(0); }
+.card-favicon-fallback {
+  width:20px; height:20px; border-radius:4px;
+  flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  background:#1a1a1a; color:#444; font-size:.75rem;
+  transition:background .3s, color .3s;
+}
+.card:hover .card-favicon-fallback { background:rgba(0,0,0,.15); color:rgba(0,0,0,.4); }
+
 /* states */
 .state-box   { grid-column:1/-1; padding:4rem 2rem; text-align:center; display:flex; flex-direction:column; align-items:center; gap:1rem; }
 .state-icon  { font-family:'Bebas Neue',sans-serif; font-size:4rem; color:var(--accent); opacity:.3; }
@@ -216,6 +233,18 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
   <p class="hero-scroll">scroll to explore</p>
 </section>
 
+<section class="section" id="links">
+  <div class="section-label">
+    Links
+    <span class="page-count" id="linksBadge"></span>
+  </div>
+  <div class="grid" id="linksGrid">
+    <div class="skeleton"><div class="sk-line" style="height:52px;width:60px"></div><div class="sk-line" style="height:24px;width:70%"></div><div class="sk-line" style="height:12px;width:90%"></div></div>
+    <div class="skeleton"><div class="sk-line" style="height:52px;width:60px"></div><div class="sk-line" style="height:24px;width:55%"></div><div class="sk-line" style="height:12px;width:85%"></div></div>
+    <div class="skeleton"><div class="sk-line" style="height:52px;width:60px"></div><div class="sk-line" style="height:24px;width:65%"></div><div class="sk-line" style="height:12px;width:80%"></div></div>
+  </div>
+</section>
+
 <section class="section" id="tools">
   <div class="section-label">
     Tools
@@ -272,8 +301,6 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
     requestAnimationFrame(animRing);
   })();
 
-  // Folders whose names start with "games-" go to the Games section.
-  // Everything else goes to the Tools section.
   const GAMES_PREFIX = 'games-';
 
   function renderCards(folders, gridEl, badgeEl, emptyIcon, emptyTitle, emptyMsg) {
@@ -294,7 +321,6 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
 
     folders.forEach((folder, i) => {
       const num  = String(i + 1).padStart(2, '0');
-      // Strip the "games-" prefix for display
       const displayName = folder.name.startsWith(GAMES_PREFIX)
         ? prettify(folder.name.slice(GAMES_PREFIX.length))
         : prettify(folder.name);
@@ -314,6 +340,100 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
         <span class="card-meta">${folder.name}/index.html</span>`;
       gridEl.appendChild(card);
     });
+  }
+
+  // ── LINKS.TXT LOADER ──
+  // Format each line in links.txt as:
+  //   Label | https://url.com
+  //   Label | https://url.com | Optional short description
+  // Blank lines and lines starting with # are ignored (use # for comments).
+
+  async function loadLinks() {
+    const linksGrid  = document.getElementById('linksGrid');
+    const linksBadge = document.getElementById('linksBadge');
+
+    try {
+      // Fetch raw links.txt from the repo (cache-busted so edits show quickly)
+      const res = await fetch(
+        `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/links.txt?t=${Date.now()}`
+      );
+
+      if (!res.ok) throw new Error(`links.txt not found (${res.status})`);
+
+      const text = await res.text();
+      const entries = text
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l && !l.startsWith('#'))
+        .map(l => {
+          const parts = l.split('|').map(p => p.trim());
+          return {
+            label: parts[0] || 'Untitled',
+            url:   parts[1] || '#',
+            desc:  parts[2] || 'Visit this link.',
+          };
+        });
+
+      if (entries.length === 0) {
+        linksBadge.textContent = '0';
+        linksGrid.innerHTML = `
+          <div class="state-box">
+            <div class="state-icon">↗</div>
+            <p class="state-title">No links yet</p>
+            <p class="state-sub">Add lines to links.txt in the root of the room-4 repo.<br>Format: Label | https://url.com | Description</p>
+          </div>`;
+        return;
+      }
+
+      linksBadge.textContent = `${entries.length} ${entries.length !== 1 ? 'items' : 'item'}`;
+      linksGrid.innerHTML = '';
+
+      entries.forEach((entry, i) => {
+        const num  = String(i + 1).padStart(2, '0');
+        const hostname = (() => { try { return new URL(entry.url).hostname; } catch { return entry.url; } })();
+        const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=32`;
+
+        const card = document.createElement('a');
+        card.className = 'card';
+        card.href = entry.url;
+        card.target = '_blank';
+        card.rel = 'noopener noreferrer';
+        card.style.animationDelay = `${i * 0.07}s`;
+        card.innerHTML = `
+          <div class="card-top">
+            <span class="card-num">${num}</span>
+            <span class="card-arrow">↗</span>
+          </div>
+          <div>
+            <div class="card-favicon-row">
+              <img
+                class="card-favicon"
+                src="${faviconUrl}"
+                alt=""
+                width="20" height="20"
+                onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+              >
+              <span class="card-favicon-fallback" style="display:none;">🌐</span>
+              <p class="card-name" style="margin:0;">${entry.label}</p>
+            </div>
+            <p class="card-desc" style="margin-top:.6rem;">${entry.desc}</p>
+          </div>
+          <span class="card-meta">${hostname}</span>`;
+        linksGrid.appendChild(card);
+      });
+
+    } catch (err) {
+      // If links.txt doesn't exist yet, show a friendly "not set up" state
+      linksBadge.textContent = '—';
+      linksGrid.innerHTML = `
+        <div class="state-box">
+          <div class="state-icon">↗</div>
+          <p class="state-title">No links.txt found</p>
+          <p class="state-sub">Create a file called <strong style="color:var(--accent);font-weight:400;">links.txt</strong> in the root of your room-4 repo.<br><br>
+          Each line: &nbsp;<span style="color:var(--accent);">Label | https://url.com | Description</span><br>
+          Lines starting with # are treated as comments.</p>
+        </div>`;
+    }
   }
 
   async function loadFolders() {
@@ -360,6 +480,7 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
     }
   }
 
+  loadLinks();
   loadFolders();
 
   // ── Date & Time ──
@@ -371,7 +492,7 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
   updateClock();
   setInterval(updateClock, 1000);
 
-  // ── QOTD — 365 Algebra 1 questions, one per day of the year ──
+  // ── QOTD ──
   const questions = [
     { day: "Jan 1 — New Year", q: "If x = 2026, what is x − 2000?", a: "26" },
     { day: "Jan 2", q: "Simplify: 3 + 4 × 2", a: "11" },
@@ -814,7 +935,6 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
             ctx.stroke();
           }
         }
-        // connect to mouse
         const mdx = particles[i].x - mouse.x;
         const mdy = particles[i].y - mouse.y;
         const mdist = Math.sqrt(mdx*mdx + mdy*mdy);
@@ -840,7 +960,6 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
         const glow = 0.5 + 0.5 * Math.sin(p.pulse);
         const opacity = p.opacity * (0.7 + 0.3 * glow);
 
-        // mouse repulsion
         const dx = p.x - mouse.x;
         const dy = p.y - mouse.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
@@ -850,19 +969,16 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
           p.vy += (dy / dist) * force;
         }
 
-        // velocity damping
         p.vx *= 0.98;
         p.vy *= 0.98;
         p.x += p.vx;
         p.y += p.vy;
 
-        // wrap edges
         if (p.x < 0) p.x = W;
         if (p.x > W) p.x = 0;
         if (p.y < 0) p.y = H;
         if (p.y > H) p.y = 0;
 
-        // draw dot
         const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
         gradient.addColorStop(0, `rgba(${ACCENT[0]},${ACCENT[1]},${ACCENT[2]},${opacity})`);
         gradient.addColorStop(1, `rgba(${ACCENT[0]},${ACCENT[1]},${ACCENT[2]},0)`);
@@ -882,7 +998,6 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
     init();
     draw();
   })();
-
 </script>
 </body>
 </html>
