@@ -83,30 +83,24 @@ html, body {
   font-size: .75rem; font-weight: 800; cursor: pointer; touch-action: auto;
 }
 
-.board-scroll {
-  flex: 1; width: 100%; overflow: hidden;
+/* The viewport — clips everything, no overflow */
+#board-viewport {
+  flex: 1; width: 100%; position: relative; overflow: hidden;
   background: #1a3810;
-  background-image:
-    linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
-  background-size: 54px 54px;
-  position: relative;
   touch-action: none;
 }
 
-#board-transform-root {
-  position: absolute;
-  transform-origin: 0 0;
-  top: 0; left: 0;
+/* Canvas draws the infinite grid lines */
+#grid-canvas {
+  position: absolute; inset: 0;
+  pointer-events: none;
 }
 
-#board { position: relative; touch-action: none; }
-
-.cell {
-  position: absolute; width: 54px; height: 54px;
-  border: 1px solid rgba(255,140,0,.14); border-radius: 5px;
-  background: transparent;
-  touch-action: none;
+/* Tile layer — absolutely positioned, tiles live here */
+#tile-layer {
+  position: absolute; top: 0; left: 0;
+  width: 0; height: 0; /* tiles use transform, no layout needed */
+  pointer-events: none;
 }
 
 .tile-placed {
@@ -116,15 +110,23 @@ html, body {
   display: flex; align-items: center; justify-content: center;
   font-family: 'Arial Rounded MT Bold', 'Arial Black', Arial, sans-serif;
   font-size: 1.5rem; color: #1a0e00; cursor: pointer; z-index: 2;
-  transform-origin: center center;
-  touch-action: none;
+  pointer-events: auto;
+  will-change: transform;
 }
 .tile-placed::after {
   content: attr(data-l); position: absolute; bottom: 2px; right: 4px;
   font-size: .42rem; font-weight: 900; color: #8a4010;
 }
-.tile-placed.held { border-color: #3b82f6; box-shadow: 0 0 0 2px #3b82f6, 2px 3px 0 #7a3500; opacity: .5; }
+.tile-placed.held     { border-color: #3b82f6; box-shadow: 0 0 0 2px #3b82f6, 2px 3px 0 #7a3500; opacity: .5; }
 .tile-placed.selected { border-color: #f59e0b; box-shadow: 0 0 0 3px #f59e0b, 2px 3px 0 #7a3500; }
+
+/* Hover-target cells rendered while a tile is held */
+.cell-target {
+  position: absolute; width: 54px; height: 54px;
+  border: 1px solid rgba(255,220,120,0.25); border-radius: 5px;
+  background: rgba(255,220,120,0.06);
+  pointer-events: auto; cursor: crosshair;
+}
 
 .tray-area {
   width: 100%; flex-shrink: 0;
@@ -232,6 +234,7 @@ html, body {
 #zoom-controls {
   position: absolute; bottom: 16px; right: 12px;
   display: flex; flex-direction: column; gap: 6px; z-index: 50;
+  pointer-events: auto;
 }
 .zoom-btn {
   width: 38px; height: 38px; border-radius: 10px;
@@ -248,13 +251,14 @@ html, body {
   color: rgba(255,140,0,.6); letter-spacing: .5px;
 }
 
+/* Marquee selection rectangle */
 #marquee {
   position: absolute; border: 2px dashed #f59e0b;
   background: rgba(245,158,11,.12);
   pointer-events: none; display: none; z-index: 20;
 }
 
-@keyframes vflash { 0%{transform:scale(1)}40%{transform:scale(1.1);background:#d4fce8}100%{transform:scale(1)} }
+@keyframes vflash { 0%{background:#fff3e0}40%{background:#d4fce8}100%{background:#fff3e0} }
 @keyframes bflash { 0%,100%{background:#fff3e0}40%{background:#ffe0e0} }
 .vflash { animation: vflash .35s ease; }
 .bflash { animation: bflash .4s ease 2; }
@@ -262,6 +266,7 @@ html, body {
 </head>
 <body>
 
+<!-- HOME -->
 <div id="home" class="screen active">
   <div class="logo-icon">🥭</div>
   <div class="logo-name">MANGO TILES</div>
@@ -290,6 +295,7 @@ html, body {
   <div id="dictStatus" style="font-size:.78rem;font-weight:700;color:rgba(255,140,0,.55);min-height:18px;text-align:center;width:100%;max-width:340px;"></div>
 </div>
 
+<!-- GAME -->
 <div id="game" class="screen">
   <div class="hud">
     <div class="hstat"><div class="hval" id="hBunch">0</div><div class="hlbl">Bunch</div></div>
@@ -303,10 +309,10 @@ html, body {
     <div class="hstat"><div class="hval" id="hTimer">0:00</div><div class="hlbl">Time</div></div>
     <button class="menu-btn" onclick="openMenu()">Menu</button>
   </div>
-  <div class="board-scroll" id="boardScroll">
-    <div id="board-transform-root">
-      <div id="board"></div>
-    </div>
+
+  <div id="board-viewport">
+    <canvas id="grid-canvas"></canvas>
+    <div id="tile-layer"></div>
     <div id="marquee"></div>
     <div id="zoom-controls">
       <div class="zoom-btn" onclick="zoomIn()">+</div>
@@ -315,6 +321,7 @@ html, body {
       <div class="zoom-btn" onclick="zoomReset()" style="font-size:.7rem;font-weight:900;">FIT</div>
     </div>
   </div>
+
   <div class="tray-area" id="trayArea">
     <div class="tray-tiles" id="trayEl"></div>
     <div class="act-row">
@@ -367,7 +374,7 @@ html, body {
 </div>
 
 <script>
-/* DICTIONARY */
+/* ── DICTIONARY ── */
 let DICT = new Set(), dictLoaded = false, dictEnabled = false;
 function toggleDict() {
   dictEnabled = !dictEnabled;
@@ -382,8 +389,7 @@ function toggleDict() {
   }
 }
 async function loadDictionary() {
-  const st = document.getElementById('dictStatus');
-  const desc = document.getElementById('dictToggleDesc');
+  const st = document.getElementById('dictStatus'), desc = document.getElementById('dictToggleDesc');
   st.textContent = 'Fetching word list…';
   for (const url of [
     'https://raw.githubusercontent.com/dolph/dictionary/master/enable1.txt',
@@ -396,95 +402,146 @@ async function loadDictionary() {
       DICT = new Set(words); dictLoaded = true;
       st.textContent = '✓ ' + DICT.size.toLocaleString() + ' words loaded';
       if (dictEnabled) desc.textContent = 'On — ' + DICT.size.toLocaleString() + ' words';
-      setTimeout(() => st.textContent = '', 3000);
-      return;
+      setTimeout(() => st.textContent = '', 3000); return;
     } catch(e) {}
   }
   st.textContent = '⚠ Could not load — check connection';
   desc.textContent = 'On — load failed';
 }
 
-/* AUDIO */
+/* ── AUDIO ── */
 const AC = new (window.AudioContext || window.webkitAudioContext)();
 function playThunk() {
   try {
     if (AC.state === 'suspended') AC.resume();
-    const buf = AC.createBuffer(1, AC.sampleRate * 0.1, AC.sampleRate);
+    const buf = AC.createBuffer(1, AC.sampleRate*.1, AC.sampleRate);
     const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(AC.sampleRate*0.015));
-    const src = AC.createBufferSource(); src.buffer = buf;
-    const f = AC.createBiquadFilter(); f.type='lowpass'; f.frequency.value=200; f.Q.value=3;
-    const g = AC.createGain(); g.gain.setValueAtTime(1.2, AC.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime+0.1);
+    for (let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(AC.sampleRate*.015));
+    const src=AC.createBufferSource(); src.buffer=buf;
+    const f=AC.createBiquadFilter(); f.type='lowpass'; f.frequency.value=200; f.Q.value=3;
+    const g=AC.createGain(); g.gain.setValueAtTime(1.2,AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+0.1);
     src.connect(f); f.connect(g); g.connect(AC.destination); src.start();
   } catch(e) {}
 }
 
-/* CONSTANTS */
-const CELL=54, GCOLS=30, GROWS=30, ORIGIN_ROW=14, ORIGIN_COL=13;
-const LD={A:13,B:3,C:3,D:6,E:18,F:3,G:4,H:3,I:12,J:2,K:2,L:5,M:3,N:8,O:11,P:3,Q:2,R:9,S:6,T:9,U:6,V:3,W:3,X:2,Y:3,Z:2};
+/* ── CONSTANTS ── */
+const CELL = 54;
+const LD = {A:13,B:3,C:3,D:6,E:18,F:3,G:4,H:3,I:12,J:2,K:2,L:5,M:3,N:8,O:11,P:3,Q:2,R:9,S:6,T:9,U:6,V:3,W:3,X:2,Y:3,Z:2};
 
-/* ZOOM STATE */
+/* ── VIEWPORT / CAMERA ── */
+// Camera position in world-space pixels (top-left of screen = this world point)
+let camX = 0, camY = 0;
 let zoom = 1.0;
-const ZOOM_MIN = 0.3, ZOOM_MAX = 2.5, ZOOM_STEP = 0.15;
-let vpX = 0, vpY = 0;
+const ZOOM_MIN = 0.25, ZOOM_MAX = 3.0, ZOOM_STEP = 0.15;
 
-function applyZoom() {
-  const root = document.getElementById('board-transform-root');
-  root.style.transform = `scale(${zoom})`;
-  const sc = document.getElementById('boardScroll');
-  const gs = 54 * zoom;
-  sc.style.backgroundSize = `${gs}px ${gs}px`;
+const vp     = () => document.getElementById('board-viewport');
+const canvas = () => document.getElementById('grid-canvas');
+const tileLayer = () => document.getElementById('tile-layer');
+
+// World → screen
+function worldToScreen(wx, wy) {
+  return { x: (wx - camX) * zoom, y: (wy - camY) * zoom };
+}
+// Screen → world
+function screenToWorld(sx, sy) {
+  return { x: sx / zoom + camX, y: sy / zoom + camY };
+}
+// Screen point → cell (row, col) — integers, infinite range
+function screenToCell(sx, sy) {
+  const w = screenToWorld(sx, sy);
+  return { row: Math.floor(w.y / CELL), col: Math.floor(w.x / CELL) };
+}
+// Cell → world top-left pixel
+function cellToWorld(row, col) {
+  return { x: col * CELL, y: row * CELL };
+}
+// Cell → screen top-left pixel
+function cellToScreen(row, col) {
+  return worldToScreen(col * CELL, row * CELL);
+}
+
+function applyCamera() {
+  drawGrid();
+  renderPlaced();
+  renderCellTargets();
+  updateMarqueePos();
+}
+
+/* ── GRID DRAWING ── */
+function drawGrid() {
+  const c = canvas();
+  const vpEl = vp();
+  const W = vpEl.clientWidth, H = vpEl.clientHeight;
+  if (c.width !== W) c.width = W;
+  if (c.height !== H) c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  const cellPx = CELL * zoom;
+  // Start grid lines from the world origin offset
+  const startX = ((-camX % CELL) * zoom + cellPx) % cellPx;
+  const startY = ((-camY % CELL) * zoom + cellPx) % cellPx;
+
+  ctx.strokeStyle = 'rgba(255,240,180,0.12)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  for (let x = startX; x <= W; x += cellPx) {
+    ctx.moveTo(Math.round(x) + 0.5, 0);
+    ctx.lineTo(Math.round(x) + 0.5, H);
+  }
+  for (let y = startY; y <= H; y += cellPx) {
+    ctx.moveTo(0, Math.round(y) + 0.5);
+    ctx.lineTo(W, Math.round(y) + 0.5);
+  }
+  ctx.stroke();
+
+  // Draw origin marker (faint cross at 0,0)
+  const ox = worldToScreen(0, 0);
+  ctx.strokeStyle = 'rgba(255,140,0,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(ox.x - 10, ox.y + 0.5); ctx.lineTo(ox.x + 10, ox.y + 0.5);
+  ctx.moveTo(ox.x + 0.5, ox.y - 10); ctx.lineTo(ox.x + 0.5, ox.y + 10);
+  ctx.stroke();
+
   document.getElementById('zoomPct').textContent = Math.round(zoom * 100) + '%';
 }
-function updateBoardPos() {
-  const root = document.getElementById('board-transform-root');
-  root.style.left = (-vpX) + 'px';
-  root.style.top  = (-vpY) + 'px';
-  const sc = document.getElementById('boardScroll');
-  const gs = 54 * zoom;
-  sc.style.backgroundPosition = `${-vpX % gs}px ${-vpY % gs}px`;
-}
-function zoomAt(newZoom, clientX, clientY) {
-  const sc = document.getElementById('boardScroll');
-  const rect = sc.getBoundingClientRect();
-  const sx = clientX - rect.left;
-  const sy = clientY - rect.top;
-  const bx = (vpX + sx) / zoom;
-  const by = (vpY + sy) / zoom;
+
+/* ── ZOOM ── */
+function zoomAt(newZoom, screenX, screenY) {
+  const w = screenToWorld(screenX, screenY);
   zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newZoom));
-  vpX = bx * zoom - sx;
-  vpY = by * zoom - sy;
-  applyZoom();
-  updateBoardPos();
+  // Keep world point under (screenX, screenY)
+  camX = w.x - screenX / zoom;
+  camY = w.y - screenY / zoom;
+  applyCamera();
 }
-function zoomIn()    { const sc=document.getElementById('boardScroll'),r=sc.getBoundingClientRect(); zoomAt(zoom+ZOOM_STEP, r.left+r.width/2, r.top+r.height/2); }
-function zoomOut()   { const sc=document.getElementById('boardScroll'),r=sc.getBoundingClientRect(); zoomAt(zoom-ZOOM_STEP, r.left+r.width/2, r.top+r.height/2); }
+function zoomIn()  { const r=vp().getBoundingClientRect(); zoomAt(zoom+ZOOM_STEP, r.width/2, r.height/2); }
+function zoomOut() { const r=vp().getBoundingClientRect(); zoomAt(zoom-ZOOM_STEP, r.width/2, r.height/2); }
 function zoomReset() {
   zoom = 1.0;
-  const sc = document.getElementById('boardScroll');
-  vpX = Math.max(0, ORIGIN_COL*CELL - sc.clientWidth/2 + CELL/2);
-  vpY = Math.max(0, ORIGIN_ROW*CELL - sc.clientHeight/2 + CELL/2);
-  applyZoom(); updateBoardPos();
+  const vpEl = vp();
+  // Center the origin at screen center
+  camX = -vpEl.clientWidth / 2 / zoom;
+  camY = -vpEl.clientHeight / 2 / zoom;
+  applyCamera();
 }
 
-/* GAME STATE */
+/* ── GAME STATE ── */
 let bunch=[], tray=[], placed=[];
 let uid=0, gMode='classic', peels=0;
 let timerSec=0, timerInt=null, paused=false;
 let dumpPending=false;
-let held=null;
+let held=null; // { tile, src }
 
-/* MARQUEE */
-let marqueeMode = false;
-let marqueeActive = false;
-let marqueeStart = {x:0, y:0};
-let selectedIds = new Set();
-let draggingSelection = false;
-let dragSelStart = {x:0, y:0};
-let dragSelOriginals = [];
+/* ── MARQUEE ── */
+let marqueeMode=false, marqueeActive=false;
+let marqueeWorldStart={x:0,y:0}, marqueeWorldEnd={x:0,y:0};
+let selectedIds=new Set();
+let draggingSelection=false, dragSelScreenStart={x:0,y:0}, dragSelOriginals=[];
 
-/* UTILITY */
+/* ── UTILITY ── */
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function openOv(id)  { document.getElementById(id).classList.add('show'); }
 function closeOv(id) { document.getElementById(id).classList.remove('show'); }
@@ -499,13 +556,13 @@ function showToast(msg, type='') {
 }
 function fmtTime(s) { return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60); }
 function startTimer() { stopTimer(); timerInt=setInterval(()=>{ if(!paused){timerSec++; document.getElementById('hTimer').textContent=fmtTime(timerSec);} },1000); }
-function stopTimer()  { clearInterval(timerInt); }
-function makeBunch()  { const b=[]; Object.entries(LD).forEach(([l,n])=>{for(let i=0;i<n;i++)b.push(l);}); for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];} return b; }
-function drawFrom(n)  { const o=[]; for(let i=0;i<n&&bunch.length;i++) o.push(bunch.pop()); return o; }
-function newTile(l)   { return {id:++uid, letter:l}; }
-function tileRot(id)  { const s=(id*2654435761)>>>0; return ((s%100)/100*5)-2.5; }
+function stopTimer() { clearInterval(timerInt); }
+function makeBunch() { const b=[]; Object.entries(LD).forEach(([l,n])=>{for(let i=0;i<n;i++)b.push(l);}); for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];} return b; }
+function drawFrom(n) { const o=[]; for(let i=0;i<n&&bunch.length;i++) o.push(bunch.pop()); return o; }
+function newTile(l)  { return {id:++uid, letter:l}; }
+function tileRot(id) { const s=(id*2654435761)>>>0; return ((s%100)/100*5)-2.5; }
 
-/* START */
+/* ── START ── */
 function startGame(mode) {
   gMode=mode; paused=false; dumpPending=false; held=null;
   bunch=[]; tray=[]; placed=[]; uid=0; peels=0;
@@ -516,32 +573,23 @@ function startGame(mode) {
   document.getElementById('bMarquee').classList.remove('active');
   bunch=makeBunch();
   tray=drawFrom(mode==='full'?144:21).map(l=>newTile(l));
-  zoom=1.0;
   showScreen('game');
-  buildBoard();
-  renderAll();
-  const sc=document.getElementById('boardScroll');
-  vpX = Math.max(0, ORIGIN_COL*CELL - sc.clientWidth/2 + CELL/2);
-  vpY = Math.max(0, ORIGIN_ROW*CELL - sc.clientHeight/2 + CELL/2);
-  applyZoom(); updateBoardPos();
-  startTimer();
-  showToast('Tap a tile to pick it up, then tap the board 🥭','good');
+  // Small delay to let the layout settle before sizing canvas
+  requestAnimationFrame(() => {
+    zoom=1.0;
+    // Start centered on the origin
+    const vpEl=vp();
+    camX = -vpEl.clientWidth/2/zoom;
+    camY = -vpEl.clientHeight/2/zoom;
+    renderAll();
+    startTimer();
+    showToast('Tap a tile to pick it up, then tap the board 🥭','good');
+  });
 }
 
-function buildBoard() {
-  const b=document.getElementById('board');
-  b.innerHTML=''; b.style.width=(GCOLS*CELL)+'px'; b.style.height=(GROWS*CELL)+'px';
-  for(let r=0;r<GROWS;r++) for(let c=0;c<GCOLS;c++) {
-    const cell=document.createElement('div');
-    cell.className='cell'; cell.dataset.row=r; cell.dataset.col=c;
-    cell.style.left=(c*CELL)+'px'; cell.style.top=(r*CELL)+'px';
-    cell.addEventListener('click', ()=>onCellClick(r,c));
-    b.appendChild(cell);
-  }
-}
+/* ── RENDER ── */
+function renderAll() { renderTray(); renderPlaced(); renderCellTargets(); updateHUD(); drawGrid(); }
 
-/* RENDER */
-function renderAll() { renderTray(); renderPlaced(); updateHUD(); }
 function renderTray() {
   const el=document.getElementById('trayEl'); el.innerHTML='';
   tray.forEach(tile => {
@@ -552,22 +600,79 @@ function renderTray() {
     el.appendChild(d);
   });
 }
+
 function renderPlaced() {
-  const board=document.getElementById('board');
-  board.querySelectorAll('.tile-placed').forEach(e=>e.remove());
+  const layer=tileLayer();
+  // Remove old tile elements, keep cell-targets
+  layer.querySelectorAll('.tile-placed').forEach(e=>e.remove());
   placed.forEach(tile => {
+    const sc = cellToScreen(tile.row, tile.col);
     const el=document.createElement('div');
-    let cls = 'tile-placed';
+    let cls='tile-placed';
     if (held && held.tile.id===tile.id) cls+=' held';
     if (selectedIds.has(tile.id)) cls+=' selected';
     el.className=cls;
     el.dataset.id=tile.id; el.textContent=tile.letter; el.setAttribute('data-l',tile.letter);
-    el.style.left=(tile.col*CELL)+'px'; el.style.top=(tile.row*CELL)+'px'; el.style.zIndex=2;
-    el.style.transform=`rotate(${tileRot(tile.id)}deg)`;
+    // Position via transform for perf
+    el.style.left='0'; el.style.top='0';
+    el.style.transform=`translate(${sc.x}px,${sc.y}px) rotate(${tileRot(tile.id)}deg)`;
+    el.style.width=el.style.height=(CELL*zoom)+'px';
+    el.style.fontSize=(1.5*zoom)+'rem';
     el.addEventListener('click', e=>{ e.stopPropagation(); onBoardTileClick(tile); });
-    board.appendChild(el);
+    layer.appendChild(el);
   });
 }
+
+// Show clickable empty-cell targets near placed tiles (or everywhere if tray held)
+function renderCellTargets() {
+  const layer=tileLayer();
+  layer.querySelectorAll('.cell-target').forEach(e=>e.remove());
+  if (!held) return;
+
+  // Build set of occupied cells
+  const occupied = new Set(placed.map(t=>t.row+','+t.col));
+
+  // Collect candidate cells: neighbors of placed tiles + a wide empty-board radius
+  const candidates = new Set();
+  const vpEl=vp();
+  const W=vpEl.clientWidth, H=vpEl.clientHeight;
+
+  if (placed.length === 0) {
+    // No tiles yet — show a grid of targets covering the screen
+    const tl=screenToCell(0,0), br=screenToCell(W,H);
+    for (let r=tl.row-1; r<=br.row+1; r++)
+      for (let c=tl.col-1; c<=br.col+1; c++)
+        candidates.add(r+','+c);
+  } else {
+    placed.forEach(t => {
+      [[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([dr,dc])=>{
+        candidates.add((t.row+dr)+','+(t.col+dc));
+      });
+    });
+    // Also show targets visible on screen that aren't occupied
+    const tl=screenToCell(0,0), br=screenToCell(W,H);
+    for (let r=tl.row; r<=br.row; r++)
+      for (let c=tl.col; c<=br.col; c++)
+        candidates.add(r+','+c);
+  }
+
+  candidates.forEach(k => {
+    if (occupied.has(k)) return;
+    const [r,c]=k.split(',').map(Number);
+    const sc=cellToScreen(r,c);
+    // Cull off-screen
+    const sz=CELL*zoom;
+    if (sc.x+sz<0||sc.x>W||sc.y+sz<0||sc.y>H) return;
+    const el=document.createElement('div');
+    el.className='cell-target';
+    el.style.left='0'; el.style.top='0';
+    el.style.transform=`translate(${sc.x}px,${sc.y}px)`;
+    el.style.width=el.style.height=sz+'px';
+    el.addEventListener('click', ()=>onCellClick(r,c));
+    layer.appendChild(el);
+  });
+}
+
 function updateHUD() {
   document.getElementById('hBunch').textContent=bunch.length;
   document.getElementById('hTray').textContent=tray.length;
@@ -577,209 +682,209 @@ function updateHUD() {
   document.getElementById('bDump').disabled=tray.length===0||bunch.length<3;
 }
 
-/* CURSOR */
-const cursorEl = document.getElementById('cursor-tile');
-function showCursor(letter, x, y) {
-  cursorEl.textContent=letter; cursorEl.style.left=x+'px'; cursorEl.style.top=y+'px';
-  cursorEl.style.display='flex';
-}
+/* ── CURSOR TILE ── */
+const cursorEl=document.getElementById('cursor-tile');
+let mouseX=window.innerWidth/2, mouseY=window.innerHeight/2;
+function showCursor(letter,x,y) { cursorEl.textContent=letter; cursorEl.style.left=x+'px'; cursorEl.style.top=y+'px'; cursorEl.style.display='flex'; }
 function moveCursor(x,y) { cursorEl.style.left=x+'px'; cursorEl.style.top=y+'px'; }
 function hideCursor() { cursorEl.style.display='none'; }
 
-let mouseX=window.innerWidth/2, mouseY=window.innerHeight/2;
-
-/* MARQUEE MODE */
+/* ── MARQUEE ── */
 function toggleMarqueeMode() {
   if (held) cancelHeld();
-  marqueeMode = !marqueeMode;
+  marqueeMode=!marqueeMode;
   document.getElementById('bMarquee').classList.toggle('active', marqueeMode);
   if (!marqueeMode) { selectedIds.clear(); renderPlaced(); }
-  showToast(marqueeMode ? '⬚ Drag to select tiles, then drag selection to move' : 'Select mode off');
+  showToast(marqueeMode?'⬚ Drag to select tiles, then drag to move':'Select mode off');
 }
 
-function clientToBoard(cx, cy) {
-  const sc = document.getElementById('boardScroll');
-  const rect = sc.getBoundingClientRect();
-  return { x: (cx - rect.left + vpX) / zoom, y: (cy - rect.top + vpY) / zoom };
+const marqueeEl=document.getElementById('marquee');
+
+function updateMarqueePos() {
+  if (!marqueeActive) return;
+  const x1=Math.min(marqueeWorldStart.x,marqueeWorldEnd.x);
+  const y1=Math.min(marqueeWorldStart.y,marqueeWorldEnd.y);
+  const x2=Math.max(marqueeWorldStart.x,marqueeWorldEnd.x);
+  const y2=Math.max(marqueeWorldStart.y,marqueeWorldEnd.y);
+  const s1=worldToScreen(x1,y1), s2=worldToScreen(x2,y2);
+  marqueeEl.style.left=s1.x+'px'; marqueeEl.style.top=s1.y+'px';
+  marqueeEl.style.width=(s2.x-s1.x)+'px'; marqueeEl.style.height=(s2.y-s1.y)+'px';
 }
 
-const marqueeEl = document.getElementById('marquee');
+/* ── INPUT ── */
+let boardPan=null;
+const vpEl2=document.getElementById('board-viewport');
 
-/* POINTER EVENTS */
-let boardPan = null;
-const sc = document.getElementById('boardScroll');
-
-sc.addEventListener('pointerdown', e => {
+vpEl2.addEventListener('pointerdown', e=>{
+  // Don't start pan if clicking a tile or cell-target or zoom button
+  if (e.target.closest('.tile-placed,.cell-target,.zoom-btn,.zoom-pct')) return;
   if (held) return;
+
   if (marqueeMode) {
-    const bp = clientToBoard(e.clientX, e.clientY);
-    marqueeStart = { x: bp.x, y: bp.y };
-    marqueeActive = true;
-    marqueeEl.style.display = 'block';
-    marqueeEl.style.left = (marqueeStart.x * zoom - vpX) + 'px';
-    marqueeEl.style.top  = (marqueeStart.y * zoom - vpY) + 'px';
-    marqueeEl.style.width = '0px'; marqueeEl.style.height = '0px';
-    sc.setPointerCapture(e.pointerId);
+    const rect=vpEl2.getBoundingClientRect();
+    const w=screenToWorld(e.clientX-rect.left, e.clientY-rect.top);
+    marqueeWorldStart={...w}; marqueeWorldEnd={...w};
+    marqueeActive=true;
+    marqueeEl.style.display='block';
+    marqueeEl.style.width='0'; marqueeEl.style.height='0';
+    vpEl2.setPointerCapture(e.pointerId);
     return;
   }
-  boardPan = { startX: e.clientX, startY: e.clientY, vpX0: vpX, vpY0: vpY };
-  sc.setPointerCapture(e.pointerId);
+
+  boardPan={ startX:e.clientX, startY:e.clientY, camX0:camX, camY0:camY };
+  vpEl2.setPointerCapture(e.pointerId);
+  vpEl2.style.cursor='grabbing';
 });
 
-sc.addEventListener('pointermove', e => {
-  mouseX = e.clientX; mouseY = e.clientY;
-  if (held) { moveCursor(mouseX, mouseY); return; }
+vpEl2.addEventListener('pointermove', e=>{
+  const rect=vpEl2.getBoundingClientRect();
+  const sx=e.clientX-rect.left, sy=e.clientY-rect.top;
+  mouseX=e.clientX; mouseY=e.clientY;
+  if (held) { moveCursor(mouseX,mouseY); return; }
+
   if (marqueeMode && marqueeActive) {
-    const bp = clientToBoard(e.clientX, e.clientY);
-    const x1 = Math.min(marqueeStart.x, bp.x);
-    const y1 = Math.min(marqueeStart.y, bp.y);
-    const x2 = Math.max(marqueeStart.x, bp.x);
-    const y2 = Math.max(marqueeStart.y, bp.y);
-    marqueeEl.style.left   = (x1 * zoom - vpX) + 'px';
-    marqueeEl.style.top    = (y1 * zoom - vpY) + 'px';
-    marqueeEl.style.width  = ((x2 - x1) * zoom) + 'px';
-    marqueeEl.style.height = ((y2 - y1) * zoom) + 'px';
+    marqueeWorldEnd=screenToWorld(sx,sy);
+    updateMarqueePos();
     return;
   }
+
   if (draggingSelection) {
-    const dx = (e.clientX - dragSelStart.x) / zoom;
-    const dy = (e.clientY - dragSelStart.y) / zoom;
-    placed.forEach(t => {
-      if (selectedIds.has(t.id)) {
-        const orig = dragSelOriginals.find(o => o.id === t.id);
-        if (orig) {
-          t.col = Math.round(orig.col + dx / CELL);
-          t.row = Math.round(orig.row + dy / CELL);
-          t.col = Math.max(0, Math.min(GCOLS-1, t.col));
-          t.row = Math.max(0, Math.min(GROWS-1, t.row));
-        }
+    const dx=(e.clientX-dragSelScreenStart.x)/zoom;
+    const dy=(e.clientY-dragSelScreenStart.y)/zoom;
+    placed.forEach(t=>{
+      if (!selectedIds.has(t.id)) return;
+      const orig=dragSelOriginals.find(o=>o.id===t.id);
+      if (orig) {
+        t.col=Math.round(orig.col+dx/CELL);
+        t.row=Math.round(orig.row+dy/CELL);
       }
     });
     renderPlaced();
     return;
   }
+
   if (boardPan) {
-    vpX = boardPan.vpX0 - (e.clientX - boardPan.startX);
-    vpY = boardPan.vpY0 - (e.clientY - boardPan.startY);
-    updateBoardPos();
+    camX=boardPan.camX0-(e.clientX-boardPan.startX)/zoom;
+    camY=boardPan.camY0-(e.clientY-boardPan.startY)/zoom;
+    applyCamera();
   }
 });
 
-sc.addEventListener('pointerup', e => {
+vpEl2.addEventListener('pointerup', e=>{
+  vpEl2.style.cursor='';
   if (draggingSelection) {
-    draggingSelection = false;
+    draggingSelection=false;
     resolveCollisions();
     renderAll();
     return;
   }
   if (marqueeMode && marqueeActive) {
-    marqueeActive = false;
-    marqueeEl.style.display = 'none';
-    const bp = clientToBoard(e.clientX, e.clientY);
-    const x1 = Math.min(marqueeStart.x, bp.x) / CELL;
-    const y1 = Math.min(marqueeStart.y, bp.y) / CELL;
-    const x2 = Math.max(marqueeStart.x, bp.x) / CELL;
-    const y2 = Math.max(marqueeStart.y, bp.y) / CELL;
+    marqueeActive=false;
+    marqueeEl.style.display='none';
+    // Select tiles in marquee rect (world coords)
+    const x1=Math.min(marqueeWorldStart.x,marqueeWorldEnd.x)/CELL;
+    const y1=Math.min(marqueeWorldStart.y,marqueeWorldEnd.y)/CELL;
+    const x2=Math.max(marqueeWorldStart.x,marqueeWorldEnd.x)/CELL;
+    const y2=Math.max(marqueeWorldStart.y,marqueeWorldEnd.y)/CELL;
     selectedIds.clear();
-    placed.forEach(t => {
-      if (t.col >= x1 && t.col < x2 && t.row >= y1 && t.row < y2) selectedIds.add(t.id);
+    placed.forEach(t=>{
+      if (t.col>=x1&&t.col<x2&&t.row>=y1&&t.row<y2) selectedIds.add(t.id);
     });
     renderPlaced();
-    if (selectedIds.size > 0) showToast(`${selectedIds.size} tile${selectedIds.size>1?'s':''} selected — drag to move`, 'good');
+    if (selectedIds.size>0) showToast(`${selectedIds.size} tile${selectedIds.size>1?'s':''} selected — drag to move`,'good');
     return;
   }
-  boardPan = null;
+  boardPan=null;
 });
 
-document.getElementById('board').addEventListener('pointerdown', e => {
-  if (!marqueeMode) return;
-  if (marqueeActive) return;
-  const tileEl = e.target.closest('.tile-placed');
+// Drag selected tiles
+tileLayer().addEventListener('pointerdown', e=>{
+  if (!marqueeMode||marqueeActive) return;
+  const tileEl=e.target.closest('.tile-placed');
   if (!tileEl) return;
-  const id = parseInt(tileEl.dataset.id);
+  const id=parseInt(tileEl.dataset.id);
   if (!selectedIds.has(id)) return;
   e.stopPropagation();
-  draggingSelection = true;
-  dragSelStart = { x: e.clientX, y: e.clientY };
-  dragSelOriginals = placed.filter(t => selectedIds.has(t.id)).map(t => ({...t}));
+  draggingSelection=true;
+  dragSelScreenStart={x:e.clientX,y:e.clientY};
+  dragSelOriginals=placed.filter(t=>selectedIds.has(t.id)).map(t=>({...t}));
 });
 
 function resolveCollisions() {
-  const usedCells = {};
-  placed.forEach(t => {
-    const k = t.row + ',' + t.col;
-    if (!usedCells[k]) { usedCells[k] = t; return; }
-    let c = t.col + 1;
-    while (placed.find(o => o.id !== t.id && o.row === t.row && o.col === c)) c++;
-    t.col = Math.min(GCOLS-1, c);
+  const seen={};
+  placed.forEach(t=>{
+    const k=t.row+','+t.col;
+    if (!seen[k]) { seen[k]=t; return; }
+    let c=t.col+1;
+    while (placed.find(o=>o.id!==t.id&&o.row===t.row&&o.col===c)) c++;
+    t.col=c;
   });
 }
 
-sc.addEventListener('wheel', e => {
-  vpX += e.deltaX;
-  vpY += e.deltaY;
-  updateBoardPos();
-}, { passive: true });
+// Scroll to pan
+vpEl2.addEventListener('wheel', e=>{
+  camX+=e.deltaX/zoom;
+  camY+=e.deltaY/zoom;
+  applyCamera();
+}, {passive:true});
 
-document.addEventListener('mousemove', e => {
-  mouseX = e.clientX; mouseY = e.clientY;
-  if (held) moveCursor(mouseX, mouseY);
+document.addEventListener('mousemove', e=>{
+  mouseX=e.clientX; mouseY=e.clientY;
+  if (held) moveCursor(mouseX,mouseY);
 });
 
-/* PICK UP / PUT DOWN */
-function pickUp(tile, src) {
-  held={tile, src};
-  showCursor(tile.letter, mouseX, mouseY);
+// Resize handler
+window.addEventListener('resize', ()=>{ if(document.getElementById('game').classList.contains('active')) applyCamera(); });
+
+/* ── PICK UP / PUT DOWN ── */
+function pickUp(tile,src) {
+  held={tile,src};
+  showCursor(tile.letter,mouseX,mouseY);
   renderAll();
 }
 function cancelHeld() {
   if (!held) return;
-  if (held.src==='tray') tray.push({id:held.tile.id, letter:held.tile.letter});
+  if (held.src==='tray') tray.push({id:held.tile.id,letter:held.tile.letter});
   held=null; hideCursor(); renderAll();
 }
 
-/* CLICK HANDLERS */
+/* ── CLICK HANDLERS ── */
 function onTrayTileClick(tile) {
   if (marqueeMode) return;
   if (dumpPending) { executeDump(tile); return; }
-  if (held) {
-    if (held.tile.id===tile.id) { cancelHeld(); return; }
-    cancelHeld();
-  }
+  if (held) { if(held.tile.id===tile.id){cancelHeld();return;} cancelHeld(); }
   tray=tray.filter(t=>t.id!==tile.id);
   pickUp(tile,'tray');
 }
+
 function onBoardTileClick(tile) {
   if (marqueeMode) {
-    if (selectedIds.has(tile.id)) selectedIds.delete(tile.id);
-    else selectedIds.add(tile.id);
-    renderPlaced();
-    return;
+    if (selectedIds.has(tile.id)) selectedIds.delete(tile.id); else selectedIds.add(tile.id);
+    renderPlaced(); return;
   }
   if (!held) {
     placed=placed.filter(t=>t.id!==tile.id);
-    tray.push({id:tile.id, letter:tile.letter});
-    renderAll();
-    return;
+    tray.push({id:tile.id,letter:tile.letter});
+    renderAll(); return;
   }
   if (held.tile.id===tile.id) { cancelHeld(); return; }
-  const row=tile.row, col=tile.col;
+  const row=tile.row,col=tile.col;
   placed=placed.filter(t=>t.id!==tile.id);
   if (held.src==='tray') tray=tray.filter(t=>t.id!==held.tile.id);
   else placed=placed.filter(t=>t.id!==held.tile.id);
-  placed.push({id:held.tile.id, letter:held.tile.letter, row, col});
+  placed.push({id:held.tile.id,letter:held.tile.letter,row,col});
   playThunk();
-  tray.push({id:tile.id, letter:tile.letter});
+  tray.push({id:tile.id,letter:tile.letter});
   held=null; hideCursor(); renderAll();
 }
-function onCellClick(row, col) {
-  if (marqueeMode) return;
+
+function onCellClick(row,col) {
   if (!held) return;
   const occupant=placed.find(t=>t.row===row&&t.col===col);
   if (occupant) { onBoardTileClick(occupant); return; }
   if (held.src==='tray') tray=tray.filter(t=>t.id!==held.tile.id);
   else placed=placed.filter(t=>t.id!==held.tile.id);
-  placed.push({id:held.tile.id, letter:held.tile.letter, row, col});
+  placed.push({id:held.tile.id,letter:held.tile.letter,row,col});
   playThunk();
   held=null; hideCursor(); renderAll();
 }
@@ -787,21 +892,21 @@ function onCellClick(row, col) {
 document.getElementById('trayArea').addEventListener('click', e=>{
   if (!held) return;
   if (e.target.closest('.tile-tray,.abtn')) return;
-  tray.push({id:held.tile.id, letter:held.tile.letter});
+  tray.push({id:held.tile.id,letter:held.tile.letter});
   held=null; hideCursor(); renderAll();
 });
 
 document.addEventListener('keydown', e=>{
-  if(e.key==='Escape') {
+  if (e.key==='Escape') {
     if (held) cancelHeld();
     if (marqueeMode) { marqueeMode=false; selectedIds.clear(); document.getElementById('bMarquee').classList.remove('active'); renderPlaced(); }
   }
-  if(e.key==='+' || e.key==='=') zoomIn();
-  if(e.key==='-') zoomOut();
-  if(e.key==='0') zoomReset();
+  if (e.key==='+'||e.key==='=') zoomIn();
+  if (e.key==='-') zoomOut();
+  if (e.key==='0') zoomReset();
 });
 
-/* ACTIONS */
+/* ── ACTIONS ── */
 function doPeel() {
   if (tray.length>0)     { showToast('Tray must be empty to Peel!','bad'); return; }
   if (placed.length===0) { showToast('Place some tiles first!','bad'); return; }
@@ -857,7 +962,7 @@ function doWin() {
   openOv('ovWin');
 }
 
-/* VALIDATION */
+/* ── VALIDATION ── */
 function getMap() { const m={}; placed.forEach(t=>{m[t.row+','+t.col]=t.letter;}); return m; }
 function isConnected() {
   if (placed.length<=1) return true;
