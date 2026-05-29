@@ -111,13 +111,13 @@ header {
 .card-preview {
   position: absolute; inset: 0; z-index: 0;
   background-size: cover; background-position: center;
-  filter: blur(6px) brightness(0.22) saturate(0.6);
-  transform: scale(1.08);
+  filter: blur(2px) brightness(0.35) saturate(0.7);
+  transform: scale(1.04);
   transition: filter .4s cubic-bezier(.23,1,.32,1), opacity .4s;
   opacity: 0;
 }
 .card-preview.loaded { opacity: 1; }
-.card:hover .card-preview { filter: blur(4px) brightness(0.12) saturate(0.4); }
+.card:hover .card-preview { filter: blur(1px) brightness(0.22) saturate(0.5); }
 
 .card-top   { display:flex; justify-content:space-between; align-items:flex-start; }
 .card-num   { font-family:'Bebas Neue',sans-serif; font-size:3.2rem; line-height:1; color:transparent; -webkit-text-stroke:1px #2a2a2a; transition:-webkit-text-stroke-color .3s; }
