@@ -321,12 +321,13 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
 
     folders.forEach((folder, i) => {
       const num  = String(i + 1).padStart(2, '0');
-      const displayName = folder.name.startsWith(GAMES_PREFIX)
+      const isGame = folder.name.startsWith(GAMES_PREFIX);
+      const displayName = isGame
         ? prettify(folder.name.slice(GAMES_PREFIX.length))
         : prettify(folder.name);
       const card = document.createElement('a');
       card.className = 'card';
-      card.href = `${folder.name}/`;
+      card.href = isGame ? `games/${folder.name}/` : `tools/${folder.name}/`;
       card.style.animationDelay = `${i * 0.07}s`;
       card.innerHTML = `
         <div class="card-top">
@@ -337,7 +338,7 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
           <p class="card-name">${displayName}</p>
           <p class="card-desc">Open this section to explore its content.</p>
         </div>
-        <span class="card-meta">${folder.name}/index.html</span>`;
+        <span class="card-meta">${isGame ? 'games' : 'tools'}/${folder.name}/index.html</span>`;
       gridEl.appendChild(card);
     });
   }
@@ -355,7 +356,7 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
     try {
       // Fetch raw links.txt from the repo (cache-busted so edits show quickly)
       const res = await fetch(
-        `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/links.txt?t=${Date.now()}`
+        `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/master/links.txt?t=${Date.now()}`
       );
 
       if (!res.ok) throw new Error(`links.txt not found (${res.status})`);
@@ -442,29 +443,36 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
     const gamesBadge = document.getElementById('gamesBadge');
     const toolsBadge = document.getElementById('toolsBadge');
 
+    async function fetchFolder(path) {
+      try {
+        const res = await fetch(
+          `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`,
+          { headers: { 'Accept': 'application/vnd.github+json' } }
+        );
+        if (!res.ok) return [];
+        const items = await res.json();
+        return Array.isArray(items) ? items.filter(i => i.type === 'dir') : [];
+      } catch {
+        return [];
+      }
+    }
+
     try {
-      const res = await fetch(
-        `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/`,
-        { headers: { 'Accept': 'application/vnd.github+json' } }
-      );
-      if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
-
-      const items   = await res.json();
-      const folders = items.filter(i => i.type === 'dir' && !IGNORE.has(i.name));
-
-      const games = folders.filter(f => f.name.startsWith(GAMES_PREFIX));
-      const tools = folders.filter(f => !f.name.startsWith(GAMES_PREFIX));
+      const [games, tools] = await Promise.all([
+        fetchFolder('games'),
+        fetchFolder('tools'),
+      ]);
 
       renderCards(
         games, gamesGrid, gamesBadge,
         '🎮', 'No games yet',
-        'Create a folder prefixed with "games-" (e.g. games-trivia/), add an index.html, push — and it will appear here.'
+        'Create a folder inside games/ (e.g. games/games-trivia/), add an index.html, push — and it will appear here.'
       );
 
       renderCards(
         tools, toolsGrid, toolsBadge,
         '4', 'No tools yet',
-        'Create a folder inside the room-4 repo, add an index.html to it, push — and it will appear here automatically.'
+        'Create a folder inside tools/ (e.g. tools/calculator/), add an index.html, push — and it will appear here automatically.'
       );
 
     } catch (err) {
