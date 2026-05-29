@@ -14,17 +14,13 @@ html, body {
   user-select: none;
   overflow: hidden;
 }
-
-/* ── SCREENS ── */
 .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; }
 .screen.active { display: flex; }
 
-/* ── HOME ── */
 #home {
   justify-content: center; gap: 20px; padding: 32px 20px;
   background: radial-gradient(ellipse at 50% 30%, rgba(255,120,0,.18) 0%, transparent 65%);
-  touch-action: auto;
-  overflow-y: auto;
+  touch-action: auto; overflow-y: auto;
 }
 .logo-icon { font-size: 4rem; line-height: 1; }
 .logo-name {
@@ -37,17 +33,15 @@ html, body {
 .hbtn {
   background: rgba(255,140,0,.1); border: 2px solid rgba(255,140,0,.3);
   border-radius: 14px; padding: 16px 18px; cursor: pointer;
-  display: flex; align-items: center; gap: 14px;
-  text-align: left; touch-action: auto;
+  display: flex; align-items: center; gap: 14px; text-align: left; touch-action: auto;
   transition: background .15s, border-color .15s;
 }
-.hbtn:hover  { background: rgba(255,140,0,.18); }
+.hbtn:hover { background: rgba(255,140,0,.18); }
 .hbtn:active { background: rgba(255,140,0,.25); border-color: #ff8c00; }
 .hbtn-icon { font-size: 1.8rem; flex-shrink: 0; }
 .hbtn-name { font-family: 'Arial Rounded MT Bold', 'Arial Black', Arial, sans-serif; font-size: 1.1rem; color: #ff8c00; }
 .hbtn-desc { font-size: .76rem; font-weight: 700; color: rgba(255,140,0,.55); margin-top: 2px; }
 
-/* dict toggle */
 .dict-toggle {
   display: flex; align-items: center; gap: 10px; touch-action: auto;
   background: rgba(255,140,0,.08); border: 1.5px solid rgba(255,140,0,.25);
@@ -71,7 +65,6 @@ html, body {
 .dict-toggle.on .toggle-switch { background: rgba(255,140,0,.35); border-color: #ff8c00; }
 .dict-toggle.on .toggle-switch::after { transform: translateX(18px); background: #ff8c00; }
 
-/* ── GAME ── */
 #game { padding: 0; touch-action: none; }
 
 .hud {
@@ -90,28 +83,31 @@ html, body {
   font-size: .75rem; font-weight: 800; cursor: pointer; touch-action: auto;
 }
 
-/* board scroll — pan freely, no tile dragging */
 .board-scroll {
-  flex: 1; width: 100%; overflow: auto;
+  flex: 1; width: 100%; overflow: hidden;
   background: #1a3810;
   background-image:
     linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
   background-size: 54px 54px;
   position: relative;
-  touch-action: pan-x pan-y;
-  -webkit-overflow-scrolling: touch;
+  touch-action: none;
 }
 
-#board { position: relative; touch-action: pan-x pan-y; }
+#board-transform-root {
+  position: absolute;
+  transform-origin: 0 0;
+  top: 0; left: 0;
+}
+
+#board { position: relative; touch-action: none; }
 
 .cell {
   position: absolute; width: 54px; height: 54px;
   border: 1px solid rgba(255,140,0,.14); border-radius: 5px;
-  background: transparent; transition: background .1s;
-  touch-action: pan-x pan-y;
+  background: transparent;
+  touch-action: none;
 }
-.cell.will-place { background: rgba(59,130,246,.3); border-color: #3b82f6; border-width: 2px; cursor: pointer; }
 
 .tile-placed {
   position: absolute; width: 54px; height: 54px;
@@ -120,16 +116,16 @@ html, body {
   display: flex; align-items: center; justify-content: center;
   font-family: 'Arial Rounded MT Bold', 'Arial Black', Arial, sans-serif;
   font-size: 1.5rem; color: #1a0e00; cursor: pointer; z-index: 2;
-  transform-origin: center center; transition: box-shadow .1s;
-  touch-action: pan-x pan-y;
+  transform-origin: center center;
+  touch-action: none;
 }
 .tile-placed::after {
   content: attr(data-l); position: absolute; bottom: 2px; right: 4px;
   font-size: .42rem; font-weight: 900; color: #8a4010;
 }
 .tile-placed.held { border-color: #3b82f6; box-shadow: 0 0 0 2px #3b82f6, 2px 3px 0 #7a3500; opacity: .5; }
+.tile-placed.selected { border-color: #f59e0b; box-shadow: 0 0 0 3px #f59e0b, 2px 3px 0 #7a3500; }
 
-/* tray */
 .tray-area {
   width: 100%; flex-shrink: 0;
   background: rgba(20,5,0,.6); border-top: 2px solid rgba(255,140,0,.2);
@@ -154,11 +150,10 @@ html, body {
   content: attr(data-l); position: absolute; bottom: 2px; right: 4px;
   font-size: .42rem; font-weight: 900; color: #8a4010;
 }
-.tile-tray:hover  { transform: translateY(-2px); }
+.tile-tray:hover { transform: translateY(-2px); }
 .tile-tray:active { transform: scale(.95); }
-.tile-tray.held   { border-color: #3b82f6; box-shadow: 0 0 0 2px #3b82f6; opacity: .5; }
+.tile-tray.held { border-color: #3b82f6; box-shadow: 0 0 0 2px #3b82f6; opacity: .5; }
 
-/* floating cursor tile */
 #cursor-tile {
   position: fixed; width: 54px; height: 54px;
   background: #fff3e0; border-radius: 7px; border: 2.5px solid #3b82f6;
@@ -170,10 +165,9 @@ html, body {
   transform: translate(-50%, -60%);
 }
 
-/* action buttons */
 .act-row { display: flex; gap: 7px; justify-content: center; }
 .abtn {
-  flex: 1; max-width: 90px; min-width: 60px;
+  flex: 1; max-width: 90px; min-width: 54px;
   padding: 9px 4px; border-radius: 10px; border: none; cursor: pointer;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
   font-size: .74rem; font-weight: 800;
@@ -187,8 +181,9 @@ html, body {
 .btn-peel:active:not(:disabled) { box-shadow: 0 1px 0 #a04800; transform: translateY(2px); }
 .btn-sec   { background: rgba(255,140,0,.12); color: #ff8c00; border: 1.5px solid rgba(255,140,0,.28); }
 .btn-good  { background: rgba(34,197,94,.12); color: #4ade80; border: 1.5px solid rgba(34,197,94,.25); }
+.btn-sel   { background: rgba(245,158,11,.15); color: #f59e0b; border: 1.5px solid rgba(245,158,11,.4); }
+.btn-sel.active { background: rgba(245,158,11,.35); border-color: #f59e0b; }
 
-/* toast */
 #toast {
   position: fixed; top: 66px; left: 50%; transform: translateX(-50%);
   background: rgba(35,8,0,.95); border: 1px solid rgba(255,140,0,.4);
@@ -200,7 +195,6 @@ html, body {
 #toast.good { border-color: rgba(34,197,94,.5); color: #4ade80; }
 #toast.bad  { border-color: rgba(239,68,68,.45); color: #f87171; }
 
-/* overlays */
 .overlay {
   position: fixed; inset: 0; background: rgba(30,5,0,.9); backdrop-filter: blur(5px);
   display: none; flex-direction: column; align-items: center; justify-content: center;
@@ -235,6 +229,31 @@ html, body {
 }
 .ov-sec:active { background: rgba(255,140,0,.12); }
 
+#zoom-controls {
+  position: absolute; bottom: 16px; right: 12px;
+  display: flex; flex-direction: column; gap: 6px; z-index: 50;
+}
+.zoom-btn {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: rgba(20,5,0,.75); border: 1px solid rgba(255,140,0,.35);
+  color: #ff8c00; font-size: 1.3rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; touch-action: auto;
+  transition: background .1s;
+}
+.zoom-btn:hover { background: rgba(255,140,0,.2); }
+.zoom-btn:active { background: rgba(255,140,0,.3); }
+.zoom-pct {
+  text-align: center; font-size: .6rem; font-weight: 800;
+  color: rgba(255,140,0,.6); letter-spacing: .5px;
+}
+
+#marquee {
+  position: absolute; border: 2px dashed #f59e0b;
+  background: rgba(245,158,11,.12);
+  pointer-events: none; display: none; z-index: 20;
+}
+
 @keyframes vflash { 0%{transform:scale(1)}40%{transform:scale(1.1);background:#d4fce8}100%{transform:scale(1)} }
 @keyframes bflash { 0%,100%{background:#fff3e0}40%{background:#ffe0e0} }
 .vflash { animation: vflash .35s ease; }
@@ -243,7 +262,6 @@ html, body {
 </head>
 <body>
 
-<!-- HOME -->
 <div id="home" class="screen active">
   <div class="logo-icon">🥭</div>
   <div class="logo-name">MANGO TILES</div>
@@ -272,7 +290,6 @@ html, body {
   <div id="dictStatus" style="font-size:.78rem;font-weight:700;color:rgba(255,140,0,.55);min-height:18px;text-align:center;width:100%;max-width:340px;"></div>
 </div>
 
-<!-- GAME -->
 <div id="game" class="screen">
   <div class="hud">
     <div class="hstat"><div class="hval" id="hBunch">0</div><div class="hlbl">Bunch</div></div>
@@ -287,24 +304,32 @@ html, body {
     <button class="menu-btn" onclick="openMenu()">Menu</button>
   </div>
   <div class="board-scroll" id="boardScroll">
-    <div id="board"></div>
+    <div id="board-transform-root">
+      <div id="board"></div>
+    </div>
+    <div id="marquee"></div>
+    <div id="zoom-controls">
+      <div class="zoom-btn" onclick="zoomIn()">+</div>
+      <div class="zoom-pct" id="zoomPct">100%</div>
+      <div class="zoom-btn" onclick="zoomOut()">−</div>
+      <div class="zoom-btn" onclick="zoomReset()" style="font-size:.7rem;font-weight:900;">FIT</div>
+    </div>
   </div>
   <div class="tray-area" id="trayArea">
     <div class="tray-tiles" id="trayEl"></div>
     <div class="act-row">
       <button class="abtn btn-peel" id="bPeel" onclick="doPeel()"><span class="i">🥭</span>Slice!</button>
       <button class="abtn btn-sec"  id="bDump" onclick="startDump()"><span class="i">🔄</span>Dump</button>
-      <button class="abtn btn-sec"  onclick="doClear()"><span class="i">↩</span>Clear All</button>
+      <button class="abtn btn-sel"  id="bMarquee" onclick="toggleMarqueeMode()"><span class="i">⬚</span>Select</button>
+      <button class="abtn btn-sec"  onclick="doClear()"><span class="i">↩</span>Clear</button>
       <button class="abtn btn-good" onclick="doCheck()"><span class="i">✓</span>Check</button>
     </div>
   </div>
 </div>
 
-<!-- Floating tile that follows cursor -->
 <div id="cursor-tile"></div>
 <div id="toast"></div>
 
-<!-- Overlays -->
 <div class="overlay" id="ovMenu">
   <div class="ov-box">
     <div class="ov-icon">⏸</div>
@@ -342,9 +367,8 @@ html, body {
 </div>
 
 <script>
-/* ── DICTIONARY ── */
+/* DICTIONARY */
 let DICT = new Set(), dictLoaded = false, dictEnabled = false;
-
 function toggleDict() {
   dictEnabled = !dictEnabled;
   document.getElementById('dictToggle').classList.toggle('on', dictEnabled);
@@ -357,7 +381,6 @@ function toggleDict() {
     document.getElementById('dictStatus').textContent = '';
   }
 }
-
 async function loadDictionary() {
   const st = document.getElementById('dictStatus');
   const desc = document.getElementById('dictToggleDesc');
@@ -381,7 +404,7 @@ async function loadDictionary() {
   desc.textContent = 'On — load failed';
 }
 
-/* ── AUDIO ── */
+/* AUDIO */
 const AC = new (window.AudioContext || window.webkitAudioContext)();
 function playThunk() {
   try {
@@ -397,24 +420,76 @@ function playThunk() {
   } catch(e) {}
 }
 
-
-/* ── CONSTANTS ── */
+/* CONSTANTS */
 const CELL=54, GCOLS=30, GROWS=30, ORIGIN_ROW=14, ORIGIN_COL=13;
 const LD={A:13,B:3,C:3,D:6,E:18,F:3,G:4,H:3,I:12,J:2,K:2,L:5,M:3,N:8,O:11,P:3,Q:2,R:9,S:6,T:9,U:6,V:3,W:3,X:2,Y:3,Z:2};
 
-/* ── GAME STATE ── */
+/* ZOOM STATE */
+let zoom = 1.0;
+const ZOOM_MIN = 0.3, ZOOM_MAX = 2.5, ZOOM_STEP = 0.15;
+let vpX = 0, vpY = 0;
+
+function applyZoom() {
+  const root = document.getElementById('board-transform-root');
+  root.style.transform = `scale(${zoom})`;
+  const sc = document.getElementById('boardScroll');
+  const gs = 54 * zoom;
+  sc.style.backgroundSize = `${gs}px ${gs}px`;
+  document.getElementById('zoomPct').textContent = Math.round(zoom * 100) + '%';
+}
+function updateBoardPos() {
+  const root = document.getElementById('board-transform-root');
+  root.style.left = (-vpX) + 'px';
+  root.style.top  = (-vpY) + 'px';
+  const sc = document.getElementById('boardScroll');
+  const gs = 54 * zoom;
+  sc.style.backgroundPosition = `${-vpX % gs}px ${-vpY % gs}px`;
+}
+function zoomAt(newZoom, clientX, clientY) {
+  const sc = document.getElementById('boardScroll');
+  const rect = sc.getBoundingClientRect();
+  const sx = clientX - rect.left;
+  const sy = clientY - rect.top;
+  const bx = (vpX + sx) / zoom;
+  const by = (vpY + sy) / zoom;
+  zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newZoom));
+  vpX = bx * zoom - sx;
+  vpY = by * zoom - sy;
+  applyZoom();
+  updateBoardPos();
+}
+function zoomIn()    { const sc=document.getElementById('boardScroll'),r=sc.getBoundingClientRect(); zoomAt(zoom+ZOOM_STEP, r.left+r.width/2, r.top+r.height/2); }
+function zoomOut()   { const sc=document.getElementById('boardScroll'),r=sc.getBoundingClientRect(); zoomAt(zoom-ZOOM_STEP, r.left+r.width/2, r.top+r.height/2); }
+function zoomReset() {
+  zoom = 1.0;
+  const sc = document.getElementById('boardScroll');
+  vpX = Math.max(0, ORIGIN_COL*CELL - sc.clientWidth/2 + CELL/2);
+  vpY = Math.max(0, ORIGIN_ROW*CELL - sc.clientHeight/2 + CELL/2);
+  applyZoom(); updateBoardPos();
+}
+
+/* GAME STATE */
 let bunch=[], tray=[], placed=[];
 let uid=0, gMode='classic', peels=0;
 let timerSec=0, timerInt=null, paused=false;
 let dumpPending=false;
-let held=null; // { tile, src } — the tile currently held by the player
+let held=null;
 
-/* ── UTILITY ── */
+/* MARQUEE */
+let marqueeMode = false;
+let marqueeActive = false;
+let marqueeStart = {x:0, y:0};
+let selectedIds = new Set();
+let draggingSelection = false;
+let dragSelStart = {x:0, y:0};
+let dragSelOriginals = [];
+
+/* UTILITY */
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function openOv(id)  { document.getElementById(id).classList.add('show'); }
 function closeOv(id) { document.getElementById(id).classList.remove('show'); }
 function openMenu()  { paused=true; openOv('ovMenu'); }
-function goHome()    { closeOv('ovMenu'); closeOv('ovWin'); stopTimer(); held=null; hideCursor(); showScreen('home'); }
+function goHome()    { closeOv('ovMenu'); closeOv('ovWin'); stopTimer(); held=null; hideCursor(); marqueeMode=false; selectedIds.clear(); showScreen('home'); }
 
 let toastTmr=null;
 function showToast(msg, type='') {
@@ -430,19 +505,25 @@ function drawFrom(n)  { const o=[]; for(let i=0;i<n&&bunch.length;i++) o.push(bu
 function newTile(l)   { return {id:++uid, letter:l}; }
 function tileRot(id)  { const s=(id*2654435761)>>>0; return ((s%100)/100*5)-2.5; }
 
-/* ── START ── */
+/* START */
 function startGame(mode) {
   gMode=mode; paused=false; dumpPending=false; held=null;
   bunch=[]; tray=[]; placed=[]; uid=0; peels=0;
   stopTimer(); timerSec=0;
   closeOv('ovMenu'); closeOv('ovWin'); closeOv('ovBad');
   hideCursor();
+  marqueeMode=false; selectedIds.clear();
+  document.getElementById('bMarquee').classList.remove('active');
   bunch=makeBunch();
   tray=drawFrom(mode==='full'?144:21).map(l=>newTile(l));
+  zoom=1.0;
   showScreen('game');
   buildBoard();
   renderAll();
-  centerBoard();
+  const sc=document.getElementById('boardScroll');
+  vpX = Math.max(0, ORIGIN_COL*CELL - sc.clientWidth/2 + CELL/2);
+  vpY = Math.max(0, ORIGIN_ROW*CELL - sc.clientHeight/2 + CELL/2);
+  applyZoom(); updateBoardPos();
   startTimer();
   showToast('Tap a tile to pick it up, then tap the board 🥭','good');
 }
@@ -459,15 +540,8 @@ function buildBoard() {
   }
 }
 
-function centerBoard() {
-  const sc=document.getElementById('boardScroll');
-  sc.scrollLeft=Math.max(0,ORIGIN_COL*CELL-sc.clientWidth/2+CELL/2);
-  sc.scrollTop =Math.max(0,ORIGIN_ROW*CELL-sc.clientHeight/2+CELL/2);
-}
-
-/* ── RENDER ── */
+/* RENDER */
 function renderAll() { renderTray(); renderPlaced(); updateHUD(); }
-
 function renderTray() {
   const el=document.getElementById('trayEl'); el.innerHTML='';
   tray.forEach(tile => {
@@ -478,13 +552,15 @@ function renderTray() {
     el.appendChild(d);
   });
 }
-
 function renderPlaced() {
   const board=document.getElementById('board');
   board.querySelectorAll('.tile-placed').forEach(e=>e.remove());
   placed.forEach(tile => {
     const el=document.createElement('div');
-    el.className='tile-placed'+(held&&held.tile.id===tile.id?' held':'');
+    let cls = 'tile-placed';
+    if (held && held.tile.id===tile.id) cls+=' held';
+    if (selectedIds.has(tile.id)) cls+=' selected';
+    el.className=cls;
     el.dataset.id=tile.id; el.textContent=tile.letter; el.setAttribute('data-l',tile.letter);
     el.style.left=(tile.col*CELL)+'px'; el.style.top=(tile.row*CELL)+'px'; el.style.zIndex=2;
     el.style.transform=`rotate(${tileRot(tile.id)}deg)`;
@@ -492,7 +568,6 @@ function renderPlaced() {
     board.appendChild(el);
   });
 }
-
 function updateHUD() {
   document.getElementById('hBunch').textContent=bunch.length;
   document.getElementById('hTray').textContent=tray.length;
@@ -502,98 +577,192 @@ function updateHUD() {
   document.getElementById('bDump').disabled=tray.length===0||bunch.length<3;
 }
 
-/* ── CURSOR TILE ── */
+/* CURSOR */
 const cursorEl = document.getElementById('cursor-tile');
 function showCursor(letter, x, y) {
-  cursorEl.textContent=letter;
-  cursorEl.style.left=x+'px'; cursorEl.style.top=y+'px';
+  cursorEl.textContent=letter; cursorEl.style.left=x+'px'; cursorEl.style.top=y+'px';
   cursorEl.style.display='flex';
 }
-function moveCursor(x,y) {
-  cursorEl.style.left=x+'px'; cursorEl.style.top=y+'px';
-}
+function moveCursor(x,y) { cursorEl.style.left=x+'px'; cursorEl.style.top=y+'px'; }
 function hideCursor() { cursorEl.style.display='none'; }
 
 let mouseX=window.innerWidth/2, mouseY=window.innerHeight/2;
-/* ── MOUSE DRAG-TO-SCROLL THE BOARD ── */
-let boardDrag = null; // {startX, startY, scrollLeft, scrollTop}
 
-document.getElementById('boardScroll').addEventListener('mousedown', e => {
-  if (held) return; // if holding a tile, don't pan
-  if (e.button !== 0) return;
+/* MARQUEE MODE */
+function toggleMarqueeMode() {
+  if (held) cancelHeld();
+  marqueeMode = !marqueeMode;
+  document.getElementById('bMarquee').classList.toggle('active', marqueeMode);
+  if (!marqueeMode) { selectedIds.clear(); renderPlaced(); }
+  showToast(marqueeMode ? '⬚ Drag to select tiles, then drag selection to move' : 'Select mode off');
+}
+
+function clientToBoard(cx, cy) {
   const sc = document.getElementById('boardScroll');
-  boardDrag = { startX: e.clientX, startY: e.clientY, scrollLeft: sc.scrollLeft, scrollTop: sc.scrollTop };
-  sc.style.cursor = 'grabbing';
-  e.preventDefault();
+  const rect = sc.getBoundingClientRect();
+  return { x: (cx - rect.left + vpX) / zoom, y: (cy - rect.top + vpY) / zoom };
+}
+
+const marqueeEl = document.getElementById('marquee');
+
+/* POINTER EVENTS */
+let boardPan = null;
+const sc = document.getElementById('boardScroll');
+
+sc.addEventListener('pointerdown', e => {
+  if (held) return;
+  if (marqueeMode) {
+    const bp = clientToBoard(e.clientX, e.clientY);
+    marqueeStart = { x: bp.x, y: bp.y };
+    marqueeActive = true;
+    marqueeEl.style.display = 'block';
+    marqueeEl.style.left = (marqueeStart.x * zoom - vpX) + 'px';
+    marqueeEl.style.top  = (marqueeStart.y * zoom - vpY) + 'px';
+    marqueeEl.style.width = '0px'; marqueeEl.style.height = '0px';
+    sc.setPointerCapture(e.pointerId);
+    return;
+  }
+  boardPan = { startX: e.clientX, startY: e.clientY, vpX0: vpX, vpY0: vpY };
+  sc.setPointerCapture(e.pointerId);
 });
 
-document.addEventListener('mousemove', e => {
+sc.addEventListener('pointermove', e => {
   mouseX = e.clientX; mouseY = e.clientY;
   if (held) { moveCursor(mouseX, mouseY); return; }
-  if (!boardDrag) return;
-  const sc = document.getElementById('boardScroll');
-  sc.scrollLeft = boardDrag.scrollLeft - (e.clientX - boardDrag.startX);
-  sc.scrollTop  = boardDrag.scrollTop  - (e.clientY - boardDrag.startY);
-});
-
-document.addEventListener('mouseup', e => {
-  if (!boardDrag) return;
-  const sc = document.getElementById('boardScroll');
-  sc.style.cursor = '';
-  const dx = Math.abs(e.clientX - boardDrag.startX);
-  const dy = Math.abs(e.clientY - boardDrag.startY);
-  boardDrag = null;
-  // If it barely moved, treat as a click — let it propagate normally
-  // If it moved significantly, suppress the click to avoid accidental placement
-  if (dx > 5 || dy > 5) {
-    const suppress = e2 => { e2.stopPropagation(); e2.preventDefault(); window.removeEventListener('click', suppress, true); };
-    window.addEventListener('click', suppress, true);
+  if (marqueeMode && marqueeActive) {
+    const bp = clientToBoard(e.clientX, e.clientY);
+    const x1 = Math.min(marqueeStart.x, bp.x);
+    const y1 = Math.min(marqueeStart.y, bp.y);
+    const x2 = Math.max(marqueeStart.x, bp.x);
+    const y2 = Math.max(marqueeStart.y, bp.y);
+    marqueeEl.style.left   = (x1 * zoom - vpX) + 'px';
+    marqueeEl.style.top    = (y1 * zoom - vpY) + 'px';
+    marqueeEl.style.width  = ((x2 - x1) * zoom) + 'px';
+    marqueeEl.style.height = ((y2 - y1) * zoom) + 'px';
+    return;
+  }
+  if (draggingSelection) {
+    const dx = (e.clientX - dragSelStart.x) / zoom;
+    const dy = (e.clientY - dragSelStart.y) / zoom;
+    placed.forEach(t => {
+      if (selectedIds.has(t.id)) {
+        const orig = dragSelOriginals.find(o => o.id === t.id);
+        if (orig) {
+          t.col = Math.round(orig.col + dx / CELL);
+          t.row = Math.round(orig.row + dy / CELL);
+          t.col = Math.max(0, Math.min(GCOLS-1, t.col));
+          t.row = Math.max(0, Math.min(GROWS-1, t.row));
+        }
+      }
+    });
+    renderPlaced();
+    return;
+  }
+  if (boardPan) {
+    vpX = boardPan.vpX0 - (e.clientX - boardPan.startX);
+    vpY = boardPan.vpY0 - (e.clientY - boardPan.startY);
+    updateBoardPos();
   }
 });
 
-/* ── PICK UP / PUT DOWN ── */
+sc.addEventListener('pointerup', e => {
+  if (draggingSelection) {
+    draggingSelection = false;
+    resolveCollisions();
+    renderAll();
+    return;
+  }
+  if (marqueeMode && marqueeActive) {
+    marqueeActive = false;
+    marqueeEl.style.display = 'none';
+    const bp = clientToBoard(e.clientX, e.clientY);
+    const x1 = Math.min(marqueeStart.x, bp.x) / CELL;
+    const y1 = Math.min(marqueeStart.y, bp.y) / CELL;
+    const x2 = Math.max(marqueeStart.x, bp.x) / CELL;
+    const y2 = Math.max(marqueeStart.y, bp.y) / CELL;
+    selectedIds.clear();
+    placed.forEach(t => {
+      if (t.col >= x1 && t.col < x2 && t.row >= y1 && t.row < y2) selectedIds.add(t.id);
+    });
+    renderPlaced();
+    if (selectedIds.size > 0) showToast(`${selectedIds.size} tile${selectedIds.size>1?'s':''} selected — drag to move`, 'good');
+    return;
+  }
+  boardPan = null;
+});
+
+document.getElementById('board').addEventListener('pointerdown', e => {
+  if (!marqueeMode) return;
+  if (marqueeActive) return;
+  const tileEl = e.target.closest('.tile-placed');
+  if (!tileEl) return;
+  const id = parseInt(tileEl.dataset.id);
+  if (!selectedIds.has(id)) return;
+  e.stopPropagation();
+  draggingSelection = true;
+  dragSelStart = { x: e.clientX, y: e.clientY };
+  dragSelOriginals = placed.filter(t => selectedIds.has(t.id)).map(t => ({...t}));
+});
+
+function resolveCollisions() {
+  const usedCells = {};
+  placed.forEach(t => {
+    const k = t.row + ',' + t.col;
+    if (!usedCells[k]) { usedCells[k] = t; return; }
+    let c = t.col + 1;
+    while (placed.find(o => o.id !== t.id && o.row === t.row && o.col === c)) c++;
+    t.col = Math.min(GCOLS-1, c);
+  });
+}
+
+sc.addEventListener('wheel', e => {
+  vpX += e.deltaX;
+  vpY += e.deltaY;
+  updateBoardPos();
+}, { passive: true });
+
+document.addEventListener('mousemove', e => {
+  mouseX = e.clientX; mouseY = e.clientY;
+  if (held) moveCursor(mouseX, mouseY);
+});
+
+/* PICK UP / PUT DOWN */
 function pickUp(tile, src) {
   held={tile, src};
   showCursor(tile.letter, mouseX, mouseY);
   renderAll();
 }
-
-function putBack() {
-  if (!held) return;
-  // return tile to its origin
-  if (held.src==='tray') tray.push({id:held.tile.id, letter:held.tile.letter});
-  else placed.push({...heldOrigin}); // shouldn't normally hit this
-  held=null; hideCursor(); renderAll();
-}
-
 function cancelHeld() {
   if (!held) return;
   if (held.src==='tray') tray.push({id:held.tile.id, letter:held.tile.letter});
-  // if src was 'placed', the tile was already removed — just drop it
   held=null; hideCursor(); renderAll();
 }
 
-/* ── CLICK HANDLERS ── */
+/* CLICK HANDLERS */
 function onTrayTileClick(tile) {
+  if (marqueeMode) return;
   if (dumpPending) { executeDump(tile); return; }
   if (held) {
-    if (held.tile.id===tile.id) { cancelHeld(); return; } // re-click = cancel
-    cancelHeld(); // drop previous, pick this one up
+    if (held.tile.id===tile.id) { cancelHeld(); return; }
+    cancelHeld();
   }
   tray=tray.filter(t=>t.id!==tile.id);
   pickUp(tile,'tray');
 }
-
 function onBoardTileClick(tile) {
+  if (marqueeMode) {
+    if (selectedIds.has(tile.id)) selectedIds.delete(tile.id);
+    else selectedIds.add(tile.id);
+    renderPlaced();
+    return;
+  }
   if (!held) {
-    // return tile to tray
     placed=placed.filter(t=>t.id!==tile.id);
     tray.push({id:tile.id, letter:tile.letter});
     renderAll();
     return;
   }
   if (held.tile.id===tile.id) { cancelHeld(); return; }
-  // swap: place held tile here, return displaced tile to tray
   const row=tile.row, col=tile.col;
   placed=placed.filter(t=>t.id!==tile.id);
   if (held.src==='tray') tray=tray.filter(t=>t.id!==held.tile.id);
@@ -603,12 +772,11 @@ function onBoardTileClick(tile) {
   tray.push({id:tile.id, letter:tile.letter});
   held=null; hideCursor(); renderAll();
 }
-
 function onCellClick(row, col) {
+  if (marqueeMode) return;
   if (!held) return;
   const occupant=placed.find(t=>t.row===row&&t.col===col);
   if (occupant) { onBoardTileClick(occupant); return; }
-  // place tile
   if (held.src==='tray') tray=tray.filter(t=>t.id!==held.tile.id);
   else placed=placed.filter(t=>t.id!==held.tile.id);
   placed.push({id:held.tile.id, letter:held.tile.letter, row, col});
@@ -616,18 +784,24 @@ function onCellClick(row, col) {
   held=null; hideCursor(); renderAll();
 }
 
-// Tray area background click = return held tile
 document.getElementById('trayArea').addEventListener('click', e=>{
   if (!held) return;
-  if (e.target.closest('.tile-tray,.abtn')) return; // let those handle themselves
+  if (e.target.closest('.tile-tray,.abtn')) return;
   tray.push({id:held.tile.id, letter:held.tile.letter});
   held=null; hideCursor(); renderAll();
 });
 
-// Escape key = cancel
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') cancelHeld(); });
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape') {
+    if (held) cancelHeld();
+    if (marqueeMode) { marqueeMode=false; selectedIds.clear(); document.getElementById('bMarquee').classList.remove('active'); renderPlaced(); }
+  }
+  if(e.key==='+' || e.key==='=') zoomIn();
+  if(e.key==='-') zoomOut();
+  if(e.key==='0') zoomReset();
+});
 
-/* ── ACTIONS ── */
+/* ACTIONS */
 function doPeel() {
   if (tray.length>0)     { showToast('Tray must be empty to Peel!','bad'); return; }
   if (placed.length===0) { showToast('Place some tiles first!','bad'); return; }
@@ -639,14 +813,12 @@ function doPeel() {
   const drawn=drawFrom(1); drawn.forEach(l=>tray.push(newTile(l))); peels++;
   renderAll(); showToast('Slice! +'+drawn[0]+'  · '+bunch.length+' left','good');
 }
-
 function startDump() {
   if (bunch.length<3) { showToast('Need 3+ in Bunch!','bad'); return; }
   dumpPending=!dumpPending;
   document.getElementById('bDump').style.background=dumpPending?'rgba(239,68,68,.3)':'';
   showToast(dumpPending?'Tap a tray tile to Dump it':'Dump cancelled');
 }
-
 function executeDump(tile) {
   if (bunch.length<3) { showToast('Not enough in Bunch!','bad'); dumpPending=false; return; }
   tray=tray.filter(t=>t.id!==tile.id);
@@ -656,13 +828,11 @@ function executeDump(tile) {
   dumpPending=false; document.getElementById('bDump').style.background='';
   renderAll(); showToast('Dumped '+tile.letter+' → got '+drawn.join(''),'good');
 }
-
 function doClear() {
   if (placed.length===0) return;
   placed.forEach(t=>tray.push({id:t.id,letter:t.letter})); placed=[];
-  renderAll(); showToast('All tiles returned to tray');
+  selectedIds.clear(); renderAll(); showToast('All tiles returned to tray');
 }
-
 function doCheck() {
   if (placed.length===0) { showToast('No tiles placed yet!','bad'); return; }
   if (!dictEnabled) { showToast('Enable Word Validation on home screen first','bad'); return; }
@@ -677,7 +847,6 @@ function doCheck() {
     showToast('✓ '+wordList.length+' valid word'+(wordList.length!==1?'s':'')+'!','good');
   }
 }
-
 function doWin() {
   stopTimer();
   const {valid,wordList}=validateGrid();
@@ -688,9 +857,8 @@ function doWin() {
   openOv('ovWin');
 }
 
-/* ── VALIDATION ── */
+/* VALIDATION */
 function getMap() { const m={}; placed.forEach(t=>{m[t.row+','+t.col]=t.letter;}); return m; }
-
 function isConnected() {
   if (placed.length<=1) return true;
   const m=getMap(), start=placed[0];
@@ -698,7 +866,6 @@ function isConnected() {
   while(q.length){const k=q.shift(),[r,c]=k.split(',').map(Number);[[1,0],[-1,0],[0,1],[0,-1]].forEach(([dr,dc])=>{const nk=(r+dr)+','+(c+dc);if(m[nk]&&!vis.has(nk)){vis.add(nk);q.push(nk);}});}
   return vis.size===placed.length;
 }
-
 function extractWords(m) {
   const words=[];
   placed.forEach(t=>{
@@ -707,9 +874,7 @@ function extractWords(m) {
   });
   return words;
 }
-
 function countWords() { return placed.length?extractWords(getMap()).length:0; }
-
 function validateGrid() {
   if(!placed.length) return {valid:true,badWords:[],wordList:[],disconnected:false};
   if(!isConnected()) return {valid:false,badWords:[],wordList:[],disconnected:true};
@@ -717,7 +882,6 @@ function validateGrid() {
   entries.forEach(({word})=>{ if(!dictEnabled||DICT.has(word)) good.push(word); else bad.push(word.toUpperCase()); });
   return {valid:bad.length===0,badWords:bad,wordList:good,disconnected:false};
 }
-
 function flashBad(badWords) {
   const m=getMap(),entries=extractWords(m),badSet=new Set(badWords.map(w=>w.toLowerCase())),badIds=new Set();
   entries.forEach(({word,row,col,dir,len})=>{
