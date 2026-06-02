@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yearbook Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik+One&family=Space+Mono:wght@400;700&family=Rubik:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --gold: #D4A828; --blue: #2176CC; --red: #C03020;
+    --tan: #B8AFA0; --dark: #2A2320; --off-white: #F5F2EE;
+    --ruled: rgba(0,0,0,0.08);
+  }
+  html, body { height: 100%; }
+  body { font-family: 'Space Mono', monospace; background: var(--off-white); color: var(--dark); }
+  .app { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+  .sidebar {
+    background: var(--dark); color: var(--off-white);
+    padding: 20px 16px; display: flex; flex-direction: column; gap: 16px;
+    border-right: 3px solid var(--gold);
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  }
+  .sidebar-title {
+    font-family: 'Rubik One', sans-serif; font-size: 13px;
+    letter-spacing: 0.2em; color: var(--gold); text-transform: uppercase;
+    border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 10px;
+  }
+  .section-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--tan); margin-bottom: 6px; }
+  .group-label { font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin: 10px 0 4px; padding-left: 2px; }
+  .template-btn {
+    display: block; width: 100%; background: transparent;
+    border: 1px solid rgba(255,255,255,0.2); color: var(--off-white);
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 9px 12px; text-align: left; cursor: pointer;
+    margin-bottom: 4px; transition: all 0.15s; position: relative;
+  }
+  .template-btn:hover, .template-btn.active { background: var(--gold); color: var(--dark); border-color: var(--gold); }
+  .template-btn .tnum { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 9px; opacity: 0.5; }
+  .color-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .color-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.1s; }
+  .color-swatch:hover, .color-swatch.active { transform: scale(1.2); border-color: white; }
+  .action-btn {
+    width: 100%; background: var(--gold); border: none; color: var(--dark);
+    font-family: 'Rubik One', sans-serif; font-size: 11px;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    padding: 11px; cursor: pointer; transition: opacity 0.15s;
+  }
+  .action-btn:hover { opacity: 0.85; }
+  .action-btn.outline { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: var(--off-white); margin-top: 5px; }
+  .canvas-area {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: flex-start; padding: 32px 24px;
+    background: #E8E4DF;
+    background-image: repeating-linear-gradient(0deg, var(--ruled) 0px, transparent 1px, transparent 24px, var(--ruled) 24px);
+  }
+  .canvas-label { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: #888; margin-bottom: 12px; align-self: flex-start; }
+  .template-canvas { background: white; width: 540px; height: 690px; position: relative; overflow: hidden; border: 2px solid var(--dark); }
+  .guide-trim { position:absolute; left:15px; top:15px; width:510px; height:660px; border:1px dashed rgba(0,120,200,0.5); pointer-events:none; z-index:100; }
+  .guide-safe { position:absolute; left:45px; top:30px; width:465px; height:630px; border:1px dashed rgba(200,60,0,0.5); pointer-events:none; z-index:100; }
+  .guide-label { position:absolute; font-family:'Space Mono',monospace; font-size:6px; letter-spacing:0.08em; text-transform:uppercase; pointer-events:none; z-index:101; }
+  .instructions { margin-top:16px; background:var(--dark); color:var(--off-white); padding:12px 16px; width:540px; display:flex; gap:16px; align-items:center; font-size:8px; letter-spacing:0.08em; text-transform:uppercase; flex-wrap:wrap; }
+  .guide-toggle { display:flex; align-items:center; gap:6px; font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--tan); cursor:pointer; user-select:none; }
+  .guide-toggle input { accent-color:var(--gold); cursor:pointer; }
+  .photo-zone {
+    background: #C8C3BC; position: absolute; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 5px; transition: background 0.15s; overflow: hidden;
+  }
+  .photo-zone:hover { background: #B0AAA3; }
+  .photo-zone .pz-icon { width: 24px; height: 24px; border: 2px solid rgba(0,0,0,0.25); border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: rgba(0,0,0,0.35); pointer-events: none; }
+  .photo-zone .pz-label { font-family: 'Space Mono', monospace; font-size: 7px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0,0,0,0.35); pointer-events: none; }
+  .photo-zone img { position: absolute; display: block; cursor: grab; user-select: none; -webkit-user-drag: none; max-width: none; max-height: none; }
+  .photo-zone img.dragging { cursor: grabbing; }
+  .photo-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .photo-zone.has-photo input[type=file] { pointer-events: none; }
+  .photo-zone.has-photo { cursor: default; }
+  .text-zone { position: absolute; }
+  .text-zone input[type=text], .text-zone textarea { background: transparent; border: none; outline: none; width: 100%; height: 100%; resize: none; color: inherit; font-family: inherit; font-size: inherit; font-weight: inherit; letter-spacing: inherit; text-transform: inherit; line-height: inherit; padding: 0; }
+  .accent-bar { position: absolute; }
+  .instructions { margin-top: 16px; background: var(--dark); color: var(--off-white); padding: 12px 16px; width: 540px; display: flex; gap: 24px; align-items: center; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; flex-wrap: wrap; }
+  .instructions span { color: var(--gold); }
+  .slider-row { display: flex; align-items: center; gap: 8px; }
+  .slider-row label { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--tan); min-width: 70px; }
+  .slider-row input[type=range] { flex: 1; }
+  .slider-row .val { font-size: 10px; min-width: 26px; text-align: right; color: var(--off-white); }
+  @media print {
+    .sidebar { display: none; }
+    .canvas-area { padding: 0; background: white; }
+    .canvas-label, .instructions { display: none; }
+    .template-canvas { border: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-title">YEARBOOK STUDIO</div>
+    <div>
+      <div class="section-label">Templates</div>
+      <div class="group-label">Classic</div>
+      <button class="template-btn active" onclick="loadTemplate('grid')" id="btn-grid">GRID SPREAD <span class="tnum">01</span></button>
+      <button class="template-btn" onclick="loadTemplate('feature')" id="btn-feature">FEATURE PAGE <span class="tnum">02</span></button>
+      <button class="template-btn" onclick="loadTemplate('portrait')" id="btn-portrait">PORTRAIT ROW <span class="tnum">03</span></button>
+      <button class="template-btn" onclick="loadTemplate('collage')" id="btn-collage">COLLAGE BLOCK <span class="tnum">04</span></button>
+      <div class="group-label">Photo Heavy</div>
+      <button class="template-btn" onclick="loadTemplate('filmstrip')" id="btn-filmstrip">FILM STRIP <span class="tnum">05</span></button>
+      <button class="template-btn" onclick="loadTemplate('mosaic')" id="btn-mosaic">PHOTO MOSAIC <span class="tnum">06</span></button>
+      <button class="template-btn" onclick="loadTemplate('contact')" id="btn-contact">CONTACT SHEET <span class="tnum">07</span></button>
+      <button class="template-btn" onclick="loadTemplate('story')" id="btn-story">PHOTO STORY <span class="tnum">08</span></button>
+    </div>
+    <div>
+      <div class="section-label">Accent Color</div>
+      <div class="color-row">
+        <div class="color-swatch active" style="background:#D4A828" onclick="setAccent('#D4A828',this)"></div>
+        <div class="color-swatch" style="background:#2176CC" onclick="setAccent('#2176CC',this)"></div>
+        <div class="color-swatch" style="background:#C03020" onclick="setAccent('#C03020',this)"></div>
+        <div class="color-swatch" style="background:#B8AFA0" onclick="setAccent('#B8AFA0',this)"></div>
+        <div class="color-swatch" style="background:#2A2320" onclick="setAccent('#2A2320',this)"></div>
+        <div class="color-swatch" style="background:#F5F2EE;border:1px solid #aaa;" onclick="setAccent('#F5F2EE',this)"></div>
+      </div>
+    </div>
+    <div>
+      <div class="section-label">Gutter</div>
+      <div class="slider-row">
+        <label>Spacing</label>
+        <input type="range" min="0" max="20" value="6" id="gutter-slider" oninput="updateGutter(this.value)">
+        <span class="val" id="gutter-val">6</span>
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);padding:10px 12px;font-size:8px;line-height:1.7;color:#888;letter-spacing:0.05em;">
+      <div style="color:var(--gold);font-size:8px;letter-spacing:0.18em;margin-bottom:5px;">DOCUCOPIES SPEC</div>
+      <div style="color:#aaa;">Bleed: <span style="color:#ccc;">9" x 11.5"</span></div>
+      <div style="color:#aaa;">Trim: <span style="color:#ccc;">8.5" x 11"</span></div>
+      <div style="color:#aaa;">Safe: <span style="color:#ccc;">7.75" x 10.5"</span></div>
+      <div style="color:#aaa;">Binding: <span style="color:#ccc;">0.5" left</span></div>
+      <div style="margin-top:5px;color:rgba(200,60,0,0.8);">Red = safe area</div>
+      <div style="color:rgba(0,120,200,0.8);">Blue = trim line</div>
+    </div>
+    <div style="margin-top:auto;">
+      <button class="action-btn" onclick="savePNG()">SAVE AS PNG</button>
+      <button class="action-btn outline" onclick="window.print()">PRINT / PDF</button>
+      <button class="action-btn outline" onclick="clearPhotos()">CLEAR PHOTOS</button>
+    </div>
+  </div>
+
+  <div class="canvas-area">
+    <div class="canvas-label">TEMPLATE PREVIEW -- CLICK GRAY ZONES TO ADD PHOTOS</div>
+    <div class="template-canvas" id="canvas"></div>
+    <div class="instructions">
+      <div><span>+</span> Upload photos</div>
+      <div><span>&#8597;</span> Drag to reposition</div>
+      <div><span>A</span> Click text to edit</div>
+      <div><span>&#8595;</span> Save PNG or PDF</div>
+      <label class="guide-toggle"><input type="checkbox" id="show-guides" checked onchange="toggleGuides(this.checked)"> Print guides</label>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+let accentColor = '#D4A828';
+let gutter = 6;
+let currentTemplate = 'grid';
+// Canvas = bleed size 9x11.5 at 60px/inch
+const W = 540, H = 690;
+// Trim: 8.5x11" — 15px inset each side
+// Safe: 7.75x10.5" — left=45(incl 0.5" binding), top=30, right=30, bottom=30
+const BLEED_PX = 15;  // 0.25" bleed each side
+const SAFE_L = 45, SAFE_T = 30, SAFE_W = 465, SAFE_H = 630;
+// Content pad = safe area left edge
+const CPAD = SAFE_L;
+
+function setAccent(c, el) {
+  accentColor = c;
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  loadTemplate(currentTemplate);
+}
+function updateGutter(v) {
+  gutter = parseInt(v);
+  document.getElementById('gutter-val').textContent = v;
+  loadTemplate(currentTemplate);
+}
+function clearPhotos() {
+  document.querySelectorAll('.photo-zone img').forEach(i => i.remove());
+  document.querySelectorAll('.photo-zone .pz-icon').forEach(i => i.style.display = '');
+  document.querySelectorAll('.photo-zone .pz-label').forEach(i => i.style.display = '');
+  document.querySelectorAll('.photo-zone').forEach(z => z.classList.remove('has-photo'));
+}
+function fitImageInZone(img, zoneW, zoneH) {
+  const natW = img.naturalWidth || zoneW;
+  const natH = img.naturalHeight || zoneH;
+  const scale = Math.max(zoneW / natW, zoneH / natH);
+  const dispW = Math.round(natW * scale);
+  const dispH = Math.round(natH * scale);
+  img.style.width = dispW + 'px';
+  img.style.height = dispH + 'px';
+  img._pw = dispW; img._ph = dispH;
+  img._zw = zoneW; img._zh = zoneH;
+  // center
+  img._ox = Math.round((zoneW - dispW) / 2);
+  img._oy = Math.round((zoneH - dispH) / 2);
+  img.style.left = img._ox + 'px';
+  img.style.top  = img._oy + 'px';
+}
+
+function clampOffset(img) {
+  const minX = img._zw - img._pw, minY = img._zh - img._ph;
+  img._ox = Math.min(0, Math.max(minX, img._ox));
+  img._oy = Math.min(0, Math.max(minY, img._oy));
+  img.style.left = img._ox + 'px';
+  img.style.top  = img._oy + 'px';
+}
+
+function attachImageDrag(img, zoneW, zoneH) {
+  let startX, startY, startOX, startOY, moved;
+  img.addEventListener('mousedown', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    startX = e.clientX; startY = e.clientY;
+    startOX = img._ox || 0; startOY = img._oy || 0;
+    moved = false;
+    img.classList.add('dragging');
+    function onMove(e) {
+      const dx = e.clientX - startX, dy = e.clientY - startY;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+      img._ox = startOX + dx; img._oy = startOY + dy;
+      clampOffset(img);
+    }
+    function onUp() {
+      img.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+  // touch support
+  img.addEventListener('touchstart', function(e) {
+    const t = e.touches[0];
+    startX = t.clientX; startY = t.clientY;
+    startOX = img._ox || 0; startOY = img._oy || 0;
+    moved = false;
+    img.classList.add('dragging');
+    function onMove(e) {
+      e.preventDefault();
+      const t = e.touches[0];
+      const dx = t.clientX - startX, dy = t.clientY - startY;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+      img._ox = startOX + dx; img._oy = startOY + dy;
+      clampOffset(img);
+    }
+    function onUp() {
+      img.classList.remove('dragging');
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onUp);
+    }
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onUp);
+  }, { passive: true });
+}
+
+function toggleGuides(show) {
+  document.querySelectorAll('.guide-trim,.guide-safe,.guide-label').forEach(el => {
+    el.style.display = show ? '' : 'none';
+  });
+}
+
+function addGuides(c) {
+  const trim = document.createElement('div'); trim.className = 'guide-trim'; c.appendChild(trim);
+  const safe = document.createElement('div'); safe.className = 'guide-safe'; c.appendChild(safe);
+  // labels
+  const tl = document.createElement('div'); tl.className = 'guide-label';
+  tl.style.cssText = 'left:16px;top:16px;color:rgba(0,120,200,0.7);';
+  tl.textContent = 'TRIM 8.5x11"'; c.appendChild(tl);
+  const sl = document.createElement('div'); sl.className = 'guide-label';
+  sl.style.cssText = 'left:46px;top:31px;color:rgba(200,60,0,0.7);';
+  sl.textContent = 'SAFE 7.75x10.5"'; c.appendChild(sl);
+  const bl = document.createElement('div'); bl.className = 'guide-label';
+  bl.style.cssText = 'left:2px;top:2px;color:rgba(0,0,0,0.3);';
+  bl.textContent = 'BLEED 9x11.5"'; c.appendChild(bl);
+  // respect toggle state
+  const cb = document.getElementById('show-guides');
+  if (cb && !cb.checked) toggleGuides(false);
+}
+
+function makePhotoZone(x, y, w, h, label) {
+  const d = document.createElement('div');
+  d.className = 'photo-zone';
+  d.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;`;
+  d.innerHTML = `<div class="pz-icon">+</div><div class="pz-label">${label}</div>`;
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*';
+  inp.addEventListener('change', function(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      d.querySelectorAll('img').forEach(i => i.remove());
+      const icon = d.querySelector('.pz-icon'); const lbl = d.querySelector('.pz-label');
+      if (icon) icon.style.display = 'none'; if (lbl) lbl.style.display = 'none';
+      const img = document.createElement('img');
+      img.src = ev.target.result;
+      img.onload = function() {
+        fitImageInZone(img, w, h);
+        attachImageDrag(img, w, h);
+      };
+      d.classList.add('has-photo');
+      d.insertBefore(img, inp);
+    };
+    reader.readAsDataURL(file);
+  });
+  d.appendChild(inp); return d;
+}
+function makeText(x, y, w, h, text, styles) {
+  const d = document.createElement('div');
+  d.className = 'text-zone';
+  d.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;${styles}`;
+  const tag = h > 28 ? 'textarea' : 'input';
+  const inp = document.createElement(tag);
+  if (tag === 'input') inp.type = 'text';
+  inp.value = text; d.appendChild(inp); return d;
+}
+function makeBar(x, y, w, h, color) {
+  const d = document.createElement('div');
+  d.className = 'accent-bar';
+  d.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${color || accentColor};`;
+  return d;
+}
+function makeFill(x, y, w, h, color) {
+  const d = document.createElement('div');
+  d.className = 'accent-bar';
+  d.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${color};`;
+  return d;
+}
+
+function loadTemplate(name) {
+  currentTemplate = name;
+  document.querySelectorAll('.template-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + name).classList.add('active');
+  const c = document.getElementById('canvas');
+  c.innerHTML = ''; c.style.height = H + 'px';
+  const g = gutter;
+  addGuides(c);
+  const mono = "'Space Mono', monospace";
+  const heavy = "'Rubik One', sans-serif";
+
+  // Safe area constants — all templates live inside these bounds
+  // SL=45 ST=30 SW=465 SH=630  (right edge = SL+SW=510, bottom = ST+SH=660)
+  const SL = SAFE_L, ST = SAFE_T, SW = SAFE_W, SH = SAFE_H;
+  const SR = SL + SW; // 510 — right edge of safe area
+  const SB = ST + SH; // 660 — bottom edge of safe area
+
+  // 01 GRID SPREAD
+  // White bg, thin border inside safe area, 3x3 photo grid
+  if (name === 'grid') {
+    c.appendChild(makeFill(0, 0, W, H, '#F5F2EE'));
+    // border strokes along safe area edges
+    c.appendChild(makeBar(SL, ST, SW, 5));
+    c.appendChild(makeBar(SL, SB-5, SW, 5));
+    c.appendChild(makeBar(SL, ST, 5, SH));
+    c.appendChild(makeBar(SR-5, ST, 5, SH));
+
+    const headerH = 62;
+    c.appendChild(makeText(SL+10, ST+8, 280, 18, 'CLASS OF', `font-family:${heavy};font-size:10px;letter-spacing:0.35em;color:#888;text-transform:uppercase;`));
+    c.appendChild(makeText(SL+10, ST+26, SW-20, 36, 'SENIOR YEAR', `font-family:${heavy};font-size:30px;color:#2A2320;letter-spacing:-0.01em;line-height:1;`));
+
+    const cols = 3, rows = 3;
+    const gridX = SL+5, gridY = ST+headerH;
+    const gridW = SW-10, gridH = SH - headerH - 22;
+    const photoW = Math.floor((gridW - g*(cols-1))/cols);
+    const photoH = Math.floor((gridH - g*(rows-1))/rows);
+    for (let r = 0; r < rows; r++)
+      for (let cc = 0; cc < cols; cc++)
+        c.appendChild(makePhotoZone(gridX+cc*(photoW+g), gridY+r*(photoH+g), photoW, photoH, `PHOTO ${r*cols+cc+1}`));
+
+    c.appendChild(makeText(SL+10, SB-20, SW-20, 16, '2024 - 2025  //  STANDUP ACADEMY', `font-family:${mono};font-size:7px;letter-spacing:0.2em;color:#888;`));
+  }
+
+  // 02 FEATURE PAGE
+  // Hero photo top half of safe area, text + secondary photo bottom half
+  else if (name === 'feature') {
+    c.appendChild(makeFill(0, 0, W, H, '#F5F2EE'));
+    const heroH = Math.floor(SH * 0.46);
+    c.appendChild(makeFill(SL, ST, SW, heroH, '#2A2320'));
+    c.appendChild(makePhotoZone(SL, ST, SW, heroH, 'HERO PHOTO'));
+    c.appendChild(makeBar(SL, ST+heroH, SW, 5));
+
+    const textY = ST + heroH + 14;
+    c.appendChild(makeText(SL, textY, 120, 14, '2024.09.01', `font-family:${mono};font-size:7px;letter-spacing:0.2em;color:${accentColor};`));
+    c.appendChild(makeText(SL, textY+16, SW, 46, 'FEATURE HEADLINE', `font-family:${heavy};font-size:32px;color:#2A2320;line-height:1;letter-spacing:-0.02em;`));
+    c.appendChild(makeBar(SL, textY+66, 50, 3));
+
+    const bodyY = textY + 74;
+    const bodyH = SB - bodyY - 20;
+    const colW = Math.floor((SW - g) / 2);
+    c.appendChild(makeText(SL, bodyY, colW, bodyH, 'Write your story or caption here. This template is built for a long-form feature spread.', `font-family:${mono};font-size:8px;line-height:1.7;color:#444;`));
+    const ph2H = Math.floor(bodyH * 0.65);
+    c.appendChild(makePhotoZone(SL+colW+g, bodyY, colW, ph2H, 'PHOTO 2'));
+    c.appendChild(makeText(SL+colW+g, bodyY+ph2H+6, colW, bodyH-ph2H-6, 'Photo caption here.', `font-family:${mono};font-size:7px;line-height:1.5;color:#888;border-top:1px solid #ddd;padding-top:4px;`));
+
+    c.appendChild(makeBar(SL, SB-18, SW, 1, '#ccc'));
+    c.appendChild(makeText(SL, SB-16, SW, 14, 'STANDUP ACADEMY YEARBOOK  //  2025', `font-family:${mono};font-size:7px;letter-spacing:0.18em;color:#aaa;`));
+  }
+
+  // 03 PORTRAIT ROW
+  // 4-col portrait grid with name labels
+  else if (name === 'portrait') {
+    c.appendChild(makeFill(0, 0, W, H, '#F5F2EE'));
+    c.appendChild(makeBar(SL, ST, SW, 7));
+
+    c.appendChild(makeText(SL, ST+14, 300, 26, 'PORTRAITS', `font-family:${heavy};font-size:20px;color:#2A2320;letter-spacing:0.08em;`));
+    c.appendChild(makeText(SL, ST+42, 300, 14, 'GRADE 12  //  SECTION A', `font-family:${mono};font-size:7px;letter-spacing:0.25em;color:#888;`));
+    c.appendChild(makeBar(SL, ST+58, SW, 1, '#ccc'));
+
+    const numCols = 4;
+    const nameH = 18;
+    const pW = Math.floor((SW - g*(numCols-1))/numCols);
+    const gridY = ST + 66;
+    const gridH = SH - 66 - 8;
+    const numRows = Math.floor(gridH / (Math.floor(pW*1.22) + g + nameH));
+    const pH = Math.floor((gridH - numRows*nameH - g*(numRows-1)) / numRows);
+    const names = ['FIRST L.','SECOND L.','THIRD L.','FOURTH L.','FIFTH L.','SIXTH L.','SEVENTH L.','EIGHTH L.','NINTH L.','TENTH L.','ELEVENTH L.','TWELFTH L.'];
+    let n = 0;
+    for (let r = 0; r < numRows; r++) {
+      for (let cc = 0; cc < numCols; cc++) {
+        const px = SL + cc*(pW+g);
+        const py = gridY + r*(pH + nameH + g);
+        c.appendChild(makePhotoZone(px, py, pW, pH, ''));
+        c.appendChild(makeText(px, py+pH+2, pW, nameH, names[n++]||'NAME L.', `font-family:${mono};font-size:6px;letter-spacing:0.1em;text-align:center;color:#2A2320;text-transform:uppercase;`));
+      }
+    }
+    c.appendChild(makeBar(SL, SB-5, SW, 4));
+    c.appendChild(makeText(SL, SB-18, 60, 12, 'pg. 24', `font-family:${mono};font-size:7px;letter-spacing:0.2em;color:#aaa;`));
+  }
+
+  // 04 COLLAGE BLOCK
+  else if (name === 'collage') {
+    c.appendChild(makeFill(0, 0, W, H, '#2A2320'));
+    const bigW = Math.floor(SW * 0.58), bigH = Math.floor(SH * 0.54);
+    c.appendChild(makePhotoZone(SL, ST, bigW-g, bigH-g, 'MAIN PHOTO'));
+    const sideW = SW - bigW;
+    const sideH = Math.floor(bigH/2);
+    c.appendChild(makePhotoZone(SL+bigW, ST, sideW, sideH-g, 'PHOTO 2'));
+    c.appendChild(makePhotoZone(SL+bigW, ST+sideH, sideW, sideH-g, 'PHOTO 3'));
+    c.appendChild(makeBar(SL, ST+bigH, SW, 5));
+    const botH = SH - bigH - 5;
+    const botPW = Math.floor(SW * 0.36);
+    c.appendChild(makePhotoZone(SR-botPW, ST+bigH+5, botPW, botH, 'PHOTO 4'));
+    const textX = SL, textW = SW - botPW - 12;
+    c.appendChild(makeText(textX, ST+bigH+14, textW, 20, 'MEMORIES', `font-family:${heavy};font-size:16px;color:${accentColor};letter-spacing:0.2em;`));
+    c.appendChild(makeText(textX, ST+bigH+38, textW, 60, 'Add your caption or quote text here. Works great for events.', `font-family:${mono};font-size:8px;color:#B8AFA0;line-height:1.6;`));
+    c.appendChild(makeText(textX, SB-28, textW, 18, '2024 - 2025', `font-family:${heavy};font-size:12px;color:#555;letter-spacing:0.1em;`));
+    const tag = document.createElement('div');
+    tag.style.cssText = `position:absolute;left:${textX}px;bottom:${H-SB+4}px;padding:3px 8px;background:${accentColor};`;
+    tag.innerHTML = `<span style="font-family:'Space Mono',monospace;font-size:6px;letter-spacing:0.15em;color:#2A2320;font-weight:700;">YEARBOOK 2025</span>`;
+    c.appendChild(tag);
+  }
+
+  // 05 FILM STRIP
+  // Sprocket holes in bleed zone (outside safe area), 5 frames inside safe area
+  else if (name === 'filmstrip') {
+    c.appendChild(makeFill(0, 0, W, H, '#111009'));
+    // sprocket holes sit in the bleed margins — intentional design detail
+    for (let i = 0; i < 11; i++) {
+      const hy = ST - 8 + i * Math.floor((SH+16)/10);
+      [SL-20, SR+8].forEach(hx => {
+        const hole = document.createElement('div');
+        hole.style.cssText = `position:absolute;left:${hx}px;top:${hy}px;width:10px;height:14px;background:#2A2320;border-radius:2px;`;
+        c.appendChild(hole);
+      });
+    }
+    const capH = 16;
+    const numFrames = 5;
+    const fH = Math.floor((SH - capH*numFrames - g*(numFrames-1)) / numFrames);
+    const captions = ['OPENING DAY', 'HOMECOMING', 'WINTER FORMAL', 'FIELD TRIP', 'GRADUATION'];
+    for (let i = 0; i < numFrames; i++) {
+      const fy = ST + i*(fH + capH + g);
+      c.appendChild(makePhotoZone(SL, fy, SW, fH, `FRAME ${i+1}`));
+      const badge = document.createElement('div');
+      badge.style.cssText = `position:absolute;left:${SL}px;top:${fy+fH}px;width:20px;height:${capH}px;background:${accentColor};display:flex;align-items:center;justify-content:center;`;
+      badge.innerHTML = `<span style="font-family:'Space Mono',monospace;font-size:6px;color:#111009;font-weight:700;">${String(i+1).padStart(2,'0')}</span>`;
+      c.appendChild(badge);
+      c.appendChild(makeText(SL+22, fy+fH, SW-22, capH, captions[i], `font-family:${mono};font-size:6px;letter-spacing:0.18em;color:#888;line-height:${capH}px;`));
+    }
+  }
+
+  // 06 PHOTO MOSAIC — 7 photos, brick layout, tiny footer
+  else if (name === 'mosaic') {
+    c.appendChild(makeFill(0, 0, W, H, '#F5F2EE'));
+    c.appendChild(makeBar(SL, ST, SW, 5));
+    const footH = 32;
+    const mH = SH - footH - 5;
+
+    const r1H = Math.floor(mH * 0.32);
+    const r1W = Math.floor((SW - g) / 2);
+    c.appendChild(makePhotoZone(SL, ST+5, r1W, r1H, 'PHOTO 1'));
+    c.appendChild(makePhotoZone(SL+r1W+g, ST+5, SW-r1W-g, r1H, 'PHOTO 2'));
+
+    const r2Y = ST+5 + r1H + g;
+    const r2H = Math.floor(mH * 0.28);
+    const r2W = Math.floor((SW - g*2) / 3);
+    c.appendChild(makePhotoZone(SL, r2Y, r2W, r2H, 'PHOTO 3'));
+    c.appendChild(makePhotoZone(SL+r2W+g, r2Y, r2W, r2H, 'PHOTO 4'));
+    c.appendChild(makePhotoZone(SL+r2W*2+g*2, r2Y, SW-r2W*2-g*2, r2H, 'PHOTO 5'));
+
+    const r3Y = r2Y + r2H + g;
+    const r3H = mH - r1H - r2H - g*2;
+    const r3WideW = Math.floor(SW * 0.62);
+    c.appendChild(makePhotoZone(SL, r3Y, r3WideW-g, r3H, 'PHOTO 6'));
+    c.appendChild(makePhotoZone(SL+r3WideW, r3Y, SW-r3WideW, r3H, 'PHOTO 7'));
+
+    c.appendChild(makeFill(SL, SB-footH, SW, footH, '#2A2320'));
+    c.appendChild(makeText(SL+8, SB-footH+9, 220, 14, 'STANDUP ACADEMY  //  2025', `font-family:${mono};font-size:7px;letter-spacing:0.18em;color:#666;`));
+    c.appendChild(makeText(SR-100, SB-footH+5, 100, 20, 'MOSAIC', `font-family:${heavy};font-size:14px;color:${accentColor};letter-spacing:0.08em;text-align:right;`));
+  }
+
+  // 07 CONTACT SHEET — 12 photos 4x3, dark bg, index badges
+  else if (name === 'contact') {
+    c.appendChild(makeFill(0, 0, W, H, '#0E0D0C'));
+    c.appendChild(makeBar(SL, ST, SW, 3, accentColor));
+    const headerH = 26;
+    c.appendChild(makeText(SL, ST+6, 200, 16, 'CONTACT SHEET', `font-family:${mono};font-size:8px;letter-spacing:0.22em;color:${accentColor};`));
+    c.appendChild(makeText(SR-110, ST+6, 110, 16, '2024 - 2025', `font-family:${mono};font-size:8px;letter-spacing:0.15em;color:#555;text-align:right;`));
+    const cols = 4, rows = 3;
+    const pW = Math.floor((SW - g*(cols-1)) / cols);
+    const pHavail = SH - headerH - g*(rows-1);
+    const pH = Math.floor(pHavail / rows);
+    for (let r = 0; r < rows; r++) {
+      for (let cc = 0; cc < cols; cc++) {
+        const idx = r*cols + cc + 1;
+        const pz = makePhotoZone(SL+cc*(pW+g), ST+headerH+r*(pH+g), pW, pH, '');
+        const badge = document.createElement('div');
+        badge.style.cssText = `position:absolute;top:0;left:0;padding:2px 4px;background:rgba(0,0,0,0.75);z-index:2;pointer-events:none;`;
+        badge.innerHTML = `<span style="font-family:'Space Mono',monospace;font-size:6px;color:#666;letter-spacing:0.1em;">${String(idx).padStart(2,'0')}</span>`;
+        pz.appendChild(badge);
+        c.appendChild(pz);
+      }
+    }
+  }
+
+  // 08 PHOTO STORY — hero + 2x2 grid + narrow text column on right
+  else if (name === 'story') {
+    c.appendChild(makeFill(0, 0, W, H, '#F5F2EE'));
+    c.appendChild(makeBar(SL, ST, 5, SH));
+
+    const textColW = 80;
+    const photoX = SL + 5 + g;
+    const photoW = SR - textColW - g - photoX;
+
+    const heroH = Math.floor(SH * 0.44);
+    c.appendChild(makePhotoZone(photoX, ST, photoW, heroH, 'HERO PHOTO'));
+
+    const sg = g;
+    const sW = Math.floor((photoW - sg) / 2);
+    const remH = SH - heroH - sg;
+    const sH = Math.floor((remH - sg) / 2);
+    c.appendChild(makePhotoZone(photoX,       ST+heroH+sg,    sW,          sH, 'PHOTO 2'));
+    c.appendChild(makePhotoZone(photoX+sW+sg, ST+heroH+sg,    photoW-sW-sg, sH, 'PHOTO 3'));
+    c.appendChild(makePhotoZone(photoX,       ST+heroH+sg+sH+sg, sW,       remH-sH-sg, 'PHOTO 4'));
+    c.appendChild(makePhotoZone(photoX+sW+sg, ST+heroH+sg+sH+sg, photoW-sW-sg, remH-sH-sg, 'PHOTO 5'));
+
+    const txX = SR - textColW;
+    c.appendChild(makeFill(txX, ST, textColW, SH, '#2A2320'));
+    c.appendChild(makeBar(txX, ST, textColW, 4, accentColor));
+    c.appendChild(makeText(txX+6, ST+12, textColW-12, 52, 'EVENT TITLE', `font-family:${heavy};font-size:12px;color:#F5F2EE;line-height:1.1;letter-spacing:0.02em;`));
+    c.appendChild(makeText(txX+6, ST+68, textColW-12, 12, '2025.04.01', `font-family:${mono};font-size:6px;letter-spacing:0.1em;color:${accentColor};`));
+    c.appendChild(makeBar(txX+6, ST+84, textColW-12, 1, 'rgba(255,255,255,0.12)'));
+    c.appendChild(makeText(txX+6, ST+90, textColW-12, SH-110, 'Add your event story here. Describe what happened, who attended, and the highlights of the day.', `font-family:${mono};font-size:6.5px;line-height:1.65;color:#B8AFA0;`));
+    c.appendChild(makeBar(txX+6, SB-22, textColW-12, 1, 'rgba(255,255,255,0.12)'));
+    c.appendChild(makeText(txX+6, SB-18, textColW-12, 14, 'pg. 38', `font-family:${mono};font-size:6px;letter-spacing:0.12em;color:#555;`));
+  }
+}
+
+function savePNG() {
+  const canvas = document.getElementById('canvas');
+  if (typeof html2canvas !== 'undefined') {
+    // hide guides for clean export
+    toggleGuides(false);
+    setTimeout(function() {
+      html2canvas(canvas, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(function(cvs) {
+        const link = document.createElement('a');
+        link.download = 'yearbook-page-bleed.png';
+        link.href = cvs.toDataURL('image/png');
+        link.click();
+        // restore guide state
+        const cb = document.getElementById('show-guides');
+        if (cb && cb.checked) toggleGuides(true);
+      });
+    }, 80);
+  } else {
+    alert('To save: right-click the template and choose Save Image, or use Print to PDF.');
+  }
+}
+
+loadTemplate('grid');
+</script>
+</body>
+</html>
