@@ -3,13 +3,14 @@
 # Lines starting with # are ignored as comments.
 # One link per line.
 
+Jordan Video | https://www.youtube.com/watch?v=OavI_GiQUtI | Z-score and normal Distribution
 Next Gen Personal Finance | https://www.ngpf.org/math/financial-algebra/ | Financial Math 
 Open up Resources | https://access.openupresources.org/curricula/our-hs-math | Math Materials and Make up work
 Onshape | https://www.onshape.com/en/ | CAD 
 Desmos | https://www.desmos.com/calculator | Graphing calculator
 GeoGebra | https://www.geogebra.org | Interactive math tools
 Wolfram Alpha | https://www.wolframalpha.com | Computational math engine
-Jordan Video | https://www.youtube.com/watch?v=OavI_GiQUtI | Z-score and normal Distribution
+
 
 
 
