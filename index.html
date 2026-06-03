@@ -42,8 +42,7 @@ body::after {
 .cur      { width:10px; height:10px; background:var(--accent); border-radius:50%; position:fixed; top:0; left:0; pointer-events:none; z-index:9999; mix-blend-mode:exclusion; transform:translate(-50%,-50%); }
 .cur-ring { width:38px; height:38px; border:1px solid rgba(200,255,0,.35); border-radius:50%; position:fixed; top:0; left:0; pointer-events:none; z-index:9998; transform:translate(-50%,-50%); }
 
-/* ENSURE STACKING */
-header, .hero, .section, footer { position: relative; z-index: 1; }
+header, .hero, .section, .spotlight-wrap, footer { position: relative; z-index: 1; }
 
 /* HEADER */
 header {
@@ -78,7 +77,7 @@ header {
 .hero-eyebrow { font-family:'DM Mono',monospace; font-size:.68rem; letter-spacing:.28em; text-transform:uppercase; color:var(--accent); margin-bottom:1.4rem; opacity:0; animation:up .7s .2s forwards; }
 .hero-title   { font-family:'Bebas Neue',sans-serif; font-size:clamp(4.5rem,13vw,11rem); line-height:.9; letter-spacing:-.01em; margin-bottom:2rem; opacity:0; animation:up .7s .38s forwards; }
 .hero-title .hollow { -webkit-text-stroke:2px var(--white); color:transparent; }
-.hero-desc    { font-size:.9rem; color:var(--muted); max-width:26rem; line-height:1.75; margin-bottom:3rem; opacity:0; animation:up .7s .55s forwards; }
+.hero-desc    { font-size:.9rem; color:var(--muted); max-width:26rem; line-height:1.75; margin-bottom:2rem; opacity:0; animation:up .7s .45s forwards; }
 .hero-scroll  { font-family:'DM Mono',monospace; font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:#3a3a3a; display:flex; align-items:center; gap:1rem; opacity:0; animation:up .7s .72s forwards; }
 .hero-scroll::before { content:''; display:block; width:36px; height:1px; background:#2a2a2a; }
 
@@ -107,7 +106,6 @@ header {
 .card:hover .card-arrow { opacity:1; transform:translate(0,0); }
 .card > * { position:relative; z-index:1; }
 
-/* CARD PREVIEW IMAGE — blurred background */
 .card-preview {
   position: absolute; inset: 0; z-index: 0;
   background-size: cover; background-position: center;
@@ -126,7 +124,6 @@ header {
 .card-desc  { font-size:.75rem; color:var(--muted); line-height:1.65; transition:color .3s; }
 .card-meta  { font-family:'DM Mono',monospace; font-size:.57rem; letter-spacing:.14em; text-transform:uppercase; color:#333; transition:color .3s; }
 
-/* LINK CARD FAVICON */
 .card-favicon-row { display:flex; align-items:center; gap:.65rem; }
 .card-favicon {
   width:20px; height:20px; border-radius:4px;
@@ -187,6 +184,181 @@ header {
 .widget-answer.revealed { opacity: 1; cursor: default; }
 .widget-answer:not(.revealed)::before { content: 'tap to reveal answer'; color: var(--muted); font-size: .6rem; }
 
+/* ═══════════════════════════════════════
+   SPOTLIGHT SECTION
+═══════════════════════════════════════ */
+.spotlight-wrap {
+  padding: 0 3rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.spotlight-label {
+  font-family: 'DM Mono', monospace;
+  font-size: .62rem; letter-spacing: .28em;
+  text-transform: uppercase; color: var(--accent);
+  display: flex; align-items: center; gap: 1rem;
+  padding: 3rem 0 2rem;
+}
+.spotlight-label::after { content: ''; flex: 1; max-width: 60px; height: 1px; background: var(--border); }
+.spotlight-label .sl-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: .55rem; letter-spacing: .12em;
+  background: var(--accent); color: var(--black);
+  padding: .2rem .5rem; margin-left: -.3rem;
+}
+
+/* The big card */
+.spotlight-card {
+  display: block;
+  text-decoration: none;
+  color: var(--white);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  cursor: none;
+  margin-bottom: 4rem;
+
+  /* reveal animation */
+  opacity: 0;
+  animation: up .65s .1s forwards;
+}
+
+/* animated beam / spotlight effect */
+.spotlight-card::before {
+  content: '';
+  position: absolute;
+  top: -120%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 280%;
+  background: conic-gradient(
+    from 180deg at 50% 0%,
+    transparent 60deg,
+    rgba(200,255,0,.13) 90deg,
+    rgba(200,255,0,.22) 95deg,
+    rgba(200,255,0,.13) 100deg,
+    transparent 140deg
+  );
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity .5s;
+  animation: beamSweep 4s ease-in-out infinite alternate;
+}
+
+/* accent fill on hover */
+.spotlight-card::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--accent);
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform .5s cubic-bezier(.23,1,.32,1);
+  z-index: 0;
+}
+.spotlight-card:hover::after { transform: scaleY(1); }
+.spotlight-card:hover { color: var(--black); }
+.spotlight-card:hover .sl-num   { -webkit-text-stroke-color: rgba(0,0,0,.08); }
+.spotlight-card:hover .sl-label-inner { color: rgba(0,0,0,.5); }
+.spotlight-card:hover .sl-desc  { color: rgba(0,0,0,.55); }
+.spotlight-card:hover .sl-meta  { color: rgba(0,0,0,.35); }
+.spotlight-card:hover .sl-arrow { opacity: 1; transform: translate(0,0); }
+.spotlight-card:hover .sl-favicon { filter: brightness(0); }
+.spotlight-card:hover .spotlight-card::before { opacity: 0; }
+
+@keyframes beamSweep {
+  0%   { left: 30%; }
+  100% { left: 70%; }
+}
+
+.spotlight-inner {
+  position: relative; z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 2rem;
+  padding: 2rem 3rem;
+}
+
+.sl-left { display: flex; flex-direction: column; gap: .9rem; }
+
+.sl-top { display: flex; align-items: center; gap: 1.2rem; }
+
+.sl-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1px #2a2a2a;
+  transition: -webkit-text-stroke-color .3s;
+  flex-shrink: 0;
+}
+
+.sl-label-inner {
+  font-family: 'DM Mono', monospace;
+  font-size: .6rem; letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color .3s;
+}
+
+.sl-name-row { display: flex; align-items: center; gap: 1rem; }
+
+.sl-favicon {
+  width: 28px; height: 28px; border-radius: 4px;
+  object-fit: contain; background: transparent;
+  flex-shrink: 0;
+  transition: filter .3s;
+}
+.sl-favicon-fallback {
+  width: 28px; height: 28px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  background: #1a1a1a; color: #555; font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.sl-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(1.6rem, 4vw, 3rem);
+  letter-spacing: .02em;
+  line-height: 1;
+}
+
+.sl-desc {
+  font-size: .85rem;
+  color: var(--muted);
+  line-height: 1.7;
+  max-width: 42rem;
+  transition: color .3s;
+}
+
+.sl-meta {
+  font-family: 'DM Mono', monospace;
+  font-size: .6rem; letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #2a2a2a;
+  transition: color .3s;
+}
+
+.sl-right { flex-shrink: 0; }
+.sl-arrow {
+  font-size: 2.5rem;
+  opacity: 0;
+  transform: translate(-10px, 10px);
+  transition: all .35s cubic-bezier(.23,1,.32,1);
+  line-height: 1;
+}
+
+/* spotlight skeleton */
+.spotlight-skeleton {
+  background: var(--dim);
+  padding: 2rem 3rem;
+  display: flex; flex-direction: column; gap: 1rem;
+  animation: pulse 1.4s ease-in-out infinite;
+  border: 1px solid var(--border);
+  margin-bottom: 4rem;
+}
+
 /* SECTION DIVIDER */
 .section + .section {
   border-top: 1px solid var(--border);
@@ -204,6 +376,9 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
   header{padding:1.2rem 1.5rem;}
   .hero{padding:0 1.5rem 4rem;}
   .section{padding:4rem 1.5rem 5rem;}
+  .spotlight-wrap{padding:0 1.5rem;}
+  .spotlight-inner{padding:2.5rem 1.5rem; grid-template-columns:1fr;}
+  .sl-right{display:none;}
   footer{padding:2rem 1.5rem;flex-direction:column;gap:.8rem;align-items:flex-start;}
 }
 </style>
@@ -227,7 +402,7 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
   <div class="hero-bg" aria-hidden="true">4</div>
   <p class="hero-eyebrow">room&#8202;—&#8202;004</p>
   <h1 class="hero-title">Enter<br>The <span class="hollow">Room</span></h1>
-  <p class="hero-desc" style="font-size:.9rem;color:var(--muted);max-width:26rem;line-height:1.75;margin-bottom:2rem;opacity:0;animation:up .7s .45s forwards;">Everything for this class in one place.</p>
+  <p class="hero-desc">Everything for this class in one place.</p>
 
   <div class="hero-widgets">
     <div class="widget">
@@ -244,6 +419,23 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
 
   <p class="hero-scroll">scroll to explore</p>
 </section>
+
+<!-- ══════════ SPOTLIGHT ══════════ -->
+<div class="spotlight-wrap" id="spotlightWrap">
+  <div class="spotlight-label">
+    <span class="sl-badge">★</span>
+    Spotlight Link
+    <span class="page-count" id="spotlightMeta"></span>
+  </div>
+  <div id="spotlightContainer">
+  <div class="spotlight-skeleton">
+      <div class="sk-line" style="height:52px;width:100px"></div>
+      <div class="sk-line" style="height:24px;width:45%"></div>
+      <div class="sk-line" style="height:12px;width:65%"></div>
+      <div class="sk-line" style="height:10px;width:35%"></div>
+    </div>
+  </div>
+</div>
 
 <section class="section" id="links">
   <div class="section-label">
@@ -276,7 +468,7 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
   </div>
   <div class="grid" id="gamesGrid">
     <div class="skeleton"><div class="sk-line" style="height:52px;width:60px"></div><div class="sk-line" style="height:24px;width:70%"></div><div class="sk-line" style="height:12px;width:90%"></div></div>
-    <div class="skeleton"><div class="sk-line" style="height:52px;width:60px"></div><div class="sk-line" style="height:24px;width:55%"></div><div class="sk-line" style="height:12px;width:85%"></div></div>
+    <div class="skeleton"><div class="sk-line" style="height:52px;width:60px"></div><div class="sk-line" style="height:24px;width:55%"></div><div class="sk-line" style="height:12px;width:80%"></div></div>
     <div class="skeleton"><div class="sk-line" style="height:52px;width:60px"></div><div class="sk-line" style="height:24px;width:65%"></div><div class="sk-line" style="height:12px;width:80%"></div></div>
   </div>
 </section>
@@ -317,7 +509,6 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
 
   function renderCards(folders, gridEl, badgeEl, emptyIcon, emptyTitle, emptyMsg) {
     gridEl.innerHTML = '';
-
     if (folders.length === 0) {
       badgeEl.textContent = '0';
       gridEl.innerHTML = `
@@ -328,9 +519,7 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
         </div>`;
       return;
     }
-
     badgeEl.textContent = `${folders.length} ${folders.length !== 1 ? 'items' : 'item'}`;
-
     folders.forEach((folder, i) => {
       const num  = String(i + 1).padStart(2, '0');
       const displayName = folder.name.startsWith(GAMES_PREFIX)
@@ -340,8 +529,6 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
       card.className = 'card';
       card.href = `${folder.name}/`;
       card.style.animationDelay = `${i * 0.07}s`;
-
-      // Try to load a preview image from the folder
       const previewUrl = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/master/${folder.name}/preview.png`;
       const previewDiv = document.createElement('div');
       previewDiv.className = 'card-preview';
@@ -351,7 +538,6 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
         previewDiv.classList.add('loaded');
       };
       img.src = previewUrl;
-
       card.innerHTML = `
         <div class="card-top">
           <span class="card-num">${num}</span>
@@ -367,22 +553,70 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
     });
   }
 
-  // ── LINKS.TXT LOADER ──
-  // Format each line in links.txt as:
-  //   Label | https://url.com
-  //   Label | https://url.com | Optional short description
-  // Blank lines and lines starting with # are ignored (use # for comments).
+  // ── SPOTLIGHT RENDERER ──
+  function renderSpotlight(entry) {
+    const container = document.getElementById('spotlightContainer');
+    const metaEl    = document.getElementById('spotlightMeta');
 
+    if (!entry) {
+      container.innerHTML = `
+        <div class="state-box" style="border:1px solid var(--border);margin-bottom:4rem;">
+          <div class="state-icon">★</div>
+          <p class="state-title">No spotlight yet</p>
+          <p class="state-sub">Add a line to links.txt — the first entry will be spotlighted here.</p>
+        </div>`;
+      return;
+    }
+
+    const hostname = (() => { try { return new URL(entry.url).hostname; } catch { return entry.url; } })();
+    const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=64`;
+    metaEl.textContent = hostname;
+
+    const card = document.createElement('a');
+    card.className = 'spotlight-card';
+    card.href = entry.url;
+    card.target = '_blank';
+    card.rel = 'noopener noreferrer';
+
+    card.innerHTML = `
+      <div class="spotlight-inner">
+        <div class="sl-left">
+          <div class="sl-top">
+            <span class="sl-num">01</span>
+            <span class="sl-label-inner">Featured Link</span>
+          </div>
+          <div class="sl-name-row">
+            <img
+              class="sl-favicon"
+              src="${faviconUrl}"
+              alt=""
+              width="28" height="28"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+            >
+            <span class="sl-favicon-fallback" style="display:none;">🌐</span>
+            <span class="sl-name">${entry.label}</span>
+          </div>
+          <p class="sl-desc">${entry.desc}</p>
+          <span class="sl-meta">${hostname}</span>
+        </div>
+        <div class="sl-right">
+          <span class="sl-arrow">↗</span>
+        </div>
+      </div>`;
+
+    container.innerHTML = '';
+    container.appendChild(card);
+  }
+
+  // ── LINKS.TXT LOADER ──
   async function loadLinks() {
     const linksGrid  = document.getElementById('linksGrid');
     const linksBadge = document.getElementById('linksBadge');
 
     try {
-      // Fetch raw links.txt from the repo (cache-busted so edits show quickly)
       const res = await fetch(
         `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/master/links.txt?t=${Date.now()}`
       );
-
       if (!res.ok) throw new Error(`links.txt not found (${res.status})`);
 
       const text = await res.text();
@@ -399,25 +633,28 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
           };
         });
 
-      if (entries.length === 0) {
+      // spotlight = first entry; rest go in the grid
+      renderSpotlight(entries[0] || null);
+      const rest = entries.slice(1);
+
+      if (rest.length === 0) {
         linksBadge.textContent = '0';
         linksGrid.innerHTML = `
           <div class="state-box">
             <div class="state-icon">↗</div>
-            <p class="state-title">No links yet</p>
-            <p class="state-sub">Add lines to links.txt in the root of the room-4 repo.<br>Format: Label | https://url.com | Description</p>
+            <p class="state-title">No additional links</p>
+            <p class="state-sub">Add more lines to links.txt — everything after the first becomes a card here.</p>
           </div>`;
         return;
       }
 
-      linksBadge.textContent = `${entries.length} ${entries.length !== 1 ? 'items' : 'item'}`;
+      linksBadge.textContent = `${rest.length} ${rest.length !== 1 ? 'items' : 'item'}`;
       linksGrid.innerHTML = '';
 
-      entries.forEach((entry, i) => {
+      rest.forEach((entry, i) => {
         const num  = String(i + 1).padStart(2, '0');
         const hostname = (() => { try { return new URL(entry.url).hostname; } catch { return entry.url; } })();
         const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=32`;
-
         const card = document.createElement('a');
         card.className = 'card';
         card.href = entry.url;
@@ -448,7 +685,7 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
       });
 
     } catch (err) {
-      // If links.txt doesn't exist yet, show a friendly "not set up" state
+      renderSpotlight(null);
       linksBadge.textContent = '—';
       linksGrid.innerHTML = `
         <div class="state-box">
@@ -466,32 +703,20 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
     const toolsGrid  = document.getElementById('toolsGrid');
     const gamesBadge = document.getElementById('gamesBadge');
     const toolsBadge = document.getElementById('toolsBadge');
-
     try {
       const res = await fetch(
         `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/`,
         { headers: { 'Accept': 'application/vnd.github+json' } }
       );
       if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
-
       const items   = await res.json();
       const folders = items.filter(i => i.type === 'dir' && !IGNORE.has(i.name));
-
       const games = folders.filter(f => f.name.startsWith(GAMES_PREFIX));
       const tools = folders.filter(f => !f.name.startsWith(GAMES_PREFIX));
-
-      renderCards(
-        games, gamesGrid, gamesBadge,
-        '🎮', 'No games yet',
-        'Create a folder prefixed with "games-" (e.g. games-trivia/), add an index.html, push — and it will appear here.'
-      );
-
-      renderCards(
-        tools, toolsGrid, toolsBadge,
-        '4', 'No tools yet',
-        'Create a folder inside the room-4 repo, add an index.html to it, push — and it will appear here automatically.'
-      );
-
+      renderCards(games, gamesGrid, gamesBadge, '🎮', 'No games yet',
+        'Create a folder prefixed with "games-" (e.g. games-trivia/), add an index.html, push — and it will appear here.');
+      renderCards(tools, toolsGrid, toolsBadge, '4', 'No tools yet',
+        'Create a folder inside the room-4 repo, add an index.html to it, push — and it will appear here automatically.');
     } catch (err) {
       console.error(err);
       const errHtml = `
@@ -902,126 +1127,65 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
     const canvas = document.getElementById('bg');
     const ctx = canvas.getContext('2d');
     let W, H, particles, mouse = { x: -9999, y: -9999 };
-
     const ACCENT = [200, 255, 0];
     const COUNT = 90;
-
-    function resize() {
-      W = canvas.width  = window.innerWidth;
-      H = canvas.height = window.innerHeight;
-    }
-
+    function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
     function rand(a, b) { return a + Math.random() * (b - a); }
-
     function makeParticle() {
-      return {
-        x:  rand(0, W),
-        y:  rand(0, H),
-        vx: rand(-0.25, 0.25),
-        vy: rand(-0.25, 0.25),
-        r:  rand(1, 2.5),
-        opacity: rand(0.08, 0.35),
-        pulse: rand(0, Math.PI * 2),
-        pulseSpeed: rand(0.005, 0.018),
-      };
+      return { x: rand(0,W), y: rand(0,H), vx: rand(-0.25,0.25), vy: rand(-0.25,0.25),
+               r: rand(1,2.5), opacity: rand(0.08,0.35), pulse: rand(0,Math.PI*2), pulseSpeed: rand(0.005,0.018) };
     }
-
-    function init() {
-      resize();
-      particles = Array.from({ length: COUNT }, makeParticle);
-    }
-
+    function init() { resize(); particles = Array.from({ length: COUNT }, makeParticle); }
     function drawGrid() {
       const spacing = 80;
-      ctx.strokeStyle = 'rgba(255,255,255,0.018)';
-      ctx.lineWidth = 0.5;
-      for (let x = 0; x < W; x += spacing) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
-      }
-      for (let y = 0; y < H; y += spacing) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-      }
+      ctx.strokeStyle = 'rgba(255,255,255,0.018)'; ctx.lineWidth = 0.5;
+      for (let x = 0; x < W; x += spacing) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+      for (let y = 0; y < H; y += spacing) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
     }
-
     function drawConnections() {
       const maxDist = 160;
       for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx*dx + dy*dy);
+        for (let j = i+1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx*dx+dy*dy);
           if (dist < maxDist) {
-            const alpha = (1 - dist / maxDist) * 0.12;
-            ctx.strokeStyle = `rgba(${ACCENT[0]},${ACCENT[1]},${ACCENT[2]},${alpha})`;
-            ctx.lineWidth = 0.6;
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.stroke();
+            ctx.strokeStyle = `rgba(${ACCENT[0]},${ACCENT[1]},${ACCENT[2]},${(1-dist/maxDist)*0.12})`;
+            ctx.lineWidth = 0.6; ctx.beginPath();
+            ctx.moveTo(particles[i].x,particles[i].y); ctx.lineTo(particles[j].x,particles[j].y); ctx.stroke();
           }
         }
-        const mdx = particles[i].x - mouse.x;
-        const mdy = particles[i].y - mouse.y;
-        const mdist = Math.sqrt(mdx*mdx + mdy*mdy);
+        const mdx = particles[i].x - mouse.x, mdy = particles[i].y - mouse.y;
+        const mdist = Math.sqrt(mdx*mdx+mdy*mdy);
         if (mdist < 200) {
-          const alpha = (1 - mdist / 200) * 0.35;
-          ctx.strokeStyle = `rgba(${ACCENT[0]},${ACCENT[1]},${ACCENT[2]},${alpha})`;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(particles[i].x, particles[i].y);
-          ctx.lineTo(mouse.x, mouse.y);
-          ctx.stroke();
+          ctx.strokeStyle = `rgba(${ACCENT[0]},${ACCENT[1]},${ACCENT[2]},${(1-mdist/200)*0.35})`;
+          ctx.lineWidth = 1; ctx.beginPath();
+          ctx.moveTo(particles[i].x,particles[i].y); ctx.lineTo(mouse.x,mouse.y); ctx.stroke();
         }
       }
     }
-
     function draw() {
-      ctx.clearRect(0, 0, W, H);
-      drawGrid();
-      drawConnections();
-
+      ctx.clearRect(0,0,W,H); drawGrid(); drawConnections();
       for (const p of particles) {
         p.pulse += p.pulseSpeed;
         const glow = 0.5 + 0.5 * Math.sin(p.pulse);
         const opacity = p.opacity * (0.7 + 0.3 * glow);
-
-        const dx = p.x - mouse.x;
-        const dy = p.y - mouse.y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < 120 && dist > 0) {
-          const force = (120 - dist) / 120 * 0.6;
-          p.vx += (dx / dist) * force;
-          p.vy += (dy / dist) * force;
-        }
-
-        p.vx *= 0.98;
-        p.vy *= 0.98;
-        p.x += p.vx;
-        p.y += p.vy;
-
-        if (p.x < 0) p.x = W;
-        if (p.x > W) p.x = 0;
-        if (p.y < 0) p.y = H;
-        if (p.y > H) p.y = 0;
-
-        const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
-        gradient.addColorStop(0, `rgba(${ACCENT[0]},${ACCENT[1]},${ACCENT[2]},${opacity})`);
-        gradient.addColorStop(1, `rgba(${ACCENT[0]},${ACCENT[1]},${ACCENT[2]},0)`);
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
-        ctx.fillStyle = gradient;
-        ctx.fill();
+        const dx = p.x - mouse.x, dy = p.y - mouse.y;
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        if (dist < 120 && dist > 0) { const force = (120-dist)/120*0.6; p.vx += (dx/dist)*force; p.vy += (dy/dist)*force; }
+        p.vx *= 0.98; p.vy *= 0.98; p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+        if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+        const gradient = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*3);
+        gradient.addColorStop(0,`rgba(${ACCENT[0]},${ACCENT[1]},${ACCENT[2]},${opacity})`);
+        gradient.addColorStop(1,`rgba(${ACCENT[0]},${ACCENT[1]},${ACCENT[2]},0)`);
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r*3,0,Math.PI*2); ctx.fillStyle = gradient; ctx.fill();
       }
-
       requestAnimationFrame(draw);
     }
-
     document.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
     document.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
     window.addEventListener('resize', resize);
-
-    init();
-    draw();
+    init(); draw();
   })();
 </script>
 </body>
