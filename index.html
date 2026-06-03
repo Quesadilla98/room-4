@@ -66,7 +66,8 @@ header {
 
 /* HERO */
 .hero {
-  min-height: 100vh;
+  height: 100vh;
+  min-height: 600px;
   display: flex; flex-direction:column; justify-content:flex-end;
   padding: 0 3rem 5rem;
   position: relative; overflow: hidden;
@@ -75,7 +76,7 @@ header {
 .hero-line { position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--accent); }
 
 .hero-eyebrow { font-family:'DM Mono',monospace; font-size:.68rem; letter-spacing:.28em; text-transform:uppercase; color:var(--accent); margin-bottom:1.4rem; opacity:0; animation:up .7s .2s forwards; }
-.hero-title   { font-family:'Bebas Neue',sans-serif; font-size:clamp(4.5rem,13vw,11rem); line-height:.9; letter-spacing:-.01em; margin-bottom:2rem; opacity:0; animation:up .7s .38s forwards; }
+.hero-title   { font-family:'Bebas Neue',sans-serif; font-size:clamp(3.5rem,9vw,8rem); line-height:.92; letter-spacing:-.01em; margin-bottom:1.5rem; opacity:0; animation:up .7s .38s forwards; }
 .hero-title .hollow { -webkit-text-stroke:2px var(--white); color:transparent; }
 .hero-desc    { font-size:.9rem; color:var(--muted); max-width:26rem; line-height:1.75; margin-bottom:2rem; opacity:0; animation:up .7s .45s forwards; }
 .hero-scroll  { font-family:'DM Mono',monospace; font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:#3a3a3a; display:flex; align-items:center; gap:1rem; opacity:0; animation:up .7s .72s forwards; }
@@ -401,7 +402,7 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
   <div class="hero-line"></div>
   <div class="hero-bg" aria-hidden="true">4</div>
   <p class="hero-eyebrow">room&#8202;—&#8202;004</p>
-  <h1 class="hero-title">Enter<br>The <span class="hollow">Room</span></h1>
+  <h1 class="hero-title">All Things<br><span class="hollow">Room 4</span></h1>
   <p class="hero-desc">Everything for this class in one place.</p>
 
   <div class="hero-widgets">
