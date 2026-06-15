@@ -3,7 +3,7 @@
 # Lines starting with # are ignored as comments.
 # One link per line.
 
-Z-Scores and normal Distribution | https://www.youtube.com/watch?v=OavI_GiQUtI | Z-score and normal Distribution
+Have A Great Summer!| https://www.youtube.com/watch?v=-d3jkbP1xc8 | Practice the Months of the Year
 Next Gen Personal Finance | https://www.ngpf.org/math/financial-algebra/ | Financial Math 
 Open up Resources | https://access.openupresources.org/curricula/our-hs-math | Math Materials and Make up work
 Onshape | https://www.onshape.com/en/ | CAD 
