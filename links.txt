@@ -3,7 +3,7 @@
 # Lines starting with # are ignored as comments.
 # One link per line.
 
-Have A Great Summer!| https://www.youtube.com/watch?v=-d3jkbP1xc8 | Practice the Months of the Year
+First Day of School September 2nd!| https://www.youtube.com/watch?v=-d3jkbP1xc8 | Practice the Months of the Year
 Next Gen Personal Finance | https://www.ngpf.org/math/financial-algebra/ | Financial Math 
 Open up Resources | https://access.openupresources.org/curricula/our-hs-math | Math Materials and Make up work
 Onshape | https://www.onshape.com/en/ | CAD 
