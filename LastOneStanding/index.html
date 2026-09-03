@@ -1,0 +1,131 @@
+<h2 class="sr-only">Interactive simulator: arrange people in a circle, count off by an interval, and watch eliminations until one winner remains, with eliminated people marked by a red x.</h2>
+<div style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin:0 0 1rem;">
+  <div>
+    <label style="display:block; font-size:13px; color:var(--text-secondary); margin-bottom:4px;">Group size</label>
+    <input type="number" id="nInput" min="2" max="60" value="16" style="width:80px;">
+  </div>
+  <div>
+    <label style="display:block; font-size:13px; color:var(--text-secondary); margin-bottom:4px;">Count interval</label>
+    <input type="number" id="kInput" min="2" max="20" value="3" style="width:80px;">
+  </div>
+  <button id="resetBtn"><i class="ti ti-refresh" style="font-size:16px; vertical-align:-3px; margin-right:4px;" aria-hidden="true"></i>New circle</button>
+  <button id="stepBtn"><i class="ti ti-player-play" style="font-size:16px; vertical-align:-3px; margin-right:4px;" aria-hidden="true"></i>Step</button>
+  <button id="runBtn"><i class="ti ti-player-play" style="font-size:16px; vertical-align:-3px; margin-right:4px;" aria-hidden="true"></i>Run to end</button>
+</div>
+
+<div style="position:relative; width:100%; max-width:440px; height:440px; margin:0 auto;" id="circleWrap"></div>
+
+<div style="text-align:center; margin-top:1rem; font-size:15px; min-height:24px;" id="status"></div>
+
+<script>
+(function(){
+  const wrap = document.getElementById('circleWrap');
+  const status = document.getElementById('status');
+  const nInput = document.getElementById('nInput');
+  const kInput = document.getElementById('kInput');
+  let people = [];
+  let currentIndex = 0;
+  let winner = null;
+  let running = false;
+
+  function buildCircle(){
+    winner = null;
+    running = false;
+    const n = Math.max(2, Math.min(60, parseInt(nInput.value)||16));
+    nInput.value = n;
+    people = Array.from({length:n}, (_,i)=>({num:i+1, out:false}));
+    currentIndex = 0;
+    render();
+    status.textContent = n + ' people, counting by ' + (parseInt(kInput.value)||3) + '. Press step or run.';
+  }
+
+  function render(highlightIdx){
+    wrap.innerHTML = '';
+    const n = people.length;
+    const R = 170;
+    const cx = 220, cy = 220;
+    people.forEach((p, i)=>{
+      const angle = (i / n) * 2 * Math.PI - Math.PI/2;
+      const x = cx + R*Math.cos(angle);
+      const y = cy + R*Math.sin(angle);
+      const holder = document.createElement('div');
+      holder.style.cssText = 'position:absolute; width:36px; height:36px; left:'+(x-18)+'px; top:'+(y-18)+'px;';
+      const dot = document.createElement('div');
+      const isHighlight = i === highlightIdx;
+      let bg, txtColor, border;
+      if(p.out){
+        bg = 'var(--surface-1)'; txtColor='var(--text-muted)'; border='var(--border)';
+      } else if(winner && p.num === winner){
+        bg = 'var(--fill-success)'; txtColor='var(--on-success)'; border='var(--border-success)';
+      } else if(isHighlight){
+        bg = 'var(--bg-accent)'; txtColor='var(--text-accent)'; border='var(--border-accent)';
+      } else {
+        bg = 'var(--surface-2)'; txtColor='var(--text-primary)'; border='var(--border-strong)';
+      }
+      dot.style.cssText = 'width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:500; background:'+bg+'; color:'+txtColor+'; border:1.5px solid '+border+'; transition:background 0.15s;';
+      dot.textContent = p.num;
+      holder.appendChild(dot);
+      if(p.out){
+        const x1 = document.createElement('div');
+        x1.style.cssText = 'position:absolute; top:-2px; left:-2px; width:40px; height:40px; display:flex; align-items:center; justify-content:center; pointer-events:none;';
+        x1.innerHTML = '<i class="ti ti-x" style="font-size:32px; color:var(--text-danger); font-weight:700;" aria-hidden="true"></i>';
+        holder.appendChild(x1);
+      }
+      wrap.appendChild(holder);
+    });
+  }
+
+  function remainingIndices(){
+    return people.map((p,i)=>i).filter(i=>!people[i].out);
+  }
+
+  function step(){
+    if(winner) return;
+    const remaining = remainingIndices();
+    if(remaining.length <= 1){
+      if(remaining.length === 1){
+        winner = people[remaining[0]].num;
+        render();
+        status.textContent = 'Winner: person ' + winner + '!';
+      }
+      running = false;
+      return;
+    }
+    const k = Math.max(2, Math.min(20, parseInt(kInput.value)||3));
+    let pos = remaining.indexOf(currentIndex);
+    if(pos === -1) pos = 0;
+    const targetPos = (pos + k - 1) % remaining.length;
+    const outIdx = remaining[targetPos];
+    render(outIdx);
+    people[outIdx].out = true;
+    const newRemaining = remainingIndices();
+    if(newRemaining.length === 1){
+      winner = people[newRemaining[0]].num;
+      setTimeout(()=>{ render(); status.textContent = 'Winner: person ' + winner + '!'; }, 300);
+      currentIndex = newRemaining[0];
+      return;
+    }
+    const nextPosInOld = targetPos;
+    let nextIdxInNew = newRemaining.findIndex(i => remaining.indexOf(i) > nextPosInOld);
+    if(nextIdxInNew === -1) nextIdxInNew = 0;
+    currentIndex = newRemaining[nextIdxInNew];
+    status.textContent = 'Person ' + people[outIdx].num + ' is out. ' + newRemaining.length + ' remaining.';
+    setTimeout(render, 300);
+  }
+
+  async function runToEnd(){
+    if(running) return;
+    running = true;
+    while(!winner && running){
+      step();
+      await new Promise(r=>setTimeout(r, 450));
+    }
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', buildCircle);
+  document.getElementById('stepBtn').addEventListener('click', step);
+  document.getElementById('runBtn').addEventListener('click', runToEnd);
+
+  buildCircle();
+})();
+</script>
