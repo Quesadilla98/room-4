@@ -1,11 +1,11 @@
-<h2 class="sr-only">Interactive simulator: arrange people in a circle, count off by an interval, and watch eliminations until one winner remains, with eliminated people marked by a red x.</h2>
+<h2 style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;">Interactive simulator: arrange people in a circle, count off by an interval, and watch eliminations until one winner remains, with eliminated people marked by a red x.</h2>
 <div style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin:0 0 1rem;">
   <div>
-    <label style="display:block; font-size:13px; color:var(--text-secondary); margin-bottom:4px;">Group size</label>
+    <label style="display:block; font-size:13px; color:var(--text-secondary, #5f5e5a); margin-bottom:4px;">Group size</label>
     <input type="number" id="nInput" min="2" max="60" value="16" style="width:80px;">
   </div>
   <div>
-    <label style="display:block; font-size:13px; color:var(--text-secondary); margin-bottom:4px;">Count interval</label>
+    <label style="display:block; font-size:13px; color:var(--text-secondary, #5f5e5a); margin-bottom:4px;">Count interval</label>
     <input type="number" id="kInput" min="2" max="20" value="3" style="width:80px;">
   </div>
   <button id="resetBtn"><i class="ti ti-refresh" style="font-size:16px; vertical-align:-3px; margin-right:4px;" aria-hidden="true"></i>New circle</button>
@@ -15,7 +15,7 @@
 
 <div style="position:relative; width:100%; max-width:440px; height:440px; margin:0 auto;" id="circleWrap"></div>
 
-<div style="text-align:center; margin-top:1rem; font-size:15px; min-height:24px;" id="status"></div>
+<div style="text-align:center; margin-top:1rem; font-size:15px; min-height:24px; color:var(--text-primary, #2c2c2a);" id="status"></div>
 
 <script>
 (function(){
@@ -54,21 +54,21 @@
       const isHighlight = i === highlightIdx;
       let bg, txtColor, border;
       if(p.out){
-        bg = 'var(--surface-1)'; txtColor='var(--text-muted)'; border='var(--border)';
+        bg = 'var(--surface-1, #eeece4)'; txtColor='var(--text-muted, #b4b2a9)'; border='var(--border, #d3d1c7)';
       } else if(winner && p.num === winner){
-        bg = 'var(--fill-success)'; txtColor='var(--on-success)'; border='var(--border-success)';
+        bg = 'var(--fill-success, #639922)'; txtColor='var(--on-success, #ffffff)'; border='var(--border-success, #3b6d11)';
       } else if(isHighlight){
-        bg = 'var(--bg-accent)'; txtColor='var(--text-accent)'; border='var(--border-accent)';
+        bg = 'var(--bg-accent, #e6f1fb)'; txtColor='var(--text-accent, #185fa5)'; border='var(--border-accent, #378add)';
       } else {
-        bg = 'var(--surface-2)'; txtColor='var(--text-primary)'; border='var(--border-strong)';
+        bg = 'var(--surface-2, #ffffff)'; txtColor='var(--text-primary, #2c2c2a)'; border='var(--border-strong, #888780)';
       }
-      dot.style.cssText = 'width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:500; background:'+bg+'; color:'+txtColor+'; border:1.5px solid '+border+'; transition:background 0.15s;';
+      dot.style.cssText = 'box-sizing:border-box; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:500; background:'+bg+'; color:'+txtColor+'; border:1.5px solid '+border+'; transition:background 0.15s;';
       dot.textContent = p.num;
       holder.appendChild(dot);
       if(p.out){
         const x1 = document.createElement('div');
         x1.style.cssText = 'position:absolute; top:-2px; left:-2px; width:40px; height:40px; display:flex; align-items:center; justify-content:center; pointer-events:none;';
-        x1.innerHTML = '<i class="ti ti-x" style="font-size:32px; color:var(--text-danger); font-weight:700;" aria-hidden="true"></i>';
+        x1.innerHTML = '<i class="ti ti-x" style="font-size:32px; color:#c0392b; font-weight:700;" aria-hidden="true"></i>';
         holder.appendChild(x1);
       }
       wrap.appendChild(holder);
