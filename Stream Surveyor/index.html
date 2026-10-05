@@ -151,11 +151,13 @@ textarea{font-family:var(--mono);font-size:.8rem;width:100%;min-height:120px;bor
           <textarea id="csvBox" hidden readonly aria-label="CSV data"></textarea>
         </div>
         <div class="box" style="margin-top:16px">
-          <h2 style="margin-top:0">Clear data</h2>
-          <p class="small">Deletes every section on this tablet so a new group can start fresh. Export first if you want to keep it. This can’t be undone.</p>
+          <h2 style="margin-top:0">Data management</h2>
+          <p class="small"><b>Load sample data</b> replaces what’s on this tablet with a made-up 30 ft stretch of creek (11 sections, 3 ft apart) to explore the views. <b>Clear all data</b> deletes every section so a new group can start fresh. Export first if you want to keep anything. Neither can be undone.</p>
           <div class="btns" style="margin-top:8px">
+            <button id="loadSample">Load sample data</button>
             <button id="clearAll">Clear all data</button>
           </div>
+          <p class="small" id="dmMsg" style="margin:10px 0 0"></p>
         </div>
       </div>
     </div>
@@ -165,9 +167,9 @@ textarea{font-family:var(--mono);font-size:.8rem;width:100%;min-height:120px;bor
   <section id="s-width" hidden>
     <div class="cols half fit">
       <div class="pane">
-        <p class="small">Step 1 of 3</p>
+        <p class="small">Step 1 of 2</p>
         <p class="question">How wide is the creek?</p>
-        <p class="small">Measure the wetted width along the tape, in feet.</p>
+        <p class="small">Measure the wetted width along the tape, in feet. Readings are taken every 6″.</p>
         <div class="readout"><span id="wVal">–</span><small>ft</small></div>
         <p class="small grow" id="wMsg" style="min-height:1.4em"></p>
         <div class="btns split">
@@ -179,28 +181,7 @@ textarea{font-family:var(--mono);font-size:.8rem;width:100%;min-height:120px;bor
     </div>
   </section>
 
-  <!-- STEP 2: INTERVAL -->
-  <section id="s-interval" hidden>
-    <div class="cols half fit">
-      <div class="pane">
-        <p class="small">Step 2 of 3</p>
-        <p class="question">How often will you read the rod?</p>
-        <p class="small grow" id="iInfo"></p>
-        <div class="btns split">
-          <button id="iBack">‹ Back</button>
-          <button class="main" id="iNext">Next ›</button>
-        </div>
-      </div>
-      <div class="pane">
-        <div class="choice">
-          <button id="iv6">6″<small></small></button>
-          <button id="iv12">12″<small></small></button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- STEP 3: DEPTHS -->
+  <!-- STEP 2: DEPTHS -->
   <section id="s-depth" hidden>
     <div class="cols half fit">
       <div class="pane">
@@ -230,7 +211,7 @@ textarea{font-family:var(--mono);font-size:.8rem;width:100%;min-height:120px;bor
         <div class="btns">
           <button class="main" id="vAdd">+ Add new entry</button>
           <button id="vHome">Back to list</button>
-          <button id="vRedo">Change width or interval</button>
+          <button id="vRedo">Change width</button>
         </div>
       </div>
       <div class="pane scroll">
@@ -357,20 +338,26 @@ function makeSection(widthFt = 8, interval = 6){
            depths: stations(widthFt*12, interval).map(() => null) });
 }
 function exampleData(){
-  const spec = [[8,9,0.55,1.2,'Riffle'],[8.5,11,0.62,2.1,''],[9,13.5,0.70,0.4,'Pool head'],
-                [9.5,15,0.66,3.3,''],[9,12,0.48,1.9,'Pool tail'],[8,8.5,0.40,2.7,'Glide']];
-  return { example: true, units: 'ft', sections: spec.map(([w, maxD, peak, seed, label], idx) => {
-    const s = makeSection(w, 6); s.label = label; s.pos = idx * 3;
-    s.invasive = ({ 'Pool head': 'Reed canarygrass, left bank', 'Glide': 'New Zealand mudsnails on cobble' })[label] || '';
+  // made-up 30 ft reach: riffle -> pool -> riffle, thalweg wandering bank to bank
+  const notes = { 0: 'Riffle', 9: 'Pool head', 15: 'Pool', 21: 'Pool tail', 30: 'Riffle' };
+  const inv = { 9: 'Reed canarygrass, left bank', 24: 'New Zealand mudsnails on cobble' };
+  const sections = [];
+  for (let pos = 0; pos <= 30; pos += 3){
+    const t = pos / 30;
+    const w = Math.round((8.5 + 2 * Math.sin(Math.PI * t) + 0.4 * Math.sin(t * 9)) * 2) / 2;
+    const maxD = 6 + 10 * Math.pow(Math.sin(Math.PI * t), 2);
+    const peak = 0.5 + 0.22 * Math.sin(t * 2 * Math.PI);
+    const k = Math.log(0.5) / Math.log(peak), seed = pos * 0.37;
+    const s = makeSection(w, 6); s.pos = pos; s.label = notes[pos] || ''; s.invasive = inv[pos] || '';
     const xs = stations(w*12, 6);
     s.depths = xs.map((x, i) => {
       if (i === 0 || i === xs.length-1) return 0;
-      const t = x/(w*12), k = Math.log(0.5)/Math.log(peak);
-      const d = maxD * Math.pow(Math.sin(Math.PI*Math.pow(t, k)), 0.85) + Math.sin(i*1.7 + seed)*0.7;
-      return Math.max(0, Math.round(d*2)/2);
+      const d = maxD * Math.pow(Math.sin(Math.PI * Math.pow(x/(w*12), k)), 0.85) + Math.sin(i*1.7 + seed) * 0.7;
+      return Math.max(0.5, Math.round(d*2)/2);
     });
-    return s;
-  })};
+    sections.push(fixBanks(s));
+  }
+  return { example: true, units: 'ft', sections };
 }
 function load(){
   try {
@@ -397,7 +384,7 @@ function real(){ if (state.example){ state.example = false; save(); } }
 let state = load();
 let ci = 0;              // current section index
 let st = 0;              // current station index
-let buf = '', fresh = true, pendingIv = 6;
+let buf = '', fresh = true;
 let isNew = false;       // wizard started from "Add new entry"
 const cur = () => state.sections[ci];
 const fmtFt = v => (Math.round(v*10)/10) + ' ft';
@@ -436,18 +423,6 @@ function goWidth(){
   $('wBack').textContent = isNew ? '‹ Cancel' : '‹ Back';
   show('s-width');
 }
-function goInterval(){
-  pendingIv = cur().interval;
-  $('iInfo').textContent = `Creek is ${cur().widthFt} ft wide.`;
-  paintIv(); show('s-interval');
-}
-function paintIv(){
-  const w = cur().widthFt*12;
-  $('iv6').setAttribute('aria-pressed', pendingIv === 6);
-  $('iv12').setAttribute('aria-pressed', pendingIv === 12);
-  $('iv6').querySelector('small').textContent = `every half foot · ${stations(w, 6).length} readings`;
-  $('iv12').querySelector('small').textContent = `every foot · ${stations(w, 12).length} readings`;
-}
 function goDepth(i){
   const xs = xsOf(cur()), n = xs.length;
   if (n <= 2){ fixBanks(cur()); save(); return goView(); }   // only banks: nothing to measure
@@ -455,7 +430,7 @@ function goDepth(i){
   const v = cur().depths[st];
   buf = has(v) ? String(v) : ''; fresh = true;
   $('crumb').textContent = `Section at ${fmtFt(cur().pos)}`;
-  $('dStep').textContent = `Step 3 of 3 · Reading ${st} of ${n-2}`;
+  $('dStep').textContent = `Step 2 of 2 · Reading ${st} of ${n-2}`;
   $('dWhere').textContent = `${ftIn(xs[st])} from left bank`;
   $('dBar').style.width = (st/(n-2)*100) + '%';
   $('dNext').textContent = st === n-2 ? 'Finish ✓' : 'Next ›';
@@ -543,19 +518,15 @@ $('wBack').onclick = () => {
 $('wNext').onclick = () => {
   const w = parseFloat(buf);
   if (!(w > 0)){ $('wMsg').textContent = 'Enter the width in feet to continue.'; return; }
-  remap(cur(), Math.round(w*100)/100, cur().interval); save(); goInterval();
+  remap(cur(), Math.round(w*100)/100, 6); save(); goDepth(1);
 };
-$('iv6').onclick = () => { pendingIv = 6; paintIv(); };
-$('iv12').onclick = () => { pendingIv = 12; paintIv(); };
-$('iBack').onclick = goWidth;
-$('iNext').onclick = () => { if (pendingIv !== cur().interval) remap(cur(), cur().widthFt, pendingIv); fixBanks(cur()); save(); goDepth(1); };
 
 function commitDepth(){
   const v = parseFloat(buf);
   cur().depths[st] = buf === '' || isNaN(v) ? null : v;
   real(); save();
 }
-$('dBack').onclick = () => { commitDepth(); if (st <= 1) goInterval(); else goDepth(st - 1); };
+$('dBack').onclick = () => { commitDepth(); if (st <= 1) goWidth(); else goDepth(st - 1); };
 $('dNext').onclick = () => {
   commitDepth();
   if (st < xsOf(cur()).length - 2) goDepth(st + 1); else goView();
@@ -587,9 +558,13 @@ function twoTap(btn, idle, armed, action){
 twoTap($('vDel'), 'Delete this section', 'Tap again to delete', () => {
   state.sections.splice(ci, 1); ci = 0; real(); save(); goHome();
 });
+twoTap($('loadSample'), 'Load sample data', 'Tap again to load sample', () => {
+  state = exampleData(); ci = 0; save(); goHome();
+  $('dmMsg').textContent = 'Sample data loaded: 11 sections over 30 ft. Open “View all sections” to see it.';
+});
 twoTap($('clearAll'), 'Clear all data', 'Tap again to delete everything', () => {
   state = { example: false, sections: [] }; ci = 0; save(); goHome();
-  $('ioMsg').textContent = 'All data cleared.';
+  $('dmMsg').textContent = 'All data cleared.';
 });
 twoTap($('clearEx'), 'Clear example data', 'Tap again to clear', () => {
   state = { example: false, sections: [] }; save(); goHome();
