@@ -1,0 +1,933 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Creek Cross-Sections</title>
+<style>
+/* Layout: built for a 16:10 landscape tablet — each screen is two side-by-side panels that fit one viewport; stacks to one column in portrait */
+:root{
+  --bg:#ffffff; --ink:#000000; --mid:#555555; --rule:#000000; --faint:#dddddd; --fill:#eeeeee; --ground:#bbbbbb;
+  --font:Arial,Helvetica,sans-serif; --mono:"Courier New",Courier,monospace;
+  --top-h:52px;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--font);font-size:17px;line-height:1.4;padding:16px;padding-block:10px 16px}
+.page{max-width:760px;margin:0 auto}
+.top{height:var(--top-h);border-bottom:2px solid var(--rule);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.top b{font-size:1.15rem}
+.top span{color:var(--mid);font-size:.95rem}
+h1{font-size:1.6rem;margin:0 0 4px}
+h2{font-size:1.15rem;margin:20px 0 8px}
+.pane > h2:first-child{margin-top:0}
+p{margin:0 0 12px}
+.small{font-size:.9rem;color:var(--mid)}
+button{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--ink);border-radius:2px;padding:10px 16px;min-height:48px;cursor:pointer;touch-action:manipulation}
+button:active{background:var(--fill)}
+button:disabled{color:#999;border-color:#bbb;cursor:default}
+button.main{background:var(--ink);color:var(--bg);font-weight:bold}
+button.main:active{background:#333}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--ink);border-radius:2px;padding:10px;min-height:48px;width:100%}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.btns.split{display:grid;grid-template-columns:1fr 2fr}
+.btns.split button{min-height:64px;font-size:1.15rem}
+.note{border:1px solid var(--ink);padding:10px 12px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.box{border:1px solid var(--ink);padding:14px}
+
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{border:1px solid var(--ink);padding:8px;text-align:left;vertical-align:middle}
+th{background:var(--fill);font-size:.9rem;position:sticky;top:0}
+td.num{font-family:var(--mono)}
+.tablewrap{overflow-x:auto}
+
+/* two-panel screens */
+.cols{display:grid;grid-template-columns:minmax(0,1fr);gap:24px}
+.pane{min-width:0;display:flex;flex-direction:column}
+.grow{flex:1}
+
+.question{font-size:1.5rem;font-weight:bold;margin:0 0 4px}
+.readout{border:2px solid var(--ink);padding:14px;margin:14px 0;text-align:center;font-family:var(--mono);font-size:3rem;line-height:1}
+.readout small{font-size:1.3rem;margin-left:6px}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.keys button{font-family:var(--mono);font-size:1.7rem;min-height:62px}
+.choice{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.choice button{min-height:140px;font-size:2.4rem;font-family:var(--mono);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.choice button small{font-family:var(--font);font-size:.95rem}
+.choice button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.progress{height:10px;border:1px solid var(--ink);margin-top:6px}
+.progress div{height:100%;background:var(--ink)}
+
+svg{display:block;width:100%;height:auto;border:1px solid var(--ink);font-family:var(--font)}
+svg text{fill:var(--ink);font-size:13px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--ink);border-top:0}
+.stats div{padding:8px;border-right:1px solid var(--ink)}
+.stats div:last-child{border-right:0}
+.stats b{display:block;font-family:var(--mono);font-size:1.2rem}
+.stats span{font-size:.8rem;color:var(--mid)}
+.lbl{display:flex;flex-direction:column;gap:4px;font-size:.9rem;color:var(--mid);flex:1;min-width:0}
+.two{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.two .lbl{min-width:140px}
+#reach{touch-action:none;cursor:grab}
+#reach.dragging{cursor:grabbing}
+.stage{position:relative}
+.toggles{border:1px solid var(--ink);margin:0 0 10px;padding:6px 12px 10px;display:flex;flex-wrap:wrap;gap:0 18px}
+.toggles legend{font-weight:bold;font-size:.9rem;padding:0 4px}
+.toggles label{display:flex;align-items:center;gap:10px;min-height:42px;cursor:pointer}
+.toggles input{width:22px;height:22px;min-height:0;margin:0;accent-color:#000}
+.zoombox{position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;gap:8px}
+.zoombox button{width:52px;height:52px;min-height:0;padding:0;font-size:1.7rem;line-height:1}
+textarea{font-family:var(--mono);font-size:.8rem;width:100%;min-height:120px;border:1px solid var(--ink);padding:8px;margin-top:10px;color:var(--ink);background:var(--bg)}
+
+/* 16:10 landscape tablet */
+@media (min-width:900px) and (orientation:landscape){
+  .page{max-width:1600px}
+  .cols.fit{height:calc(100dvh - var(--top-h) - 56px);gap:32px;grid-template-rows:minmax(0,1fr)}
+  .cols.half{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .cols.main-side{grid-template-columns:minmax(0,3fr) minmax(0,2fr)}
+  .cols.stage-side{grid-template-columns:minmax(0,1fr) 330px}
+  .scroll{overflow-y:auto;padding-right:6px}
+  .scroll > *{flex-shrink:0}
+  .keys{height:100%;grid-template-rows:repeat(4,1fr)}
+  .keys button{min-height:0;font-size:2.2rem}
+  .readout{font-size:4.5rem;padding:24px}
+  .question{font-size:1.8rem}
+  .choice{height:100%;margin:0}
+  .choice button{min-height:0;font-size:3.4rem}
+  #s-view svg#xs{max-height:calc(100dvh - var(--top-h) - 300px)}
+  .stage{height:100%;display:flex;align-items:center;border:1px solid var(--ink)}
+  .stage svg{border:0;height:100%}
+  .toggles{flex-direction:column}
+  .toggles.stretch{flex-direction:row}
+  .readtable td,.readtable th{padding:5px 8px}
+}
+</style>
+
+<div class="page">
+  <div class="top"><b>Creek Cross-Sections</b><span id="crumb"></span></div>
+
+  <!-- HOME -->
+  <section id="s-home" hidden>
+    <div class="cols main-side fit">
+      <div class="pane scroll">
+        <h1>Survey sections</h1>
+        <p class="small">Each section is one tape across the creek, listed by its position in feet downstream.</p>
+        <div class="btns" style="margin:4px 0 16px">
+          <button class="main" id="addBtn">+ Add new entry</button>
+          <button id="reachBtn">View all sections</button>
+        </div>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Section</th><th>Width</th><th>Readings</th><th>Thalweg</th><th></th></tr></thead>
+          <tbody id="list"></tbody>
+        </table></div>
+      </div>
+      <div class="pane scroll">
+        <div id="exNote" class="note" hidden>
+          <span>Example data is loaded so you can see how it works.</span>
+          <button id="clearEx">Clear example data</button>
+        </div>
+        <div class="box">
+          <h2 style="margin-top:0">Save or load data</h2>
+          <p class="small">Export saves every section to a CSV file that opens in Excel or Google Sheets. Import loads one or more CSV files exported from this app. You can set where each file starts along the creek, so files from different groups line up in order.</p>
+          <div class="btns">
+            <button id="exportBtn">Export CSV file</button>
+            <button id="importBtn">Import CSV file</button>
+            <input type="file" id="importFile" accept=".csv,text/csv,text/plain" multiple hidden>
+          </div>
+          <p class="small" id="ioMsg" style="margin:10px 0 0"></p>
+          <div id="importPanel" style="margin-top:14px;border-top:1px solid var(--ink);padding-top:12px" hidden>
+            <h2 style="margin-top:0">Line up the files</h2>
+            <p class="small">Enter where each file starts, in feet downstream. Sections inside a file keep their spacing.</p>
+            <div class="tablewrap"><table>
+              <thead><tr><th>File</th><th>Sections</th><th>Starts at (ft)</th><th>Ends at</th></tr></thead>
+              <tbody id="importList"></tbody>
+            </table></div>
+            <p class="small" id="importWarn" style="margin:8px 0 0"></p>
+            <div class="btns">
+              <button class="main" id="impReplace">Replace my data</button>
+              <button id="impAdd">Add to my data</button>
+              <button id="impCancel">Cancel</button>
+            </div>
+          </div>
+          <textarea id="csvBox" hidden readonly aria-label="CSV data"></textarea>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 1: WIDTH -->
+  <section id="s-width" hidden>
+    <div class="cols half fit">
+      <div class="pane">
+        <p class="small">Step 1 of 3</p>
+        <p class="question">How wide is the creek?</p>
+        <p class="small">Measure the wetted width along the tape, in feet.</p>
+        <div class="readout"><span id="wVal">–</span><small>ft</small></div>
+        <p class="small grow" id="wMsg" style="min-height:1.4em"></p>
+        <div class="btns split">
+          <button id="wBack">‹ Cancel</button>
+          <button class="main" id="wNext">Next ›</button>
+        </div>
+      </div>
+      <div class="pane"><div class="keys"></div></div>
+    </div>
+  </section>
+
+  <!-- STEP 2: INTERVAL -->
+  <section id="s-interval" hidden>
+    <div class="cols half fit">
+      <div class="pane">
+        <p class="small">Step 2 of 3</p>
+        <p class="question">How often will you read the rod?</p>
+        <p class="small grow" id="iInfo"></p>
+        <div class="btns split">
+          <button id="iBack">‹ Back</button>
+          <button class="main" id="iNext">Next ›</button>
+        </div>
+      </div>
+      <div class="pane">
+        <div class="choice">
+          <button id="iv6">6″<small></small></button>
+          <button id="iv12">12″<small></small></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3: DEPTHS -->
+  <section id="s-depth" hidden>
+    <div class="cols half fit">
+      <div class="pane">
+        <p class="small" id="dStep"></p>
+        <p class="question" id="dWhere"></p>
+        <p class="small">Read the stadia rod and enter the depth in inches.</p>
+        <div class="progress"><div id="dBar"></div></div>
+        <div class="readout"><span id="dVal">–</span><small>in</small></div>
+        <p class="small grow" id="dMsg" style="min-height:1.4em"></p>
+        <div class="btns split">
+          <button id="dBack">‹ Back</button>
+          <button class="main" id="dNext">Next ›</button>
+        </div>
+      </div>
+      <div class="pane"><div class="keys"></div></div>
+    </div>
+  </section>
+
+  <!-- RESULT / SECTION VIEW -->
+  <section id="s-view" hidden>
+    <div class="cols main-side fit">
+      <div class="pane scroll">
+        <h1 id="vTitle"></h1>
+        <p class="small" id="vSub"></p>
+        <svg id="xs" role="img" aria-label="Cross-section"></svg>
+        <div class="stats" id="vStats"></div>
+        <div class="btns">
+          <button class="main" id="vAdd">+ Add new entry</button>
+          <button id="vHome">Back to list</button>
+          <button id="vRedo">Change width or interval</button>
+        </div>
+      </div>
+      <div class="pane scroll">
+        <h2>Location</h2>
+        <label class="lbl">Position downstream (ft)
+          <input id="vPos" type="text" inputmode="decimal" autocomplete="off" style="max-width:10rem">
+        </label>
+        <p class="small" id="posMsg" style="margin:4px 0 10px"></p>
+        <label class="lbl">Note
+          <input id="vLabel" type="text" placeholder="e.g. riffle below footbridge" autocomplete="off">
+        </label>
+        <div class="two">
+          <label class="lbl">GPS latitude
+            <input id="vLat" type="text" placeholder="e.g. 44.05821" autocomplete="off">
+          </label>
+          <label class="lbl">GPS longitude
+            <input id="vLon" type="text" placeholder="e.g. -121.31530" autocomplete="off">
+          </label>
+        </div>
+        <div class="btns" style="margin-top:10px"><button id="vGps">Use this tablet's location</button></div>
+        <p class="small" id="gpsMsg" style="margin:8px 0 0"></p>
+        <h2>Invasive species</h2>
+        <label class="lbl">Species seen at this section, and where
+          <textarea id="vInv" style="font-family:var(--font);font-size:1rem;min-height:80px;margin-top:0" placeholder="e.g. reed canarygrass on left bank; New Zealand mudsnails on rocks"></textarea>
+        </label>
+        <h2>Readings</h2>
+        <div class="tablewrap"><table class="readtable">
+          <thead><tr><th>Station (from left bank)</th><th>Depth (in)</th><th></th></tr></thead>
+          <tbody id="vTable"></tbody>
+        </table></div>
+        <div class="btns">
+          <button id="vDel">Delete this section</button>
+        </div>
+        <div class="btns" style="margin-top:20px;border-top:1px solid var(--ink);padding-top:16px">
+          <button class="main" id="vHome2" style="min-width:12rem">‹ Back to list</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REACH -->
+  <section id="s-reach" hidden>
+    <div class="cols stage-side fit">
+      <div class="pane">
+        <div class="stage">
+          <svg id="reach" role="img" aria-label="All sections along the creek, rotatable"></svg>
+          <div class="zoombox">
+            <button id="zoomIn" aria-label="Zoom in">+</button>
+            <button id="zoomOut" aria-label="Zoom out">−</button>
+          </div>
+        </div>
+      </div>
+      <div class="pane scroll">
+        <h1>All sections</h1>
+        <p class="small">Sections are placed at their positions downstream. Drag the drawing to rotate it. Tap a section to open it.</p>
+        <fieldset class="toggles stretch">
+          <legend>Depth stretch</legend>
+          <label><input type="radio" name="stretch" id="st1" value="1"> 1:1</label>
+          <label><input type="radio" name="stretch" id="st2" value="2"> 2:1</label>
+          <label><input type="radio" name="stretch" id="st3" value="3" checked> 3:1</label>
+        </fieldset>
+        <fieldset class="toggles">
+          <legend>Show labels</legend>
+          <label><input type="checkbox" id="tSec"> Section numbers</label>
+          <label><input type="checkbox" id="tFlow"> Flow arrow</label>
+          <label><input type="checkbox" id="tDeep"> Deepest points</label>
+          <label><input type="checkbox" id="tLine"> Deepest-point line</label>
+          <label><input type="checkbox" id="tInv"> Invasive species</label>
+          <label><input type="checkbox" id="tNotes"> Location notes</label>
+        </fieldset>
+        <div class="btns" style="margin:0">
+          <button id="rReset">Reset view</button>
+          <button class="main" id="rHome">‹ Back to list</button>
+        </div>
+        <h2>Invasive species by section</h2>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Section</th><th>Invasive species</th></tr></thead>
+          <tbody id="reachInv"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const KEY = 'creek-xs-v1';
+const NS = 'http://www.w3.org/2000/svg';
+const $ = id => document.getElementById(id);
+
+/* ---------- helpers ---------- */
+function stations(widthIn, iv){
+  const a = [];
+  for (let x = 0; x <= widthIn + 1e-6; x += iv) a.push(Math.round(x*100)/100);
+  if (widthIn - a[a.length-1] > 0.05) a.push(Math.round(widthIn*100)/100);
+  return a;
+}
+function ftIn(inches){
+  const f = Math.floor(inches/12 + 1e-6);
+  const r = Math.round((inches - f*12)*10)/10;
+  return `${f}′ ${r}″`;
+}
+function niceStep(max, count){
+  const raw = max / count, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p;
+}
+const xsOf = s => stations(s.widthFt*12, s.interval);
+const has = d => d !== null && d !== undefined && !isNaN(d);
+function points(s){ return xsOf(s).map((x,i) => [x, s.depths[i]]).filter(p => has(p[1])); }
+function stats(s){
+  const p = points(s), w = s.widthFt*12;
+  let area = 0;
+  for (let i = 1; i < p.length; i++) area += (p[i][0]-p[i-1][0]) * (p[i][1]+p[i-1][1]) / 2;
+  const max = p.length ? Math.max(...p.map(q => q[1])) : 0;
+  const thal = p.length ? p.reduce((a,b) => b[1] > a[1] ? b : a) : null;
+  return { area, mean: w ? area/w : 0, max, thal, filled: p.length, total: xsOf(s).length };
+}
+function esc(t){ return t.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ---------- data ---------- */
+let uid = 1;
+function fixBanks(s){ const n = s.depths.length; if (n){ s.depths[0] = 0; s.depths[n-1] = 0; } return s; }
+function makeSection(widthFt = 8, interval = 6){
+  return fixBanks({ id: 's' + Date.now().toString(36) + (uid++), pos: 0, label: '', lat: '', lon: '', invasive: '', widthFt, interval,
+           depths: stations(widthFt*12, interval).map(() => null) });
+}
+function exampleData(){
+  const spec = [[8,9,0.55,1.2,'Riffle'],[8.5,11,0.62,2.1,''],[9,13.5,0.70,0.4,'Pool head'],
+                [9.5,15,0.66,3.3,''],[9,12,0.48,1.9,'Pool tail'],[8,8.5,0.40,2.7,'Glide']];
+  return { example: true, units: 'ft', sections: spec.map(([w, maxD, peak, seed, label], idx) => {
+    const s = makeSection(w, 6); s.label = label; s.pos = idx * 3;
+    s.invasive = ({ 'Pool head': 'Reed canarygrass, left bank', 'Glide': 'New Zealand mudsnails on cobble' })[label] || '';
+    const xs = stations(w*12, 6);
+    s.depths = xs.map((x, i) => {
+      if (i === 0 || i === xs.length-1) return 0;
+      const t = x/(w*12), k = Math.log(0.5)/Math.log(peak);
+      const d = maxD * Math.pow(Math.sin(Math.PI*Math.pow(t, k)), 0.85) + Math.sin(i*1.7 + seed)*0.7;
+      return Math.max(0, Math.round(d*2)/2);
+    });
+    return s;
+  })};
+}
+function load(){
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && Array.isArray(s.sections)){
+      const fromMeters = s.units !== 'ft';
+      s.sections.forEach((x, i) => { if (typeof x.pos !== 'number' || isNaN(x.pos)) x.pos = i; if (fromMeters) x.pos = Math.round(x.pos / 0.3048 * 10)/10; fixBanks(x); });
+      s.units = 'ft';
+      s.sections.sort((a, b) => a.pos - b.pos);
+      return s;
+    }
+  } catch(e){}
+  return exampleData();
+}
+function save(){ state.units = 'ft'; try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+function remap(s, w, iv){
+  const map = new Map(xsOf(s).map((x,i) => [x.toFixed(2), s.depths[i]]));
+  s.widthFt = w; s.interval = iv;
+  s.depths = xsOf(s).map(x => map.has(x.toFixed(2)) ? map.get(x.toFixed(2)) : null);
+  fixBanks(s);
+}
+function real(){ if (state.example){ state.example = false; save(); } }
+
+let state = load();
+let ci = 0;              // current section index
+let st = 0;              // current station index
+let buf = '', fresh = true, pendingIv = 6;
+let isNew = false;       // wizard started from "Add new entry"
+const cur = () => state.sections[ci];
+const fmtFt = v => (Math.round(v*10)/10) + ' ft';
+function sortSecs(){
+  const c = state.sections[ci];
+  state.sections.sort((a, b) => a.pos - b.pos);
+  if (c) ci = state.sections.indexOf(c);
+}
+
+/* ---------- screens ---------- */
+function show(id){
+  document.querySelectorAll('section[id^="s-"]').forEach(s => s.hidden = s.id !== id);
+  window.scrollTo(0, 0);
+}
+function goHome(){
+  isNew = false;
+  $('crumb').textContent = '';
+  $('exNote').hidden = !state.example;
+  const tb = $('list'); tb.textContent = '';
+  if (!state.sections.length) tb.innerHTML = '<tr><td colspan="5">No sections yet. Tap “Add new entry” to start.</td></tr>';
+  state.sections.forEach((s, i) => {
+    const k = stats(s), tr = document.createElement('tr');
+    tr.innerHTML = `<td>${fmtFt(s.pos)}${s.label ? '<br><span class="small">' + esc(s.label) + '</span>' : ''}</td>
+      <td class="num">${s.widthFt} ft</td><td class="num">${Math.max(0, k.filled - 2)}/${Math.max(0, k.total - 2)}</td><td class="num">${k.max.toFixed(1)}″</td><td></td>`;
+    const b = document.createElement('button'); b.textContent = 'Open'; b.onclick = () => goView(i);
+    tr.lastElementChild.appendChild(b); tb.appendChild(tr);
+  });
+  $('reachBtn').disabled = !state.sections.length;
+  $('csvBox').hidden = true; $('importPanel').hidden = true;
+  show('s-home');
+}
+function goWidth(){
+  buf = String(cur().widthFt); fresh = true;
+  $('crumb').textContent = `Section at ${fmtFt(cur().pos)}`;
+  $('wVal').textContent = buf; $('wMsg').textContent = '';
+  $('wBack').textContent = isNew ? '‹ Cancel' : '‹ Back';
+  show('s-width');
+}
+function goInterval(){
+  pendingIv = cur().interval;
+  $('iInfo').textContent = `Creek is ${cur().widthFt} ft wide.`;
+  paintIv(); show('s-interval');
+}
+function paintIv(){
+  const w = cur().widthFt*12;
+  $('iv6').setAttribute('aria-pressed', pendingIv === 6);
+  $('iv12').setAttribute('aria-pressed', pendingIv === 12);
+  $('iv6').querySelector('small').textContent = `every half foot · ${stations(w, 6).length} readings`;
+  $('iv12').querySelector('small').textContent = `every foot · ${stations(w, 12).length} readings`;
+}
+function goDepth(i){
+  const xs = xsOf(cur()), n = xs.length;
+  if (n <= 2){ fixBanks(cur()); save(); return goView(); }   // only banks: nothing to measure
+  st = Math.max(1, Math.min(n-2, i));
+  const v = cur().depths[st];
+  buf = has(v) ? String(v) : ''; fresh = true;
+  $('crumb').textContent = `Section at ${fmtFt(cur().pos)}`;
+  $('dStep').textContent = `Step 3 of 3 · Reading ${st} of ${n-2}`;
+  $('dWhere').textContent = `${ftIn(xs[st])} from left bank`;
+  $('dBar').style.width = (st/(n-2)*100) + '%';
+  $('dNext').textContent = st === n-2 ? 'Finish ✓' : 'Next ›';
+  $('dMsg').textContent = 'Both banks are set to 0 automatically. Leave blank and tap Next to skip a reading.';
+  paintDepth(); show('s-depth');
+}
+function paintDepth(){ $('dVal').textContent = buf === '' ? '–' : buf; }
+
+function goView(i){
+  if (i !== undefined) ci = i;
+  isNew = false;
+  const s = cur(), k = stats(s);
+  $('crumb').textContent = `Section at ${fmtFt(cur().pos)}`;
+  $('vTitle').textContent = `Section at ${fmtFt(s.pos)}`;
+  $('vPos').value = s.pos; $('posMsg').textContent = '';
+  $('vSub').textContent = `${s.widthFt} ft wide · reading every ${s.interval}″ · ${Math.max(0, k.filled - 2)} of ${Math.max(0, k.total - 2)} readings (banks are 0)`;
+  $('vStats').innerHTML = `<div><b>${k.max.toFixed(1)}″</b><span>Thalweg</span></div><div><b>${k.mean.toFixed(1)}″</b><span>Mean depth</span></div><div><b>${(k.area/144).toFixed(2)} ft²</b><span>Area</span></div>`;
+  $('vLabel').value = s.label;
+  $('vLat').value = s.lat || ''; $('vLon').value = s.lon || ''; $('vInv').value = s.invasive || ''; $('gpsMsg').textContent = '';
+  const tb = $('vTable'); tb.textContent = '';
+  const xsAll = xsOf(s);
+  xsAll.forEach((x, j) => {
+    const tr = document.createElement('tr');
+    const bank = j === 0 ? 'Left bank' : j === xsAll.length - 1 ? 'Right bank' : '';
+    tr.innerHTML = `<td class="num">${ftIn(x)}${bank ? ' <span class="small">(' + bank + ')</span>' : ''}</td><td class="num">${bank ? '0' : has(s.depths[j]) ? s.depths[j] : '—'}</td><td></td>`;
+    if (bank){ tr.lastElementChild.innerHTML = '<span class="small">Always 0</span>'; }
+    else {
+      const b = document.createElement('button'); b.textContent = 'Edit'; b.style.minHeight = '40px'; b.style.padding = '6px 12px';
+      b.onclick = () => goDepth(j);
+      tr.lastElementChild.appendChild(b);
+    }
+    tb.appendChild(tr);
+  });
+  drawSection();
+  show('s-view');
+}
+function goReach(){ $('crumb').textContent = ''; show('s-reach'); drawReach(); }
+
+/* ---------- keypads ---------- */
+document.querySelectorAll('.keys').forEach(k => {
+  ['7','8','9','4','5','6','1','2','3','.','0','⌫'].forEach(c => {
+    const b = document.createElement('button'); b.textContent = c;
+    if (c === '⌫') b.setAttribute('aria-label', 'Delete digit');
+    b.onclick = () => press(c === '⌫' ? 'del' : c);
+    k.appendChild(b);
+  });
+});
+function press(k){
+  if (k === 'del'){ buf = fresh ? '' : buf.slice(0, -1); fresh = false; }
+  else {
+    if (fresh){ buf = ''; fresh = false; }
+    if (k === '.' && buf.includes('.')) return;
+    if (buf.replace('.', '').length >= 4) return;
+    buf = (buf === '' && k === '.') ? '0.' : buf + k;
+  }
+  if (!$('s-width').hidden){ $('wVal').textContent = buf === '' ? '–' : buf; $('wMsg').textContent = ''; }
+  if (!$('s-depth').hidden) paintDepth();
+}
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if ($('s-width').hidden && $('s-depth').hidden) return;
+  if (/^[0-9.]$/.test(e.key)) { press(e.key); e.preventDefault(); }
+  else if (e.key === 'Backspace') { press('del'); e.preventDefault(); }
+  else if (e.key === 'Enter' && !(e.target.closest && e.target.closest('button'))) {
+    e.preventDefault(); (!$('s-width').hidden ? $('wNext') : $('dNext')).click();
+  }
+});
+
+/* ---------- wizard wiring ---------- */
+function addEntry(){
+  real();
+  const last = state.sections[state.sections.length - 1];
+  const ns = makeSection(last ? last.widthFt : 8, last ? last.interval : 6);
+  ns.pos = last ? Math.round((last.pos + 3)*10)/10 : 0;
+  state.sections.push(ns); sortSecs(); ci = state.sections.indexOf(ns); isNew = true; save();
+  goWidth();
+}
+$('addBtn').onclick = addEntry;
+$('vAdd').onclick = addEntry;
+
+$('wBack').onclick = () => {
+  if (isNew){ state.sections.splice(ci, 1); ci = 0; save(); goHome(); }
+  else goView();
+};
+$('wNext').onclick = () => {
+  const w = parseFloat(buf);
+  if (!(w > 0)){ $('wMsg').textContent = 'Enter the width in feet to continue.'; return; }
+  remap(cur(), Math.round(w*100)/100, cur().interval); save(); goInterval();
+};
+$('iv6').onclick = () => { pendingIv = 6; paintIv(); };
+$('iv12').onclick = () => { pendingIv = 12; paintIv(); };
+$('iBack').onclick = goWidth;
+$('iNext').onclick = () => { if (pendingIv !== cur().interval) remap(cur(), cur().widthFt, pendingIv); fixBanks(cur()); save(); goDepth(1); };
+
+function commitDepth(){
+  const v = parseFloat(buf);
+  cur().depths[st] = buf === '' || isNaN(v) ? null : v;
+  real(); save();
+}
+$('dBack').onclick = () => { commitDepth(); if (st <= 1) goInterval(); else goDepth(st - 1); };
+$('dNext').onclick = () => {
+  commitDepth();
+  if (st < xsOf(cur()).length - 2) goDepth(st + 1); else goView();
+};
+
+$('vHome').onclick = goHome;
+$('vHome2').onclick = goHome;
+$('rHome').onclick = goHome;
+$('reachBtn').onclick = goReach;
+$('vRedo').onclick = goWidth;
+$('vPos').addEventListener('change', e => {
+  const v = parseFloat(e.target.value);
+  if (isNaN(v) || v < 0){ e.target.value = cur().pos; $('posMsg').textContent = 'Enter a number of feet, 0 or more.'; return; }
+  cur().pos = Math.round(v*10)/10; sortSecs(); real(); save();
+  const dup = state.sections.filter(x => x.pos === cur().pos).length > 1;
+  $('posMsg').textContent = dup ? `Another section is also at ${fmtFt(cur().pos)}.` : 'Position saved.';
+  $('vTitle').textContent = `Section at ${fmtFt(cur().pos)}`; $('crumb').textContent = `Section at ${fmtFt(cur().pos)}`;
+});
+$('vLabel').addEventListener('input', e => { cur().label = e.target.value; real(); save(); });
+
+function twoTap(btn, idle, armed, action){
+  let t = null;
+  btn.addEventListener('click', () => {
+    if (btn.dataset.armed){ clearTimeout(t); delete btn.dataset.armed; btn.textContent = idle; action(); return; }
+    btn.dataset.armed = '1'; btn.textContent = armed;
+    t = setTimeout(() => { delete btn.dataset.armed; btn.textContent = idle; }, 3000);
+  });
+}
+twoTap($('vDel'), 'Delete this section', 'Tap again to delete', () => {
+  state.sections.splice(ci, 1); ci = 0; real(); save(); goHome();
+});
+twoTap($('clearEx'), 'Clear example data', 'Tap again to clear', () => {
+  state = { example: false, sections: [] }; save(); goHome();
+});
+
+/* ---------- location ---------- */
+$('vLat').addEventListener('input', e => { cur().lat = e.target.value.trim(); real(); save(); });
+$('vInv').addEventListener('input', e => { cur().invasive = e.target.value; real(); save(); });
+$('vLon').addEventListener('input', e => { cur().lon = e.target.value.trim(); real(); save(); });
+$('vGps').onclick = () => {
+  const msg = $('gpsMsg');
+  const fail = () => { msg.textContent = 'This view can’t read the tablet’s GPS. Type the coordinates from your GPS or phone map instead.'; };
+  if (!navigator.geolocation) return fail();
+  msg.textContent = 'Getting location…';
+  try {
+    navigator.geolocation.getCurrentPosition(pos => {
+      const s = cur();
+      s.lat = pos.coords.latitude.toFixed(6); s.lon = pos.coords.longitude.toFixed(6);
+      $('vLat').value = s.lat; $('vLon').value = s.lon; real(); save();
+      msg.textContent = `Location saved (accuracy about ${Math.round(pos.coords.accuracy)} m).`;
+    }, fail, { enableHighAccuracy: true, timeout: 15000 });
+  } catch(e){ fail(); }
+};
+
+/* ---------- export / import ---------- */
+const CSV_HEAD = ['section_ft','location','latitude','longitude','invasive_species','width_ft','interval_in','station_in','depth_in'];
+const q = v => { v = v === null || v === undefined ? '' : String(v); return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v; };
+function buildCsv(){
+  const rows = [CSV_HEAD.join(',')];
+  state.sections.forEach((s, i) => xsOf(s).forEach((x, j) =>
+    rows.push([s.pos, s.label, s.lat, s.lon, s.invasive, s.widthFt, s.interval, x, has(s.depths[j]) ? s.depths[j] : ''].map(q).join(','))));
+  return rows.join('\n') + '\n';
+}
+const dlReady = (window.claude && claude.use) ? claude.use('downloads').catch(() => null) : Promise.resolve(null);
+function showBox(text){
+  const box = $('csvBox'); box.value = text; box.hidden = false; box.focus(); box.select();
+  $('ioMsg').textContent = 'Saving files isn’t available here. Select the text below, copy it, and paste it into a spreadsheet.';
+}
+$('exportBtn').onclick = async () => {
+  const text = buildCsv(), name = `creek-sections-${new Date().toISOString().slice(0,10)}.csv`;
+  $('ioMsg').textContent = ''; $('csvBox').hidden = true;
+  if (!window.claude){                       // opened as a plain file in a browser
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' })); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    $('ioMsg').textContent = `Saved ${name}`; return;
+  }
+  const dl = await dlReady;
+  if (!dl) return showBox(text);
+  try { await dl.save({ filename: name, data: text }); $('ioMsg').textContent = `Exported ${name}`; }
+  catch(e){
+    if (e && e.code === 'declined') $('ioMsg').textContent = 'Export cancelled.';
+    else if (e && e.code === 'rate_limited') $('ioMsg').textContent = 'A save prompt is already open. Finish it, then try again.';
+    else showBox(text);
+  }
+};
+
+function parseCsv(t){
+  const rows = []; let row = [], f = '', inQ = false;
+  for (let i = 0; i < t.length; i++){
+    const c = t[i];
+    if (inQ){ if (c === '"'){ if (t[i+1] === '"'){ f += '"'; i++; } else inQ = false; } else f += c; }
+    else if (c === '"') inQ = true;
+    else if (c === ','){ row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r'){ if (c === '\r' && t[i+1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += c;
+  }
+  if (f !== '' || row.length){ row.push(f); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim() !== ''));
+}
+function sectionsFromCsv(text){
+  const rows = parseCsv(text.replace(/^﻿/, ''));
+  if (rows.length < 2) throw new Error('The file has no data rows.');
+  const h = rows[0].map(x => x.trim().toLowerCase());
+  const col = n => h.indexOf(n);
+  const posCol = col('section_ft') >= 0 ? col('section_ft') : col('section_m');
+  const posMul = col('section_ft') >= 0 ? 1 : 1/0.3048;
+  if (posCol < 0) throw new Error('The file is missing the “section_ft” column. Use a CSV exported from this app.');
+  for (const need of ['station_in','depth_in','width_ft'])
+    if (col(need) < 0) throw new Error(`The file is missing the “${need}” column. Use a CSV exported from this app.`);
+  const groups = new Map();
+  rows.slice(1).forEach(r => {
+    let k = parseFloat(r[posCol]); if (isNaN(k)) return; k = Math.round(k * posMul * 10)/10;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  });
+  const out = [];
+  [...groups.keys()].sort((a,b) => a-b).forEach(k => {
+    const rs = groups.get(k), r0 = rs[0], g = n => col(n) >= 0 ? (r0[col(n)] || '').trim() : '';
+    const w = parseFloat(g('width_ft'));
+    const xs = rs.map(r => parseFloat(r[col('station_in')])).filter(x => !isNaN(x)).sort((a,b) => a-b);
+    let iv = parseFloat(g('interval_in'));
+    if (!(iv > 0)) iv = xs.length > 1 ? Math.round((xs[1] - xs[0])*100)/100 : 6;
+    if (!(w > 0)) return;
+    const s = makeSection(w, iv); s.pos = k;
+    s.label = g('location'); s.lat = g('latitude'); s.lon = g('longitude'); s.invasive = g('invasive_species');
+    const map = new Map(rs.map(r => [parseFloat(r[col('station_in')]).toFixed(2), r[col('depth_in')]]));
+    s.depths = xsOf(s).map(x => { const v = parseFloat(map.get(x.toFixed(2))); return isNaN(v) ? null : v; });
+    fixBanks(s); out.push(s);
+  });
+  if (!out.length) throw new Error('No sections could be read from the file.');
+  return out;
+}
+let pendingImport = null;   // [{ name, sections, min, max, start }]
+const readText = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.onerror = rej; r.readAsText(f); });
+$('importBtn').onclick = () => { $('importFile').value = ''; $('importFile').click(); };
+$('importFile').addEventListener('change', async e => {
+  const files = [...(e.target.files || [])]; if (!files.length) return;
+  const items = [], errs = [];
+  for (const f of files){
+    try {
+      const secs = sectionsFromCsv(await readText(f));
+      const ps = secs.map(x => x.pos);
+      items.push({ name: f.name, sections: secs, min: Math.min(...ps), max: Math.max(...ps) });
+    } catch(err){ errs.push(`${f.name}: ${err.message || 'could not be read'}`); }
+  }
+  if (!items.length){ pendingImport = null; $('importPanel').hidden = true; $('ioMsg').textContent = 'Couldn’t import. ' + errs.join(' '); return; }
+  // default start: keep each file's own positions unless it would overlap the file before it
+  let end = -Infinity;
+  items.forEach(it => { it.start = it.min > end ? it.min : Math.round((end + 3)*10)/10; end = it.start + (it.max - it.min); });
+  pendingImport = items;
+  $('ioMsg').textContent = errs.length ? 'Skipped: ' + errs.join(' ') : '';
+  $('impAdd').hidden = !state.sections.length || state.example;
+  renderImport(); $('importPanel').hidden = false;
+});
+function renderImport(){
+  const tb = $('importList'); tb.textContent = '';
+  pendingImport.forEach((it, k) => {
+    const tr = document.createElement('tr');
+    const n = it.sections.length;
+    tr.innerHTML = `<td>${esc(it.name)}</td><td class="num">${n}</td><td></td><td class="num"></td>`;
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.inputMode = 'decimal'; inp.id = 'imp-start-' + k; inp.value = it.start;
+    inp.style.maxWidth = '7rem'; inp.setAttribute('aria-label', `Start position for ${it.name}`);
+    inp.addEventListener('input', () => { const v = parseFloat(inp.value); if (!isNaN(v) && v >= 0){ it.start = v; } paintImport(); });
+    tr.children[2].appendChild(inp);
+    tb.appendChild(tr);
+  });
+  paintImport();
+}
+function placed(it){ return it.sections.map(x => Math.round((it.start + (x.pos - it.min))*10)/10); }
+function paintImport(){
+  const rows = $('importList').children, all = new Map(), warn = [];
+  pendingImport.forEach((it, k) => {
+    const ps = placed(it);
+    rows[k].children[3].textContent = fmtFt(Math.max(...ps));
+    ps.forEach(v => { if (all.has(v) && all.get(v) !== it.name) warn.push(`${it.name} and ${all.get(v)} both have a section at ${fmtFt(v)}.`); all.set(v, it.name); });
+  });
+  const existing = new Set(state.example ? [] : state.sections.map(x => x.pos));
+  const clash = [...all.keys()].filter(v => existing.has(v));
+  if (clash.length && !$('impAdd').hidden) warn.push(`If you add, ${clash.length} imported section${clash.length === 1 ? '' : 's'} will share a position with your current data (${clash.slice(0,3).map(fmtFt).join(', ')}${clash.length > 3 ? '…' : ''}).`);
+  $('importWarn').textContent = [...new Set(warn)].slice(0, 4).join(' ');
+}
+function importedSections(){
+  const out = [];
+  pendingImport.forEach(it => { const ps = placed(it); it.sections.forEach((x, j) => { x.pos = ps[j]; out.push(x); }); });
+  return out;
+}
+$('impReplace').onclick = () => { const secs = importedSections(); state = { example: false, sections: secs }; finishImport(secs.length); };
+$('impAdd').onclick = () => { const secs = importedSections(); state.sections = state.sections.concat(secs); state.example = false; finishImport(secs.length); };
+$('impCancel').onclick = () => { pendingImport = null; $('importPanel').hidden = true; };
+function finishImport(n){
+  const files = pendingImport.length; pendingImport = null;
+  state.sections.sort((a, b) => a.pos - b.pos); ci = 0; save(); goHome();
+  $('ioMsg').textContent = `Imported ${n} section${n === 1 ? '' : 's'} from ${files} file${files === 1 ? '' : 's'}.`;
+}
+
+/* ---------- drawing ---------- */
+function el(tag, a, parent){
+  const e = document.createElementNS(NS, tag);
+  for (const k in a) e.setAttribute(k, a[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function txt(parent, x, y, s, anchor = 'start', extra = {}){
+  const t = el('text', Object.assign({ x, y, 'text-anchor': anchor }, extra), parent); t.textContent = s; return t;
+}
+function drawSection(){
+  const svg = $('xs'), s = cur(), W = 760, H = 320, m = { l: 46, r: 16, t: 18, b: 40 };
+  svg.textContent = ''; svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const wIn = s.widthFt*12, p = points(s), k = stats(s);
+  const step = niceStep(Math.max(k.max, 2), 4), maxD = Math.ceil(Math.max(k.max, 2)/step)*step;
+  const pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const sx = x => m.l + x/wIn*pw, sy = d => m.t + d/maxD*ph;
+  el('rect', { x: 0, y: 0, width: W, height: H, fill: 'var(--bg)' }, svg);
+  for (let d = 0; d <= maxD + 1e-6; d += step){
+    el('line', { x1: m.l, x2: W-m.r, y1: sy(d), y2: sy(d), stroke: 'var(--faint)' }, svg);
+    txt(svg, m.l - 6, sy(d) + 4, (Math.round(d*10)/10) + '″', 'end');
+  }
+  const ftStep = s.widthFt > 30 ? 5 : s.widthFt > 14 ? 2 : 1;
+  for (let f = 0; f <= s.widthFt + 1e-6; f += ftStep){
+    el('line', { x1: sx(f*12), x2: sx(f*12), y1: H-m.b, y2: H-m.b+5, stroke: 'var(--ink)' }, svg);
+    txt(svg, sx(f*12), H-m.b+19, f + '′', 'middle');
+  }
+  txt(svg, W - m.r, H - 6, 'Distance from left bank (ft)', 'end', { 'font-size': 11 });
+  if (p.length){
+    let g = `M${sx(p[0][0])},${sy(p[0][1])}`;
+    p.forEach(q => g += ` L${sx(q[0])},${sy(q[1])}`);
+    g += ` L${sx(p[p.length-1][0])},${H-m.b} L${sx(p[0][0])},${H-m.b} Z`;
+    el('path', { d: g, fill: 'var(--ground)' }, svg);
+    let w = `M${sx(p[0][0])},${sy(0)}`;
+    p.forEach(q => w += ` L${sx(q[0])},${sy(q[1])}`);
+    w += ` L${sx(p[p.length-1][0])},${sy(0)} Z`;
+    el('path', { d: w, fill: 'var(--fill)' }, svg);
+    el('polyline', { points: p.map(q => sx(q[0]) + ',' + sy(q[1])).join(' '), fill: 'none', stroke: 'var(--ink)', 'stroke-width': 2 }, svg);
+    p.forEach(q => el('circle', { cx: sx(q[0]), cy: sy(q[1]), r: 2.5, fill: 'var(--ink)' }, svg));
+    if (k.thal && k.thal[1] > 0){
+      const tx = sx(k.thal[0]), ty = sy(k.thal[1]);
+      el('circle', { cx: tx, cy: ty, r: 6, fill: 'none', stroke: 'var(--ink)', 'stroke-width': 1.5 }, svg);
+      const anchor = tx > W - 140 ? 'end' : tx < m.l + 140 ? 'start' : 'middle';
+      const lbl = txt(svg, tx, ty + 22, `Deepest ${k.thal[1]}″ at ${ftIn(k.thal[0])}`, anchor, { 'font-weight': 'bold', 'paint-order': 'stroke', stroke: 'var(--bg)', 'stroke-width': 5 });
+      if (ty + 22 > H - m.b - 2) lbl.setAttribute('y', ty - 12);
+    }
+  } else {
+    txt(svg, W/2, H/2, 'No readings yet', 'middle');
+  }
+  el('line', { x1: sx(0), x2: sx(wIn), y1: sy(0), y2: sy(0), stroke: 'var(--ink)', 'stroke-width': 1.5 }, svg);
+  txt(svg, sx(wIn) - 4, sy(0) - 5, 'water surface', 'end', { 'font-size': 11 });
+}
+/* 3D reach view: x = across (m), z = downstream (positions in ft, converted to m), y = depth (m, stretched) */
+const view = { yaw: -0.55, pitch: 0.45, zoom: 1 };
+const show3d = { notes: false, sec: false, flow: false, deep: false, line: false, inv: false };
+let DEPTH_STRETCH = 3; const FT = 0.3048, IN = 0.0254;
+let dragged = false;
+function drawReach(){
+  const svg = $('reach'), secs = state.sections, n = secs.length;
+  svg.textContent = '';
+  const LAND = matchMedia('(min-width:900px) and (orientation:landscape)').matches;
+  const stg = svg.parentElement;
+  const W = Math.max(320, Math.round(stg.clientWidth || 800));
+  const H = LAND ? Math.max(300, Math.round(stg.clientHeight || 500)) : Math.round(W * 0.625);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  el('rect', { x: 0, y: 0, width: W, height: H, fill: 'var(--bg)' }, svg);
+  if (!n){ txt(svg, W/2, H/2, 'No sections yet', 'middle'); return; }
+
+  const maxW = Math.max(...secs.map(s => s.widthFt*FT));
+  const maxD = Math.max(0.05, ...secs.map(s => stats(s).max*IN*DEPTH_STRETCH));
+  const zMin = Math.min(...secs.map(s => s.pos)), zMax = Math.max(...secs.map(s => s.pos)), zSpan = zMax - zMin;
+  const c = [maxW/2, maxD/2, (zMin + zMax)/2];
+  const cy = Math.cos(view.yaw), sy = Math.sin(view.yaw), cp = Math.cos(view.pitch), sp = Math.sin(view.pitch);
+  const R = Math.max(0.5, Math.hypot(maxW/2, maxD/2, zSpan*FT/2 + 0.6));
+  const scale = Math.min(W, H) * 0.62 / R * view.zoom;
+  function P(x, y, z){
+    x -= c[0]; y -= c[1]; z = (z - c[2]) * FT;
+    const x1 = x*cy - z*sy, z1 = x*sy + z*cy;
+    const y2 = y*cp - z1*sp, z2 = y*sp + z1*cp;
+    return [W/2 + x1*scale, H/2 + y2*scale, z2];
+  }
+  const pt = a => a[0].toFixed(1) + ',' + a[1].toFixed(1);
+
+  // bank lines and flow arrow
+  if (n > 1){
+    el('polyline', { points: secs.map((s,i) => pt(P(0,0,s.pos))).join(' '), fill: 'none', stroke: 'var(--faint)' }, svg);
+    el('polyline', { points: secs.map((s,i) => pt(P(s.widthFt*FT,0,s.pos))).join(' '), fill: 'none', stroke: 'var(--faint)' }, svg);
+  }
+  if (show3d.flow){
+    const a0 = P(-0.35, 0, zMin - 1.5), a1 = P(-0.35, 0, zMax + 1.5);
+    el('line', { x1: a0[0], y1: a0[1], x2: a1[0], y2: a1[1], stroke: 'var(--mid)', 'stroke-width': 1 }, svg);
+    const ang = Math.atan2(a1[1]-a0[1], a1[0]-a0[0]), hl = 9;
+    el('path', { d: `M${a1[0]},${a1[1]} L${a1[0]-hl*Math.cos(ang-0.4)},${a1[1]-hl*Math.sin(ang-0.4)} L${a1[0]-hl*Math.cos(ang+0.4)},${a1[1]-hl*Math.sin(ang+0.4)} Z`, fill: 'var(--mid)' }, svg);
+    txt(svg, a1[0] + 6*Math.cos(ang), a1[1] + 6*Math.sin(ang) + 4, 'flow', 'start', { 'font-size': 11 });
+  }
+
+  // sections, far to near
+  const order = secs.map((s, i) => ({ s, i, z: P(s.widthFt*FT/2, 0, s.pos)[2] })).sort((a, b) => b.z - a.z);
+  const thal = [], deepLabels = [], invLabels = [], leftLabels = [];
+  order.forEach(({ s, i }) => {
+    const p = points(s), wM = s.widthFt*FT;
+    const g = el('g', { style: 'cursor:pointer', tabindex: 0, role: 'button', 'aria-label': `Open section at ${fmtFt(s.pos)}` }, svg);
+    g.addEventListener('click', () => { if (!dragged) goView(i); });
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); goView(i); } });
+    const L = P(0, 0, s.pos), Rt = P(wM, 0, s.pos);
+    if ((s.invasive || '').trim()) invLabels.push([P(wM + 0.15, 0, s.pos), s.invasive.trim()]);
+    if (p.length){
+      const bed = p.map(q => P(q[0]*IN, q[1]*IN*DEPTH_STRETCH, s.pos));
+      const first = P(p[0][0]*IN, 0, s.pos), last = P(p[p.length-1][0]*IN, 0, s.pos);
+      el('path', { d: 'M' + [first, ...bed, last].map(pt).join(' L') + ' Z', fill: 'var(--bg)', 'fill-opacity': 0.92 }, g);
+      el('polyline', { points: bed.map(pt).join(' '), fill: 'none', stroke: 'var(--ink)', 'stroke-width': 1.6, 'stroke-linejoin': 'round' }, g);
+      const t = stats(s).thal;
+      if (t){
+        const tp3 = P(t[0]*IN, t[1]*IN*DEPTH_STRETCH, s.pos); thal[i] = tp3;
+        if (t[1] > 0){
+          deepLabels.push([tp3, t[1]]);
+        }
+      }
+    }
+    el('line', { x1: L[0], y1: L[1], x2: Rt[0], y2: Rt[1], stroke: 'var(--mid)', 'stroke-width': 1 }, g);
+    el('line', { x1: L[0], y1: L[1], x2: Rt[0], y2: Rt[1], stroke: 'transparent', 'stroke-width': 14 }, g);
+    const lab = P(-0.12, 0, s.pos);
+    const note = show3d.notes ? (s.label || '').trim().replace(/\s+/g, ' ') : '';
+    const leftText = [show3d.sec ? fmtFt(s.pos) : '', note.length > 30 ? note.slice(0, 29) + '…' : note].filter(Boolean).join(' · ');
+    if (leftText) leftLabels.push([lab, lab[0] < L[0] ? 'end' : 'start', leftText]);
+  });
+  const tp = thal.filter(Boolean);
+  if (show3d.line && tp.length > 1) el('polyline', { points: tp.map(pt).join(' '), fill: 'none', stroke: 'var(--ink)', 'stroke-width': 1, 'stroke-dasharray': '4 4', 'pointer-events': 'none' }, svg);
+  leftLabels.forEach(([q, anchor, t]) => {
+    const t2 = txt(svg, q[0], q[1] + 4, t, anchor, { 'font-size': 12, 'paint-order': 'stroke', stroke: 'var(--bg)', 'stroke-width': 3, 'pointer-events': 'none' });
+    let len = 0; try { len = t2.getComputedTextLength(); } catch(_){}
+    if (anchor === 'end' && q[0] - len < 4) t2.setAttribute('x', 4 + len);
+    if (anchor === 'start' && q[0] + len > W - 6) t2.setAttribute('x', W - 6 - len);
+  });
+  if (show3d.inv) invLabels.forEach(([q, t]) => {
+    const short = t.replace(/\s+/g, ' ');
+    const t2 = txt(svg, q[0], q[1] + 4, short.length > 40 ? short.slice(0, 39) + '…' : short, 'start',
+      { 'font-size': 11, 'font-style': 'italic', 'paint-order': 'stroke', stroke: 'var(--bg)', 'stroke-width': 3, 'pointer-events': 'none' });
+    let len = 0; try { len = t2.getComputedTextLength(); } catch(_){}
+    if (q[0] + len > W - 6) t2.setAttribute('x', Math.max(4, W - 6 - len));
+  });
+  const tb = $('reachInv'); tb.textContent = '';
+  secs.forEach((s, i) => {
+    const tr = document.createElement('tr'), a = document.createElement('td'), b = document.createElement('td');
+    a.textContent = fmtFt(s.pos); b.textContent = (s.invasive || '').trim() || '—';
+    tr.append(a, b); tb.appendChild(tr);
+  });
+  if (show3d.deep) deepLabels.forEach(([q, d]) => {
+    el('circle', { cx: q[0], cy: q[1], r: 3, fill: 'var(--ink)', 'pointer-events': 'none' }, svg);
+    txt(svg, q[0] + 6, q[1] + 14, d + '″', 'start', { 'font-size': 11, 'font-weight': 'bold', 'paint-order': 'stroke', stroke: 'var(--bg)', 'stroke-width': 3, 'pointer-events': 'none' });
+  });
+}
+
+/* rotate by dragging or buttons */
+(function(){
+  const svg = $('reach'); let sx = 0, sy = 0, y0 = 0, p0 = 0, id = null;
+  svg.addEventListener('pointerdown', e => {
+    id = e.pointerId; sx = e.clientX; sy = e.clientY; y0 = view.yaw; p0 = view.pitch; dragged = false;
+  });
+  svg.addEventListener('pointermove', e => {
+    if (id !== e.pointerId) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (!dragged && Math.hypot(dx, dy) < 6) return;
+    if (!dragged){ dragged = true; svg.classList.add('dragging'); try { svg.setPointerCapture(id); } catch(_){} }
+    view.yaw = y0 + dx * 0.01;
+    view.pitch = Math.max(-0.2, Math.min(1.5, p0 + dy * 0.01));
+    drawReach();
+  });
+  const end = e => { if (id !== e.pointerId) return; id = null; svg.classList.remove('dragging'); setTimeout(() => dragged = false, 0); };
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+  $('rReset').onclick = () => { view.yaw = -0.55; view.pitch = 0.45; view.zoom = 1; drawReach(); };
+  const zoom = f => { view.zoom = Math.max(0.5, Math.min(4, view.zoom * f)); drawReach(); };
+  [['tSec','sec'],['tFlow','flow'],['tDeep','deep'],['tLine','line'],['tInv','inv'],['tNotes','notes']].forEach(([id, k]) =>
+    $(id).addEventListener('change', e => { show3d[k] = e.target.checked; drawReach(); }));
+  document.querySelectorAll('input[name="stretch"]').forEach(r => r.addEventListener('change', () => { DEPTH_STRETCH = Number(r.value); drawReach(); }));
+  $('zoomIn').onclick = () => zoom(1.25);
+  $('zoomOut').onclick = () => zoom(0.8);
+})();
+
+window.addEventListener('resize', () => { if (!$('s-reach').hidden) drawReach(); });
+goHome();
+</script>
+
+</body></html>
