@@ -150,6 +150,13 @@ textarea{font-family:var(--mono);font-size:.8rem;width:100%;min-height:120px;bor
           </div>
           <textarea id="csvBox" hidden readonly aria-label="CSV data"></textarea>
         </div>
+        <div class="box" style="margin-top:16px">
+          <h2 style="margin-top:0">Clear data</h2>
+          <p class="small">Deletes every section on this tablet so a new group can start fresh. Export first if you want to keep it. This can’t be undone.</p>
+          <div class="btns" style="margin-top:8px">
+            <button id="clearAll">Clear all data</button>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -579,6 +586,10 @@ function twoTap(btn, idle, armed, action){
 }
 twoTap($('vDel'), 'Delete this section', 'Tap again to delete', () => {
   state.sections.splice(ci, 1); ci = 0; real(); save(); goHome();
+});
+twoTap($('clearAll'), 'Clear all data', 'Tap again to delete everything', () => {
+  state = { example: false, sections: [] }; ci = 0; save(); goHome();
+  $('ioMsg').textContent = 'All data cleared.';
 });
 twoTap($('clearEx'), 'Clear example data', 'Tap again to clear', () => {
   state = { example: false, sections: [] }; save(); goHome();
