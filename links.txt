@@ -3,7 +3,7 @@
 # Lines starting with # are ignored as comments.
 # One link per line.
 
-Yellow Mid Term Project| https://docs.google.com/document/d/1C-WSRjnzlI_76KEGDaj7XRgzDRpvCcwCs_f6ZJAO6sA/edit?tab=t.0 | Find the worksheet here. 
+Blue Mid Term Project| https://docs.google.com/document/d/1C-WSRjnzlI_76KEGDaj7XRgzDRpvCcwCs_f6ZJAO6sA/edit?tab=t.0 | Find the worksheet here. 
 Next Gen Personal Finance | https://www.ngpf.org/math/financial-algebra/ | Financial Math 
 Open up Resources | https://access.openupresources.org/curricula/our-hs-math | Math Materials and Make up work
 Onshape | https://www.onshape.com/en/ | CAD 
