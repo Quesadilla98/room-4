@@ -184,7 +184,29 @@ header {
 }
 .widget-answer.revealed { opacity: 1; cursor: default; }
 .widget-answer:not(.revealed)::before { content: 'tap to reveal answer'; color: var(--muted); font-size: .6rem; }
-
+/* GOOGLE SEARCH */
+.hero-search {
+  display: flex; max-width: 38rem;
+  margin-bottom: 1.5rem;
+  background: #111; border: 1px solid var(--border);
+  transition: border-color .2s;
+  opacity: 0; animation: up .7s .5s forwards;
+}
+.hero-search:focus-within { border-color: var(--accent); }
+.hero-search input {
+  flex: 1; min-width: 0;
+  background: transparent; border: none; outline: none;
+  color: var(--white); caret-color: var(--accent);
+  font-family: 'DM Mono', monospace; font-size: .85rem;
+  padding: 1rem 1.2rem; cursor: none;
+}
+.hero-search input::placeholder { color: var(--muted); }
+.hero-search button {
+  background: var(--accent); color: var(--black); border: none;
+  font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: .1em;
+  padding: 0 1.5rem; cursor: none; transition: background .2s;
+}
+.hero-search button:hover { background: var(--white); }
 /* ═══════════════════════════════════════
    SPOTLIGHT SECTION
 ═══════════════════════════════════════ */
@@ -404,7 +426,11 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
   <p class="hero-eyebrow">room&#8202;—&#8202;004</p>
   <h1 class="hero-title">All Things<br><span class="hollow">Room 4</span></h1>
   <p class="hero-desc">Everything for this class in one place.</p>
-
+  <form class="hero-search" action="https://www.google.com/search" method="get" target="_blank" role="search">
+  <input type="search" name="q" placeholder="Search Google…" autocomplete="off" aria-label="Search Google">
+  <input type="hidden" name="safe" value="active">
+  <button type="submit">Search</button>
+</form>
   <div class="hero-widgets">
     <div class="widget">
       <span class="widget-label">Date</span>
@@ -733,7 +759,12 @@ footer { padding:2.5rem 3rem; border-top:1px solid var(--border); display:flex; 
 
   loadLinks();
   loadFolders();
-
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) {
+    e.preventDefault();
+    document.querySelector('.hero-search input').focus();
+  }
+});
   // ── Date & Time ──
   function updateClock() {
     const now = new Date();
