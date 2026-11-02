@@ -1,0 +1,14 @@
+# Tickers the portfolio tracker gets prices for. One per line.
+# Add new student picks here; prices show up a few minutes after you commit.
+# SPY (S&P 500) is always included as the benchmark.
+PM
+GM
+TM
+CAT
+D
+AAL
+PLTR
+BLK
+AXON
+PDD
+0625.HK

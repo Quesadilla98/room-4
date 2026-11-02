@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Class Portfolio Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: ledger-style leaderboard; clicking a row swaps to a student detail view */
+:root{
+  --bg:#f6f7f5; --panel:#ffffff; --ink:#18201c; --muted:#5d6862; --line:#dde2de;
+  --accent:#1f4f7a; --accent-soft:#e3ecf4; --gain:#1d7a46; --loss:#b3362f; --warn:#9a6a00; --warn-soft:#fbf1d9;
+  --font-ui:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-num:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121614; --panel:#1a201d; --ink:#e7ece9; --muted:#9aa59f; --line:#2c3531;
+  --accent:#7fb0e0; --accent-soft:#1e2c39; --gain:#5cc68a; --loss:#ef7b72; --warn:#e5b54a; --warn-soft:#2f2816; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121614; --panel:#1a201d; --ink:#e7ece9; --muted:#9aa59f; --line:#2c3531;
+  --accent:#7fb0e0; --accent-soft:#1e2c39; --gain:#5cc68a; --loss:#ef7b72; --warn:#e5b54a; --warn-soft:#2f2816; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--font-ui);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1040px;margin:0 auto;padding-block:24px 64px;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-size:1.6rem;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--muted);font-size:.9rem}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+button,.btn{font:inherit;font-size:.9rem;font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  padding:8px 14px;border-radius:6px;cursor:pointer}
+button:hover,.btn:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--panel)}
+button.danger{color:var(--loss)}
+button:focus-visible,input:focus-visible,.btn:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.5;cursor:default}
+input[type=text],input[type=password],input[type=date]{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px}
+#settings{padding:18px;display:grid;gap:14px}
+#settings .row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}
+#settings label{display:flex;flex-direction:column;gap:4px;font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+#settings p{margin:0;color:var(--muted);font-size:.88rem;max-width:70ch}
+#settings a{color:var(--accent)}
+#status{font-size:.9rem;padding:10px 14px;border-radius:6px;background:var(--accent-soft);color:var(--ink)}
+#status.warn{background:var(--warn-soft)}
+#status.bad{background:var(--warn-soft);color:var(--loss)}
+.num{font-family:var(--font-num);font-variant-numeric:tabular-nums}
+.gain{color:var(--gain)} .loss{color:var(--loss)}
+.tablebox{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+th.r,td.r{text-align:right}
+td{padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+#board tbody tr{cursor:pointer}
+#board tbody tr:hover{background:var(--accent-soft)}
+.rank{color:var(--muted);width:2.5em}
+.who{font-weight:600}
+.flag{display:inline-block;margin-left:6px;font-size:.7rem;font-weight:700;color:var(--warn);background:var(--warn-soft);padding:1px 6px;border-radius:10px;vertical-align:1px}
+.sorts{display:flex;gap:6px;align-items:center;font-size:.85rem;color:var(--muted);flex-wrap:wrap}
+.sorts button{padding:4px 10px;font-size:.82rem}
+.sorts button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent)}
+.boardhead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;padding:14px 12px 4px}
+.empty{padding:40px 20px;text-align:center;color:var(--muted);display:grid;gap:12px;justify-items:center}
+.empty strong{color:var(--ink);font-size:1.05rem}
+.drop{outline:2px dashed var(--accent);outline-offset:4px}
+/* detail */
+.dhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px}
+.dhead h2{margin:0;font-size:1.5rem}
+.bigval{font-size:2rem;font-weight:600;line-height:1.1}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.tile{background:var(--panel);padding:12px 14px;display:grid;gap:2px;min-width:0}
+.tile .k{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.tile .v{font-size:1.15rem;font-weight:600}
+.tile .n{font-size:.8rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chartbox{padding:14px 14px 6px}
+.chartbox svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:16px;font-size:.82rem;color:var(--muted);padding:0 4px 8px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+.fix{display:flex;gap:6px}
+.fix input{width:7.5em;padding:4px 8px}
+.fix button{padding:4px 10px}
+.st{font-size:.72rem;font-weight:700;padding:1px 7px;border-radius:10px;background:var(--warn-soft);color:var(--warn)}
+.foot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.confirm{display:flex;gap:8px;align-items:center;font-size:.9rem}
+@media (max-width:560px){.bigval{font-size:1.6rem} .hide-sm{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Class Portfolio Tracker</h1>
+      <div class="sub" id="periodLine"></div>
+    </div>
+    <div class="actions">
+      <label class="btn" for="fileIn">Add portfolios<input id="fileIn" type="file" accept=".csv,.tsv,.txt" multiple hidden></label>
+      <button id="refreshBtn" type="button">Reload prices</button>
+      <button id="settingsBtn" type="button" aria-expanded="false">Settings</button>
+    </div>
+  </header>
+
+  <section id="settings" class="panel" hidden>
+    <div class="row">
+      <label for="startDate">Track from<input id="startDate" type="date"></label>
+      <button id="saveSettings" class="primary" type="button">Save</button>
+    </div>
+    <p>Closing prices update every weeknight from Yahoo Finance and cover the past year. Only tickers listed in <span class="num">stocks/tickers.txt</span> in the room-4 repo get prices; the page tells you when a student picks one that isn't there yet.</p>
+    <p>Student portfolios are saved in this browser only. Use a backup to move them to another computer.</p>
+    <div class="row">
+      <button id="exportBtn" type="button">Download backup</button>
+      <label class="btn" for="importIn" style="text-transform:none;letter-spacing:0;font-size:.9rem;color:var(--ink);flex-direction:row">Restore backup<input id="importIn" type="file" accept=".json" hidden></label>
+    </div>
+  </section>
+
+  <div id="status" hidden></div>
+
+  <section id="board" class="panel"></section>
+  <section id="detail" hidden></section>
+</div>
+
+<script>
+"use strict";
+const LS_STATE = "pft.state.v1", BENCH = "SPY";
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function localISO(d = new Date()) { return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+function defaultStart() { const d = new Date(); d.setMonth(d.getMonth() - 1); d.setDate(1); return localISO(d); }
+function load(k, def) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch (e) { return def; } }
+function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { setStatus("Couldn't save in this browser: " + e.message, "bad"); } }
+
+let state = load(LS_STATE, null) || { settings: { startDate: defaultStart() }, students: [] };
+let raw = null, priceUpdated = "", prices = {};
+let sortKey = "ret", selectedId = null, fetching = false, pendingDelete = false;
+const saveState = () => save(LS_STATE, state);
+
+/* ---------- formatting ---------- */
+const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const money = v => v == null || !isFinite(v) ? "—" : usd.format(v);
+const signed = v => v == null || !isFinite(v) ? "—" : (v >= 0 ? "+" : "−") + usd.format(Math.abs(v));
+const pct = v => v == null || !isFinite(v) ? "—" : (v >= 0 ? "+" : "−") + Math.abs(v * 100).toFixed(2) + "%";
+const cls = v => v == null || !isFinite(v) || v === 0 ? "" : v > 0 ? "gain" : "loss";
+const niceDate = s => s ? new Date(s + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+
+function setStatus(msg, kind) {
+  const el = $("status");
+  if (!msg) { el.hidden = true; return; }
+  el.hidden = false; el.className = kind || ""; el.textContent = msg;
+}
+
+/* ---------- parsing student files ---------- */
+function splitLine(line, delim) {
+  const out = []; let cur = "", q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === delim) { out.push(cur); cur = ""; }
+    else cur += c;
+  }
+  out.push(cur);
+  return out.map(s => s.trim());
+}
+const num = s => { const v = parseFloat(String(s ?? "").replace(/[$,\s]/g, "")); return isFinite(v) ? v : null; };
+function normTicker(raw) {
+  let t = String(raw || "").trim().toUpperCase().replace(/\s+/g, "");
+  if (t.includes(":")) t = t.split(":").pop();   // "NYSE:BLK" -> "BLK"
+  return t;
+}
+function apiSymbol(t) {
+  const m = t.match(/^(.+)\.([A-Z]{1,2})$/);
+  const ex = { HK: "HKEX", TO: "TSX", L: "LSE", T: "JPX", DE: "XETR", PA: "Euronext", AX: "ASX" };
+  return m && ex[m[2]] ? { symbol: m[1], exchange: ex[m[2]] } : { symbol: t };
+}
+const isCash = h => /cash/i.test(h.type || "") || h.ticker === "CASH";
+
+function parseSheet(text) {
+  const lines = text.replace(/\r/g, "").split("\n").filter(l => l.trim());
+  const hi = lines.findIndex(l => /ticker/i.test(l));
+  if (hi < 0) throw new Error('no "Ticker" column');
+  const head = lines[hi];
+  const delim = head.split("\t").length > head.split(",").length ? "\t" : ",";
+  const h = splitLine(head, delim).map(s => s.toLowerCase());
+  const iT = h.findIndex(x => x.includes("ticker"));
+  const iSh = h.findIndex(x => /#|shares|qty|quantity/.test(x) && !x.includes("price"));
+  const iP = h.findIndex(x => x.includes("price"));
+  const iTy = h.findIndex(x => x.includes("type"));
+  const iN = h.findIndex((x, i) => x.includes("name") && i !== iT);
+  if (iSh < 0) throw new Error('no "# of shares" column');
+  const holdings = [];
+  for (const line of lines.slice(hi + 1)) {
+    const c = splitLine(line, delim);
+    const name = iN >= 0 ? c[iN] || "" : "";
+    const ticker = normTicker(c[iT]);
+    const shares = num(c[iSh]);
+    if ((!name && !ticker) || !shares) continue;
+    holdings.push({ name: name || ticker, type: iTy >= 0 ? c[iTy] || "" : "", ticker, sheetPrice: iP >= 0 ? num(c[iP]) : null, shares });
+  }
+  if (!holdings.length) throw new Error("no rows with a share count");
+  return holdings;
+}
+const nameFromFile = fn => fn.replace(/\.[^.]+$/, "").replace(/[_]+/g, " ").replace(/\s+/g, " ").trim();
+
+async function addFiles(files) {
+  const added = [], failed = [];
+  for (const f of files) {
+    try {
+      const holdings = parseSheet(await f.text());
+      const name = nameFromFile(f.name);
+      const existing = state.students.find(s => s.name.toLowerCase() === name.toLowerCase());
+      if (existing) existing.holdings = holdings;
+      else state.students.push({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()), name, holdings });
+      added.push(name);
+    } catch (e) { failed.push(`${f.name} (${e.message})`); }
+  }
+  saveState(); render();
+  let msg = added.length ? `Added ${added.length} portfolio${added.length > 1 ? "s" : ""}.` : "";
+  if (failed.length) msg += ` Couldn't read: ${failed.join("; ")}.`;
+  setStatus(msg.trim(), failed.length ? "warn" : "");
+  if (added.length && raw) showPriceStatus(); else if (added.length) refresh();
+}
+
+/* ---------- prices (stocks/prices.json, built nightly by a GitHub Action) ---------- */
+function neededSymbols() {
+  const s = new Set([BENCH]);
+  state.students.forEach(st => st.holdings.forEach(h => { if (h.ticker && !isCash(h)) s.add(h.ticker); }));
+  return [...s];
+}
+const missingTickers = () => raw ? neededSymbols().filter(t => !raw[t]) : [];
+function applyStart() {
+  prices = {};
+  if (!raw) return;
+  for (const [t, p] of Object.entries(raw)) {
+    const series = (p.series || []).filter(x => x[0] >= state.settings.startDate);
+    prices[t] = { series, currency: p.currency, error: series.length ? null : "No prices since the start date" };
+  }
+}
+function showPriceStatus() {
+  const m = missingTickers(), el = $("status");
+  if (!m.length) { setStatus(priceUpdated ? "" : "Prices loaded."); return; }
+  el.hidden = false; el.className = "warn";
+  el.innerHTML = `${m.length} ticker${m.length > 1 ? "s aren't" : " isn't"} in the price list yet: <span class="num">${esc(m.join(" "))}</span>. Add ${m.length > 1 ? "them" : "it"} to <span class="num">stocks/tickers.txt</span> in the room-4 repo and prices appear a few minutes later. <button type="button" id="copyMissing" style="padding:3px 10px;margin-left:6px">Copy list</button>`;
+  $("copyMissing").onclick = async () => {
+    try { await navigator.clipboard.writeText(m.join("\n")); $("copyMissing").textContent = "Copied"; }
+    catch (e) { $("copyMissing").textContent = "Copy failed"; }
+  };
+}
+async function refresh() {
+  if (fetching) return;
+  fetching = true; $("refreshBtn").disabled = true;
+  try {
+    const r = await fetch("prices.json?v=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status === 404 ? "prices.json isn't on the site yet. Run the Stock prices action in the room-4 repo once." : `Couldn't load prices (error ${r.status}).`);
+    const j = await r.json();
+    raw = j.prices || {}; priceUpdated = j.updated || "";
+    applyStart(); render(); showPriceStatus();
+  } catch (e) {
+    setStatus(e.message, "bad");
+  } finally { fetching = false; $("refreshBtn").disabled = false; }
+}
+
+/* ---------- analysis ---------- */
+const seriesFor = t => { const p = prices[t]; return p && p.start === state.settings.startDate && p.series && p.series.length ? p.series : null; };
+function priceAt(series, date) {
+  let lo = 0, hi = series.length - 1, ans = -1;
+  while (lo <= hi) { const m = (lo + hi) >> 1; if (series[m][0] <= date) { ans = m; lo = m + 1; } else hi = m - 1; }
+  return series[ans < 0 ? 0 : ans][1];
+}
+function timeline() {
+  const b = seriesFor(BENCH);
+  if (b) return b.map(x => x[0]);
+  const s = new Set(); Object.keys(prices).forEach(t => (seriesFor(t) || []).forEach(x => s.add(x[0])));
+  return [...s].sort();
+}
+function analyze(st) {
+  const dates = timeline();
+  const rows = st.holdings.map(h => {
+    const cash = isCash(h), s = cash ? null : seriesFor(h.ticker);
+    let start, now, status;
+    if (cash) { start = now = h.sheetPrice ?? 1; status = "cash"; }
+    else if (s) { start = s[0][1]; now = s[s.length - 1][1]; status = "ok"; }
+    else { start = now = h.sheetPrice; status = !h.ticker ? "missing" : raw && !raw[h.ticker] ? "unlisted" : prices[h.ticker] && prices[h.ticker].error ? "error" : "pending"; }
+    const cur = s && prices[h.ticker].currency;
+    return { h, s, start, now, status, cur, startVal: (start || 0) * h.shares, val: (now || 0) * h.shares,
+      ret: s && start ? now / start - 1 : null };
+  });
+  const hist = dates.map(d => rows.reduce((sum, r) => sum + (r.s ? priceAt(r.s, d) : (r.start || 0)) * r.h.shares, 0));
+  const startV = hist.length ? hist[0] : rows.reduce((a, r) => a + r.startVal, 0);
+  const nowV = hist.length ? hist[hist.length - 1] : rows.reduce((a, r) => a + r.val, 0);
+  const b = seriesFor(BENCH);
+  const benchHist = b ? dates.map(d => priceAt(b, d) / b[0][1] - 1) : null;
+  let peak = -Infinity, dd = 0;
+  hist.forEach(v => { peak = Math.max(peak, v); if (peak > 0) dd = Math.min(dd, v / peak - 1); });
+  const priced = rows.filter(r => r.ret != null).sort((a, b) => b.ret - a.ret);
+  rows.forEach(r => r.weight = nowV ? r.val / nowV : 0);
+  return {
+    rows, dates, hist, startV, nowV, chg: nowV - startV, ret: startV ? nowV / startV - 1 : null,
+    bench: benchHist ? benchHist[benchHist.length - 1] : null, benchHist,
+    day: hist.length > 1 ? hist[hist.length - 1] - hist[hist.length - 2] : null,
+    drawdown: hist.length ? dd : null, best: priced[0], worst: priced[priced.length - 1],
+    issues: rows.filter(r => r.status === "missing" || r.status === "error" || r.status === "unlisted" || (r.cur && r.cur !== "USD")).length
+  };
+}
+
+/* ---------- charts ---------- */
+function sparkline(hist) {
+  if (hist.length < 2) return "";
+  const w = 96, h = 28, min = Math.min(...hist), max = Math.max(...hist), span = max - min || 1;
+  const pts = hist.map((v, i) => `${(i / (hist.length - 1) * w).toFixed(1)},${(h - 2 - (v - min) / span * (h - 4)).toFixed(1)}`).join(" ");
+  const col = hist[hist.length - 1] >= hist[0] ? "var(--gain)" : "var(--loss)";
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+}
+function niceStep(range) {
+  const raw = range / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / mag;
+  return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * mag;
+}
+function returnChart(a) {
+  if (a.hist.length < 2) return `<div class="empty" style="padding:24px">The chart appears once prices have loaded.</div>`;
+  const port = a.hist.map(v => v / a.hist[0] - 1), bench = a.benchHist;
+  const W = 760, H = 300, L = 56, R = 70, T = 14, B = 34;
+  const all = port.concat(bench || [], [0]);
+  let lo = Math.min(...all), hi = Math.max(...all); const pad = (hi - lo) * 0.08 || 0.01; lo -= pad; hi += pad;
+  const step = niceStep(hi - lo);
+  const x = i => L + i / (port.length - 1) * (W - L - R), y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+  let g = "";
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) {
+    const yy = y(v).toFixed(1), zero = Math.abs(v) < step / 1000;
+    g += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="var(--line)" stroke-width="${zero ? 1.6 : 1}"/>`;
+    g += `<text x="${L - 8}" y="${yy}" dy="4" text-anchor="end" font-size="11" fill="var(--muted)" font-family="var(--font-num)">${(v * 100).toFixed(step < 0.01 ? 1 : 0)}%</text>`;
+  }
+  const idx = [0, Math.floor((port.length - 1) / 2), port.length - 1];
+  idx.forEach((i, k) => {
+    g += `<text x="${x(i).toFixed(1)}" y="${H - 10}" text-anchor="${k === 0 ? "start" : k === 2 ? "end" : "middle"}" font-size="11" fill="var(--muted)">${niceDate(a.dates[i]).replace(/, \d{4}$/, "")}</text>`;
+  });
+  const line = (arr, col, dash, wdt) => `<polyline points="${arr.map((v, i) => x(i).toFixed(1) + "," + y(v).toFixed(1)).join(" ")}" fill="none" stroke="${col}" stroke-width="${wdt}" ${dash ? 'stroke-dasharray="4 4"' : ""} stroke-linejoin="round"/>`;
+  const end = (arr, col, label) => { const v = arr[arr.length - 1]; return `<circle cx="${x(arr.length - 1)}" cy="${y(v)}" r="3.5" fill="${col}"/><text x="${x(arr.length - 1) + 8}" y="${y(v)}" dy="4" font-size="12" font-weight="600" fill="${col}" font-family="var(--font-num)">${pct(v)}</text>`; };
+  // nudge endpoint labels apart if they collide
+  let bLabel = "";
+  if (bench) {
+    bLabel = line(bench, "var(--muted)", true, 1.5);
+  }
+  let ends = end(port, "var(--accent)");
+  if (bench) {
+    const dy = Math.abs(y(port[port.length - 1]) - y(bench[bench.length - 1]));
+    ends += dy < 14 ? `<circle cx="${x(bench.length - 1)}" cy="${y(bench[bench.length - 1])}" r="3" fill="var(--muted)"/>` : end(bench, "var(--muted)");
+  }
+  return `<div class="legend"><span><i style="background:var(--accent)"></i>This portfolio</span>${bench ? '<span><i style="background:var(--muted)"></i>S&amp;P 500 (SPY)</span>' : ""}</div>
+  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Portfolio return over time">${g}${bLabel}${line(port, "var(--accent)", false, 2.2)}${ends}</svg>`;
+}
+
+/* ---------- rendering ---------- */
+function render() {
+  $("periodLine").textContent = `${state.students.length} portfolio${state.students.length === 1 ? "" : "s"} · tracking from ${niceDate(state.settings.startDate)}` + (priceUpdated ? ` · prices as of ${new Date(priceUpdated).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` : "");
+  if (selectedId && state.students.find(s => s.id === selectedId)) renderDetail(); else { selectedId = null; renderBoard(); }
+}
+
+function renderBoard() {
+  $("detail").hidden = true; $("board").hidden = false;
+  if (!state.students.length) {
+    $("board").innerHTML = `<div class="empty"><strong>No portfolios yet</strong>
+      <div>Drop student CSV files anywhere on this page, or use Add portfolios.<br>Each file name becomes the student's name, so <span class="num">Tyler Maxwell.csv</span> shows up as Tyler Maxwell.</div>
+      <button type="button" id="exampleBtn">Load an example portfolio</button></div>`;
+    $("exampleBtn").onclick = loadExample;
+    return;
+  }
+  const data = state.students.map(s => ({ s, a: analyze(s) }));
+  data.sort((p, q) => sortKey === "name" ? p.s.name.localeCompare(q.s.name)
+    : sortKey === "value" ? q.a.nowV - p.a.nowV : (q.a.ret ?? -Infinity) - (p.a.ret ?? -Infinity));
+  const sb = (k, l) => `<button type="button" data-sort="${k}" aria-pressed="${sortKey === k}">${l}</button>`;
+  $("board").innerHTML = `<div class="boardhead"><strong>Leaderboard</strong><div class="sorts">Sort by ${sb("ret", "Return")}${sb("value", "Value")}${sb("name", "Name")}</div></div>
+  <div class="tablebox"><table><thead><tr><th class="rank">#</th><th>Student</th><th class="r">Value</th><th class="r">Change</th><th class="r">Return</th><th class="r hide-sm">vs S&amp;P 500</th><th class="hide-sm">Trend</th></tr></thead><tbody>
+  ${data.map((d, i) => `<tr data-id="${d.s.id}" tabindex="0"><td class="rank num">${sortKey === "name" ? "" : i + 1}</td>
+    <td class="who">${esc(d.s.name)}${d.a.issues ? `<span class="flag" title="Some holdings need attention">${d.a.issues} to check</span>` : ""}</td>
+    <td class="r num">${money(d.a.nowV)}</td><td class="r num ${cls(d.a.chg)}">${signed(d.a.chg)}</td>
+    <td class="r num ${cls(d.a.ret)}">${pct(d.a.ret)}</td>
+    <td class="r num hide-sm ${cls(d.a.ret != null && d.a.bench != null ? d.a.ret - d.a.bench : null)}">${d.a.ret != null && d.a.bench != null ? pct(d.a.ret - d.a.bench) : "—"}</td>
+    <td class="hide-sm">${sparkline(d.a.hist)}</td></tr>`).join("")}
+  </tbody></table></div>`;
+  $("board").querySelectorAll("[data-sort]").forEach(b => b.onclick = () => { sortKey = b.dataset.sort; renderBoard(); });
+  $("board").querySelectorAll("tr[data-id]").forEach(tr => {
+    const open = () => { selectedId = tr.dataset.id; pendingDelete = false; render(); window.scrollTo(0, 0); };
+    tr.onclick = open; tr.onkeydown = e => { if (e.key === "Enter") open(); };
+  });
+}
+
+function renderDetail() {
+  const st = state.students.find(s => s.id === selectedId), a = analyze(st);
+  $("board").hidden = true; const el = $("detail"); el.hidden = false;
+  const statusPill = r => r.status === "missing" ? `<span class="st">No ticker</span>` : r.status === "error" ? `<span class="st" title="${esc(prices[r.h.ticker].error)}">No data</span>`
+    : r.status === "unlisted" ? `<span class="st" title="Add it to stocks/tickers.txt">Not in price list</span>` : r.status === "pending" ? `<span class="st">Waiting</span>` : r.cur && r.cur !== "USD" ? `<span class="st" title="Not converted to dollars">${esc(r.cur)}</span>` : "";
+  const tickerCell = (r, i) => (r.status === "missing" || r.status === "error" || r.status === "unlisted")
+    ? `<div class="fix"><input type="text" id="fix-${i}" value="${esc(r.h.ticker)}" placeholder="Ticker" aria-label="Ticker for ${esc(r.h.name)}"><button type="button" data-fix="${i}">Save</button></div>`
+    : `<span class="num">${esc(r.h.ticker || "—")}</span>`;
+  const tile = (k, v, n, c) => `<div class="tile"><span class="k">${k}</span><span class="v num ${c || ""}">${v}</span>${n ? `<span class="n">${n}</span>` : ""}</div>`;
+  const vsB = a.ret != null && a.bench != null ? a.ret - a.bench : null;
+  el.innerHTML = `
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div><button type="button" id="backBtn">← All students</button></div>
+    <div class="dhead">
+      <div><h2>${esc(st.name)}</h2><div class="sub">${st.holdings.length} holdings · since ${niceDate(a.dates[0] || state.settings.startDate)}</div></div>
+      <div style="text-align:right"><div class="bigval num">${money(a.nowV)}</div><div class="num ${cls(a.chg)}">${signed(a.chg)} (${pct(a.ret)})</div></div>
+    </div>
+    <div class="tiles">
+      ${tile("Starting value", money(a.startV), niceDate(a.dates[0]))}
+      ${tile("Total return", pct(a.ret), signed(a.chg), cls(a.ret))}
+      ${tile("vs S&amp;P 500", pct(vsB), a.bench != null ? "SPY returned " + pct(a.bench) : "Benchmark not loaded", cls(vsB))}
+      ${tile("Last trading day", signed(a.day), a.dates.length ? niceDate(a.dates[a.dates.length - 1]) : "", cls(a.day))}
+      ${tile("Best pick", a.best ? pct(a.best.ret) : "—", a.best ? esc(a.best.h.name) : "", a.best ? cls(a.best.ret) : "")}
+      ${tile("Worst pick", a.worst ? pct(a.worst.ret) : "—", a.worst ? esc(a.worst.h.name) : "", a.worst ? cls(a.worst.ret) : "")}
+      ${tile("Biggest drop", a.drawdown != null ? pct(a.drawdown) : "—", "From a high to a later low", a.drawdown ? "loss" : "")}
+      ${tile("Largest holding", a.rows.length ? (Math.max(...a.rows.map(r => r.weight)) * 100).toFixed(1) + "%" : "—", esc((a.rows.slice().sort((p, q) => q.weight - p.weight)[0] || { h: {} }).h.name || ""))}
+    </div>
+    <div class="panel chartbox">${returnChart(a)}</div>
+    <div class="panel tablebox"><table><thead><tr><th>Investment</th><th>Ticker</th><th class="r">Shares</th><th class="r hide-sm">Price on sheet</th><th class="r">Start price</th><th class="r">Price now</th><th class="r">Value</th><th class="r">Gain</th><th class="r">Return</th><th class="r hide-sm">Weight</th></tr></thead><tbody>
+      ${a.rows.map((r, i) => `<tr><td>${esc(r.h.name)} ${statusPill(r)}</td><td>${tickerCell(r, i)}</td>
+        <td class="r num">${r.h.shares}</td><td class="r num hide-sm">${money(r.h.sheetPrice)}</td>
+        <td class="r num">${money(r.start)}</td><td class="r num">${money(r.now)}</td><td class="r num">${money(r.val)}</td>
+        <td class="r num ${cls(r.val - r.startVal)}">${r.ret != null ? signed(r.val - r.startVal) : "—"}</td>
+        <td class="r num ${cls(r.ret)}">${pct(r.ret)}</td><td class="r num hide-sm">${(r.weight * 100).toFixed(1)}%</td></tr>`).join("")}
+    </tbody></table></div>
+    <div class="foot">
+      <span class="sub">Start price is the closing price on the first trading day tracked. Holdings without price data are counted at the price on the sheet.</span>
+      <div id="delArea">${pendingDelete
+        ? `<span class="confirm">Remove ${esc(st.name)}? <button type="button" class="danger" id="delYes">Remove</button><button type="button" id="delNo">Cancel</button></span>`
+        : `<button type="button" class="danger" id="delBtn">Remove student</button>`}</div>
+    </div>
+  </div>`;
+  $("backBtn").onclick = () => { selectedId = null; render(); };
+  el.querySelectorAll("[data-fix]").forEach(b => b.onclick = () => {
+    const i = +b.dataset.fix, t = normTicker($("fix-" + i).value);
+    if (!t) return;
+    st.holdings[i].ticker = t; saveState(); render(); showPriceStatus();
+  });
+  if (pendingDelete) {
+    $("delYes").onclick = () => { state.students = state.students.filter(s => s.id !== st.id); pendingDelete = false; selectedId = null; saveState(); render(); setStatus(`Removed ${st.name}.`); };
+    $("delNo").onclick = () => { pendingDelete = false; renderDetail(); };
+  } else $("delBtn").onclick = () => { pendingDelete = true; renderDetail(); };
+}
+
+/* ---------- settings, backup, example ---------- */
+function openSettings(force) {
+  const s = $("settings"), open = force || s.hidden;
+  s.hidden = !open; $("settingsBtn").setAttribute("aria-expanded", String(open));
+  $("startDate").value = state.settings.startDate;
+}
+$("settingsBtn").onclick = () => openSettings(false);
+$("saveSettings").onclick = () => {
+  const start = $("startDate").value || state.settings.startDate;
+  if (start > localISO()) { setStatus("The start date can't be in the future.", "bad"); return; }
+  state.settings = { startDate: start }; saveState(); applyStart();
+  $("settings").hidden = true; $("settingsBtn").setAttribute("aria-expanded", "false");
+  render(); setStatus("Settings saved.");
+};
+$("refreshBtn").onclick = () => refresh();
+$("fileIn").onchange = e => { addFiles([...e.target.files]); e.target.value = ""; };
+$("exportBtn").onclick = () => {
+  const backup = { kind: "class-portfolio-tracker", saved: new Date().toISOString(), students: state.students, startDate: state.settings.startDate };
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" }));
+  a.download = `portfolio-backup-${localISO()}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+$("importIn").onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try {
+    const b = JSON.parse(await f.text());
+    if (b.kind !== "class-portfolio-tracker" || !Array.isArray(b.students)) throw new Error("not a tracker backup");
+    state.students = b.students; if (b.startDate) state.settings.startDate = b.startDate;
+    saveState(); render(); setStatus(`Restored ${b.students.length} portfolios.`); applyStart(); render(); showPriceStatus();
+  } catch (err) { setStatus("Couldn't restore that file: " + err.message, "bad"); }
+};
+function loadExample() {
+  const text = `Investment Name\tAsset Type\tTicker\tCurrent Share Price\t# of shares
+phillip morris\tstock\tpm\t203.13\t1
+general motors\tstock\tgm\t81.43\t1
+toyota\tstock\ttm\t193.84\t1
+caterpillar\tstock\tcat\t716.09\t1
+dominion energy\tstock\td\t64.67\t1
+american airlines group\tstock\t\t12.76\t30
+palintir\tstock\tpltr\t193.97\t2
+blackrock\tstock\tnyse:blk\t1168\t1
+axon\t\taxon\t436\t3
+shein\tstock\t0625.HK\t4.05\t44
+temu\tstock\tpdd\t78.77\t4`;
+  addFiles([new File([text], "Example Student.csv")]);
+}
+
+/* drag and drop anywhere */
+["dragenter", "dragover"].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); document.body.classList.add("drop"); }));
+["dragleave", "drop"].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); if (ev === "drop" || e.target === document.documentElement) document.body.classList.remove("drop"); }));
+document.addEventListener("drop", e => { const fs = [...(e.dataTransfer?.files || [])]; if (fs.length) addFiles(fs); });
+
+render();
+refresh();
+</script>
+</body>
+</html>
