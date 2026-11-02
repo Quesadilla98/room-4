@@ -263,7 +263,7 @@ async function refresh() {
 }
 
 /* ---------- analysis ---------- */
-const seriesFor = t => { const p = prices[t]; return p && p.start === state.settings.startDate && p.series && p.series.length ? p.series : null; };
+const seriesFor = t => { const p = prices[t]; return p && p.series && p.series.length ? p.series : null; };
 function priceAt(series, date) {
   let lo = 0, hi = series.length - 1, ans = -1;
   while (lo <= hi) { const m = (lo + hi) >> 1; if (series[m][0] <= date) { ans = m; lo = m + 1; } else hi = m - 1; }
