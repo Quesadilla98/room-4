@@ -1,8 +1,7 @@
-
 # Tickers the portfolio tracker gets prices for. One per line.
 # Add new student picks here; prices show up a few minutes after you commit.
 # SPY (S&P 500) is always included as the benchmark.
- 
+
 # Stocks
 AAL
 AAPL
@@ -10,6 +9,7 @@ AMZN
 APH
 AVGO
 AXON
+BA
 BAC
 BLK
 CAT
@@ -19,18 +19,22 @@ CVX
 D
 DASH
 DIS
+DVN
 EW
+F
 FLEX
 GEHC
 GM
 GOOGL
 GS
 HIG
+HONA
 INTC
 JNJ
 JPM
 KO
 LDOS
+LHX
 LIN
 LMT
 MAS
@@ -40,6 +44,7 @@ MNST
 MSFT
 MU
 NFLX
+NOC
 NVDA
 ORCL
 P
@@ -68,11 +73,10 @@ WFC
 WM
 WMB
 WMT
- 
+
 # Bond funds and ETFs
 AGG
 FIPDX
 PONAX
 SPHY
 VBTLX
- 
