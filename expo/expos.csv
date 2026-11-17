@@ -4,7 +4,7 @@
 # no_school rows skip those days of class time; end_date is optional for multi-day breaks
 # SAMPLE DATES BELOW - replace with your real ones
 type,name,date,time,end_date
-expo,Q1 Expo,2026-11-05,17:00,
+expo,Q1 Expo,2026-11-19,17:00,
 expo,Q2 Expo,2027-01-28,17:00,
 expo,Q3 Expo,2027-04-08,17:00,
 expo,Q4 Expo,2027-06-10,17:00,
