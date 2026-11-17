@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Expo Countdown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Silkscreen&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;color:#ffe9c4}
+  canvas{position:fixed;inset:0;width:100vw;height:100vh;image-rendering:pixelated;image-rendering:crisp-edges;z-index:0}
+  .shade{position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(ellipse 60% 45% at 50% 42%,rgba(0,0,0,.55),rgba(0,0,0,0) 75%)}
+  main{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:4vh 4vw 18vh;gap:1.6vh;font-family:'Pixelify Sans',monospace;
+    text-shadow:0 0 18px rgba(0,0,0,.9),0 3px 0 rgba(0,0,0,.8)}
+  .lbl{font-family:'Silkscreen',monospace;font-size:clamp(13px,1.6vw,26px);letter-spacing:.12em;color:#ffbe73}
+  #expo{font-size:clamp(28px,5vw,84px);font-weight:700;line-height:1;color:#fff4dc}
+  #when{font-family:'Silkscreen',monospace;font-size:clamp(13px,1.5vw,24px);color:#ffcf94}
+  #status{font-family:'Silkscreen',monospace;font-size:clamp(13px,1.5vw,24px);padding:.45em 1em;border:3px solid currentColor;
+    margin:1vh 0;background:rgba(0,0,0,.45);text-shadow:none}
+  #status.live{color:#ffd23e}
+  #status.paused{color:#9a8a78}
+  #class{font-size:clamp(64px,15vw,260px);font-weight:700;line-height:.95;color:#fff;font-variant-numeric:tabular-nums;
+    transition:color .6s}
+  body.paused #class{color:#bfb2a2}
+  .row{display:flex;gap:clamp(24px,6vw,120px);flex-wrap:wrap;justify-content:center;margin-top:1.5vh}
+  .stat b{display:block;font-size:clamp(26px,4.2vw,72px);font-weight:500;color:#fff4dc;font-variant-numeric:tabular-nums;line-height:1.1}
+  #msg{font-family:'Silkscreen',monospace;font-size:clamp(13px,1.4vw,22px);color:#ffbe73;max-width:900px;line-height:1.5}
+  #fs{position:fixed;right:14px;bottom:12px;z-index:3;font:12px 'Silkscreen',monospace;color:#7a3a14;background:none;border:0;cursor:pointer;opacity:.7}
+  #fs:hover{opacity:1;color:#ffbe73}
+  @media (prefers-reduced-motion:reduce){#class{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="shade"></div>
+
+<main>
+  <div class="lbl" id="up">NEXT EXPO</div>
+  <div id="expo">Loading…</div>
+  <div id="when"></div>
+  <div id="status" class="paused">—</div>
+  <div class="lbl">CLASS TIME LEFT</div>
+  <div id="class">--:--:--</div>
+  <div class="row">
+    <div class="stat"><span class="lbl">TOTAL TIME LEFT</span><b id="total">--</b></div>
+    <div class="stat"><span class="lbl">CLASS PERIODS LEFT</span><b id="periods">--</b></div>
+  </div>
+  <div id="msg"></div>
+</main>
+<button id="fs" type="button">FULLSCREEN</button>
+
+<script>
+// ===================== SETTINGS =====================
+const CONFIG = {
+  periods: [
+    { name: 'Period 1', start: '9:00',  end: '10:15' },
+    { name: 'Period 2', start: '10:20', end: '11:20' },
+    { name: 'Period 3', start: '13:00', end: '14:00' },
+    { name: 'Period 4', start: '15:10', end: '16:00' },
+  ],
+  dailyPeriod: 1,            // on regular weeks, which period is the project class (1-4)
+  schoolDays: [2,3,4,5],     // Tue–Fri (0=Sun … 6=Sat)
+  defaultExpoTime: '17:00',  // used when a row in expos.csv has no time
+  csvFile: 'expos.csv',
+  reloadMinutes: 30          // re-read the CSV this often, so a TV left on picks up changes
+};
+
+// ===================== LOGIC START =====================
+const DAY = 86400000;
+function toMin(s) {                     // "9:00", "17:00", "5:00 PM" -> minutes after midnight
+  const m = String(s).trim().match(/^(\d{1,2}):(\d{2})\s*([ap]\.?m\.?)?$/i);
+  if (!m) return null;
+  let h = +m[1]; const mi = +m[2], ap = m[3] && m[3][0].toLowerCase();
+  if (ap === 'p' && h < 12) h += 12;
+  if (ap === 'a' && h === 12) h = 0;
+  return h * 60 + mi;
+}
+function parseDay(s) {                  // "2026-12-17" or "12/17/2026" -> local midnight Date
+  s = String(s).trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) return new Date(+m[1], m[2] - 1, +m[3]);
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (m) return new Date(m[3].length === 2 ? 2000 + +m[3] : +m[3], m[1] - 1, +m[2]);
+  return null;
+}
+function at(day, min) { return new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, min); }
+function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+
+function parseCSV(text) {
+  const expos = [], noSchool = [], errors = [];
+  const lines = text.replace(/\r/g, '').split('\n');
+  let header = null;
+  lines.forEach((raw, i) => {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) return;
+    const cells = line.split(',').map(c => c.trim());
+    if (!header) { header = cells.map(c => c.toLowerCase()); return; }
+    const row = {}; header.forEach((h, j) => row[h] = cells[j] || '');
+    const type = (row.type || 'expo').toLowerCase().replace(/[\s-]/g, '_');
+    const day = parseDay(row.date);
+    if (!day) { errors.push(`Line ${i + 1}: bad date "${row.date}"`); return; }
+    if (type === 'expo') {
+      const t = toMin(row.time || CONFIG.defaultExpoTime);
+      if (t == null) { errors.push(`Line ${i + 1}: bad time "${row.time}"`); return; }
+      expos.push({ name: row.name || 'Expo', day, at: at(day, t) });
+    } else if (type === 'no_school') {
+      const end = row.end_date ? parseDay(row.end_date) : day;
+      if (!end) { errors.push(`Line ${i + 1}: bad end_date "${row.end_date}"`); return; }
+      noSchool.push({ name: row.name, start: day, end });
+    } else errors.push(`Line ${i + 1}: unknown type "${row.type}"`);
+  });
+  expos.sort((a, b) => a.at - b.at);
+  return { expos, noSchool, errors };
+}
+
+const PERIODS = CONFIG.periods.map(p => ({ name: p.name, s: toMin(p.start), e: toMin(p.end) }));
+
+// All class blocks counting toward this expo, from `from` until the expo starts
+function classBlocks(expo, noSchool, from) {
+  const out = [];
+  const dow = expo.day.getDay();
+  const weekStart = new Date(expo.day.getFullYear(), expo.day.getMonth(), expo.day.getDate() - ((dow + 6) % 7)); // Monday of expo week
+  const off = d => noSchool.some(n => d >= n.start && d <= n.end);
+  for (let day = startOfDay(from); day <= expo.day; day = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1)) {
+    if (!CONFIG.schoolDays.includes(day.getDay()) || off(day)) continue;
+    const project = day >= weekStart;
+    const list = project ? PERIODS : [PERIODS[CONFIG.dailyPeriod - 1]];
+    for (const p of list) {
+      const s = at(day, p.s); let e = at(day, p.e);
+      if (e > expo.at) e = expo.at;
+      if (e <= s || e <= from) continue;
+      out.push({ s, e, name: p.name, project });
+    }
+  }
+  return { blocks: out, weekStart };
+}
+
+function snapshot(data, now) {
+  const expo = data.expos.find(x => x.at > now);
+  if (!expo) return { expo: null };
+  const { blocks, weekStart } = classBlocks(expo, data.noSchool, now);
+  let classMs = 0, current = null, next = null;
+  for (const b of blocks) {
+    classMs += b.e - Math.max(b.s, now);
+    if (b.s <= now && now < b.e) current = b;
+    else if (!next && b.s > now) next = b;
+  }
+  return { expo, classMs, totalMs: expo.at - now, current, next,
+           periodsLeft: blocks.length, projectWeek: now >= weekStart };
+}
+// ===================== LOGIC END =====================
+
+{
+  const $ = id => document.getElementById(id);
+  const pad = n => String(n).padStart(2, '0');
+  const hms = ms => { const s = Math.ceil(ms / 1000); return `${Math.floor(s / 3600)}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`; };
+  const dhms = ms => { const s = Math.ceil(ms / 1000), d = Math.floor(s / 86400);
+    return `${d}d ${pad(Math.floor(s / 3600) % 24)}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`; };
+  const fmtWhen = d => d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()
+    + ' · ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).toUpperCase();
+
+  // ?now=2026-12-15T10:30 lets you preview any moment (clock keeps running from there)
+  const q = new URLSearchParams(location.search).get('now');
+  const shift = q && !isNaN(new Date(q)) ? new Date(q) - Date.now() : 0;
+  const clock = () => new Date(Date.now() + shift);
+
+  let data = null;
+  async function load() {
+    try {
+      const r = await fetch(CONFIG.csvFile + '?v=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+      data = parseCSV(await r.text());
+      $('msg').textContent = data.errors.length ? 'expos.csv: ' + data.errors.join(' · ') : '';
+    } catch (e) {
+      if (!data) { $('expo').textContent = 'No dates loaded'; $('msg').textContent = `Couldn't read ${CONFIG.csvFile}. Open this page from the website (not as a local file).`; }
+    }
+  }
+
+  let fireTarget = 0.6;
+  function tick() {
+    if (!data) return;
+    const now = clock(), s = snapshot(data, now);
+    if (!s.expo) {
+      $('expo').textContent = 'No upcoming expo'; $('when').textContent = '';
+      $('status').textContent = 'ADD DATES TO EXPOS.CSV'; $('status').className = 'paused';
+      $('class').textContent = '0:00:00'; $('total').textContent = '--'; $('periods').textContent = '0';
+      document.body.classList.add('paused'); fireTarget = 0.4; return;
+    }
+    $('up').textContent = s.projectWeek ? 'PROJECT WEEK · EXPO' : 'NEXT EXPO';
+    $('expo').textContent = s.expo.name;
+    $('when').textContent = fmtWhen(s.expo.at);
+    $('class').textContent = hms(s.classMs);
+    $('total').textContent = dhms(s.totalMs);
+    $('periods').textContent = s.periodsLeft;
+    const st = $('status');
+    if (s.current) {
+      st.className = 'live';
+      st.textContent = `IN CLASS · ${s.current.name.toUpperCase()} · ENDS ${s.current.e.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).toUpperCase()}`;
+      document.body.classList.remove('paused');
+      fireTarget = s.projectWeek ? 1.15 : 1;
+    } else {
+      st.className = 'paused';
+      st.textContent = s.next ? `PAUSED · NEXT: ${s.next.name.toUpperCase()} · ${fmtWhen(s.next.s)}` : 'PAUSED · NO CLASS TIME LEFT';
+      document.body.classList.add('paused');
+      fireTarget = 0.55;
+    }
+  }
+
+  load().then(tick);
+  setInterval(tick, 250);
+  setInterval(load, CONFIG.reloadMinutes * 60000);
+
+  // ---------- pixel fire ----------
+  const cvs = $('c'), ctx = cvs.getContext('2d'), PX = 4, N = 64;
+  const stops = [[0,[0,0,0]],[.12,[18,2,2]],[.25,[70,8,4]],[.4,[140,24,6]],[.55,[200,60,10]],[.7,[235,110,20]],[.82,[250,170,50]],[.92,[255,215,120]],[1,[255,245,210]]];
+  const pal = [];
+  for (let i = 0; i < N; i++) {
+    const t = i / (N - 1); let k = 0; while (stops[k + 1][0] < t) k++;
+    const [t0, c0] = stops[k], [t1, c1] = stops[k + 1], f = (t - t0) / (t1 - t0);
+    pal.push(c0.map((v, j) => Math.round(v + (c1[j] - v) * f)));
+  }
+  let W, H, fire, img, buf;
+  function resize() {
+    W = Math.ceil(innerWidth / PX); H = Math.ceil(innerHeight / PX);
+    cvs.width = W; cvs.height = H; fire = new Uint8Array(W * H);
+    img = ctx.createImageData(W, H); buf = img.data;
+  }
+  addEventListener('resize', resize); resize();
+
+  const embers = []; let wind = 0, t = 0, intensity = 0.6;
+  function step() {
+    t++; intensity += (fireTarget - intensity) * 0.03;
+    wind += (Math.random() - 0.5) * 0.15; wind *= 0.97;
+    const base = W * (H - 1);
+    for (let x = 0; x < W; x++) {
+      const n = Math.sin(x * 0.05 + t * 0.02) * 0.5 + Math.sin(x * 0.13 - t * 0.035) * 0.5;
+      const v = (0.75 + 0.25 * n) * intensity;
+      fire[base + x] = Math.random() < v ? N - 1 : Math.floor((N - 1) * Math.min(1, v) * 0.6);
+    }
+    const extra = H > 180 ? 0 : 0.3;
+    for (let y = 1; y < H; y++) for (let x = 0; x < W; x++) {
+      const src = y * W + x, p = fire[src];
+      if (p === 0) { fire[src - W] = 0; continue; }
+      let dx = x - (Math.random() * 3 | 0) + 1 + Math.round(wind);
+      if (dx < 0) dx += W; else if (dx >= W) dx -= W;
+      const cool = (Math.random() < 0.55 ? 1 : 0) + (Math.random() < extra ? 1 : 0);
+      fire[(y - 1) * W + dx] = p > cool ? p - cool : 0;
+    }
+    for (let i = 0, j = 0; i < fire.length; i++, j += 4) { const c = pal[fire[i]]; buf[j] = c[0]; buf[j+1] = c[1]; buf[j+2] = c[2]; buf[j+3] = 255; }
+    if (Math.random() < 0.6 * intensity) embers.push({ x: Math.random() * W, y: H - 1 - Math.random() * H * 0.15,
+      vx: (Math.random() - 0.5) * 0.3, vy: -(0.3 + Math.random() * 0.7), life: 1, decay: 0.003 + Math.random() * 0.006 });
+    for (let i = embers.length - 1; i >= 0; i--) {
+      const e = embers[i];
+      e.vx += (Math.random() - 0.5) * 0.08 + wind * 0.01; e.x += e.vx; e.y += e.vy; e.life -= e.decay;
+      if (e.life <= 0 || e.y < 0) { embers.splice(i, 1); continue; }
+      const xi = e.x | 0; if (xi < 0 || xi >= W) continue;
+      const c = pal[Math.floor((N - 1) * (0.6 + 0.4 * e.life))], j = ((e.y | 0) * W + xi) * 4;
+      buf[j] = c[0]; buf[j+1] = c[1]; buf[j+2] = c[2];
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  let last = 0;
+  (function loop(ts) { if (ts - last > 1000 / 30) { step(); last = ts; } requestAnimationFrame(loop); })(0);
+
+  $('fs').addEventListener('click', () => {
+    try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch (e) {}
+  });
+}
+</script>
+</body>
+</html>
