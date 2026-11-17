@@ -1,0 +1,12 @@
+# Expo Countdown dates. Lines starting with # are ignored.
+# type: expo or no_school
+# date: YYYY-MM-DD (or MM/DD/YYYY). time: when the expo starts (blank = 5:00 PM)
+# no_school rows skip those days of class time; end_date is optional for multi-day breaks
+# SAMPLE DATES BELOW - replace with your real ones
+type,name,date,time,end_date
+expo,Q1 Expo,2026-11-05,17:00,
+expo,Q2 Expo,2027-01-28,17:00,
+expo,Q3 Expo,2027-04-08,17:00,
+expo,Q4 Expo,2027-06-10,17:00,
+no_school,Thanksgiving Break,2026-11-25,,2026-11-27
+no_school,Winter Break,2026-12-21,,2027-01-01
