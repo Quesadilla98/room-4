@@ -73,6 +73,10 @@ WFC
 WM
 WMB
 WMT
+BND
+BSV
+SCHP
+NKE
 
 # Bond funds and ETFs
 AGG
